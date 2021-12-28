@@ -1,0 +1,142 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# Copyright (c) 2021 Salvador E. Tropea
+# Copyright (c) 2021 Instituto Nacional de Tecnologïa Industrial
+# License: Apache 2.0
+# Project: KiAuto (formerly kicad-automation-scripts)
+"""
+Wrapper for kicad2step
+On KiCad 6.0.0 this became a graphical tool
+"""
+
+import os
+from subprocess import run, PIPE
+import sys
+import re
+import argparse
+import atexit
+import json
+import time
+from time import sleep
+
+# Look for the 'kiauto' module from where the script is running
+script_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.dirname(script_dir))
+# kiauto import
+# Log functionality first
+from kiauto import log
+log.set_domain(os.path.splitext(os.path.basename(__file__))[0])
+logger = log.init()
+
+from kiauto.file_util import (get_log_files)
+from kiauto.ui_automation import (PopenContext, xdotool, wait_not_focused, wait_for_window, recorded_xvfb,
+                                  wait_point, text_replace, set_time_out_scale, clipboard_retrieve)
+from kiauto.misc import (REC_W, REC_H, __version__, WAIT_START, Config, __copyright__, __license__, TIME_OUT_MULT)
+
+
+def run_gui_version(cmd, cfg, flog_out, flog_err):
+    retry = 1
+    with recorded_xvfb(cfg, retry):
+        with PopenContext(cmd, stderr=flog_err, close_fds=True, stdout=flog_out, start_new_session=True) as proc:
+            wait_for_window('KiCad to STEP', 'Kicad2step', popen_obj=proc)
+            # Wait until the export finishes and get the messages
+            timeout = 60*cfg.time_out_scale
+            DELAY = 0.3
+            for i in range(int(timeout/DELAY)):
+                xdotool(['click', '1'])
+                xdotool(['key', 'ctrl+a', 'ctrl+c'])
+                text = clipboard_retrieve()
+                res = proc.poll()
+                if 'STRING not available' in text:
+                    if res is not None:
+                        logger.error('KiCad to STEP died')
+                        break
+                    sleep(DELAY)
+                else:
+                    logger.info(text)
+                    xdotool(['key', 'Tab', 'Return'])
+                    sleep(DELAY)
+                    res = proc.poll()
+                    if res is None:
+                        logger.error('Still running')
+                        res = -1
+                    break
+    return res
+
+
+def run_cli_version(cmd, cfg):
+    res = run(cmd, stderr=PIPE, stdout=PIPE)
+    logger.info(res.stdout.decode())
+    if res.stderr:
+        logger.error(res.stderr.decode())
+    return res.returncode
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='KiCad step converter wrapper')
+
+    parser.add_argument('pcb_filename', help='KiCad PCB file')
+
+    parser.add_argument('--output-filename', '-o', nargs=1, help='output filename')
+    parser.add_argument('--force', '-f', help='overwrite output file', action='store_true')
+    parser.add_argument('--drill-origin', help='Use Drill Origin for output origin', action='store_true')
+    parser.add_argument('--grid-origin', help='Use Grid Origin for output origin', action='store_true')
+    parser.add_argument('--user-origin', nargs=1, help='User-specified output origin ex. 1x1in, 1x1inch, 25.4x25.4mm (default mm)')
+    parser.add_argument('--no-virtual', help="exclude 3D models for components with 'virtual' attribute", action='store_true')
+    parser.add_argument('--min-distance', nargs=1, help='Minimum distance between points to treat them as separate ones (default 0.01 mm)')
+    # Our options
+    parser.add_argument('--record', '-r', help='Record the UI automation', action='store_true')
+    parser.add_argument('--rec_width', help='Record width ['+str(REC_W)+']', type=int, default=REC_W)
+    parser.add_argument('--rec_height', help='Record height ['+str(REC_H)+']', type=int, default=REC_H)
+    parser.add_argument('--start_x11vnc', '-s', help='Start x11vnc (debug)', action='store_true')
+    parser.add_argument('--use_wm', '-m', help='Use a window manager (fluxbox)', action='store_true')
+    parser.add_argument('--verbose', '-v', action='count', default=0)
+    parser.add_argument('--version', '-V', action='version', version='%(prog)s '+__version__+' - ' +
+                        __copyright__+' - License: '+__license__)
+    parser.add_argument('--wait_key', '-w', help='Wait for key to advance (debug)', action='store_true')
+    parser.add_argument('--wait_start', help='Timeout to pcbnew start ['+str(WAIT_START)+']', type=int, default=WAIT_START)
+    parser.add_argument('--time_out_scale', help='Timeout multiplier, affects most timeouts',
+                        type=float, default=TIME_OUT_MULT)
+    parser.add_argument('--output-dir', '-d', nargs=1, help='output directory')
+    args = parser.parse_args()
+    log.set_level(logger, args.verbose)
+    if args.output_dir is None:
+        args.output_dir = '.'
+    else:
+        args.output_dir = args.output_dir[0]
+    cfg = Config(logger, args.pcb_filename, args)
+
+    # Create output dir, compute full name for output file and remove it
+    output_dir = os.path.abspath(args.output_dir)
+    cfg.video_dir = cfg.output_dir = output_dir
+    cfg.video_name = 'kicad2step_screencast.ogv'
+    os.makedirs(output_dir, exist_ok=True)
+
+    logger.info('KiCad to STEP wrapper')
+
+    cmd = [cfg.kicad2step]
+    if args.output_filename:
+        cmd.extend(['-o', args.output_filename[0]])
+    if args.force:
+        cmd.append('-f')
+    if args.drill_origin:
+        cmd.append('--drill-origin')
+    if args.grid_origin:
+        cmd.append('--grid-origin')
+    if args.user_origin:
+        cmd.append('--user-origin='+args.user_origin[0])
+    if args.no_virtual:
+        cmd.append('--no-virtual')
+    if args.min_distance:
+        cmd.append('--min-distance='+args.min_distance[0])
+    cmd.append(args.pcb_filename)
+    logger.debug("Command: "+str(cmd))
+
+    flog_out, flog_err = get_log_files(output_dir, 'kicad2step')
+
+    if cfg.kicad_version_major == 5:
+        res = run_cli_version(cmd, cfg)
+    else:
+        res = run_gui_version(cmd, cfg, flog_out, flog_err)
+    logger.debug('Error level '+str(res))
+    exit(res)

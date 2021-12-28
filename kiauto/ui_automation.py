@@ -246,13 +246,13 @@ def text_replace(string):
     xdotool(['key', 'ctrl+a', 'type', string])
 
 
-# def clipboard_retrieve():
-#     p = Popen(['xclip', '-o', '-selection', 'clipboard'], stdout=PIPE, stderr=STDOUT)
-#     output = ''
-#     for line in p.stdout:
-#         output += line.decode()
-#     logger.debug('Clipboard retrieve "'+output+'"')
-#     return output
+def clipboard_retrieve():
+    p = Popen(['xclip', '-o', '-selection', 'clipboard'], stdout=PIPE, stderr=STDOUT)
+    output = ''
+    for line in p.stdout:
+        output += line.decode()
+    logger.debug('Clipboard retrieve "'+output+'"')
+    return output
 
 
 def get_windows(all=False):

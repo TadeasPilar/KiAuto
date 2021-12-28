@@ -17,7 +17,7 @@ setup(name='kiauto',
       url=__url__,
       # Packages are marked using __init__.py
       packages=find_packages(),
-      scripts=['src/eeschema_do', 'src/pcbnew_do'],
+      scripts=['src/eeschema_do', 'src/pcbnew_do', 'src/kicad2step_do'],
       install_requires=['xvfbwrapper', 'psutil'],
       classifiers=['Development Status :: 4 - Beta',
                    'Environment :: Console',

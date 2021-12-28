@@ -10,7 +10,7 @@ X-Python3-Version: >= 3.2
 Package: kiauto
 Architecture: all
 Multi-Arch: foreign
-Depends: ${misc:Depends}, ${python3:Depends}, python3-xvfbwrapper, python3-psutil, recordmydesktop, xdotool, kicad (>= 5.1.0), xsltproc
+Depends: ${misc:Depends}, ${python3:Depends}, python3-xvfbwrapper, python3-psutil, recordmydesktop, xdotool, kicad (>= 5.1.0), xsltproc, xclip
 Recommends: fluxbox, wmctrl, x11vnc, ssvnc, procps
 Description: KiCad automation scripts
  Runs KiCad in a virtual environment to automate some tasks.

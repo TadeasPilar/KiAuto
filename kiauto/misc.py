@@ -105,11 +105,13 @@ class Config(object):
         # Executable and dirs
         self.eeschema = 'eeschema'
         self.pcbnew = 'pcbnew'
+        self.kicad2step = 'kicad2step'
         self.kicad_conf_dir = 'kicad'
         ng_ver = os.environ.get('KIAUS_USE_NIGHTLY')
         if ng_ver:
             self.eeschema += '-'+NIGHTLY
             self.pcbnew += '-'+NIGHTLY
+            self.kicad2step += '-'+NIGHTLY
             self.kicad_conf_dir += os.path.join(NIGHTLY, ng_ver)
             # Path to the Python module
             path.insert(0, '/usr/lib/kicad-nightly/lib/python3/dist-packages')
@@ -277,4 +279,4 @@ __license__ = 'Apache 2.0'
 __email__ = 'stropea@inti.gob.ar'
 __status__ = 'beta'
 __url__ = 'https://github.com/INTI-CMNB/KiAuto/'
-__version__ = '1.5.15'
+__version__ = '1.6.0'

@@ -233,6 +233,7 @@ def memorize_project(cfg):
         cfg.pro_name = name_no_ext+'.pro'
         if not os.path.isfile(cfg.pro_name):
             logger.warning('KiCad project file not found')
+            cfg.pro_name = name_no_ext+'.'+cfg.pro_ext
             return
         if cfg.kicad_version >= KICAD_VERSION_5_99:
             logger.warning('Using old format projects is not recommended. Convert them first.')

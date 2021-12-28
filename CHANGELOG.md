@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [1.6.0] - 2021-12-28
+### Added
+- `kicad2step_do` a wrapper for `kicad2step`, a GUI tool in KiCad 6
+
 ### Changed
 - Better support for KiCad 6 DRC errors.
 - Better support for KiCad 6 error dialog at start-up.

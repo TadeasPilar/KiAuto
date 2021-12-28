@@ -1,3 +1,9 @@
+kiauto (1.6.0-1) stable; urgency=medium
+
+  * Better KiCad 6 support.
+
+ -- Salvador Eduardo Tropea <salvador@inti.gob.ar>  Tue, 28 Dec 2021 16:05:23 -0300
+
 kiauto (1.5.15-1) stable; urgency=medium
 
   * Better support for KiCad 6 DRC errors and eeschema Error dialog.
