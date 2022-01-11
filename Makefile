@@ -30,6 +30,11 @@ test_server_latest:
 	pytest-3 --test_dir output
 	python3-coverage report
 
+test_server_ki6:
+	python3-coverage erase
+	pytest-3 --test_dir output
+	python3-coverage report
+
 test_server_nightly:
 	python3-coverage erase
 	KIAUS_USE_NIGHTLY=6.0 pytest-3 --test_dir output

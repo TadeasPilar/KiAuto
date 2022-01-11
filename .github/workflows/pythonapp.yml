@@ -15,10 +15,13 @@ on:
      - '.github/workflows/pythonapp.yml'
 
 jobs:
-  test_normal:
+  test:
+    strategy:
+      matrix:
+        ki_release: [latest, ki6]
 
     runs-on: ubuntu-latest
-    container: setsoft/kicad_auto_test:latest
+    container: setsoft/kicad_auto_test:${{ matrix.ki_release }}
 
     steps:
     - uses: actions/checkout@v2
@@ -28,25 +31,25 @@ jobs:
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         # exit-zero treats all errors as warnings.
         flake8 . --count --exit-zero --statistics
-    - name: Test normal
+    - name: Test ${{ matrix.ki_release }}
       run: |
-        make test_server_latest
+        make test_server_${{ matrix.ki_release }}
     - name: Store results
       if: ${{ always() }}
       uses: actions/upload-artifact@v1
       with:
-        name: Test_Output_normal
+        name: Test_Output_${{ matrix.ki_release }}
         path: output
     - name: Upload Coverage
       env:
         COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
-        COVERALLS_FLAG_NAME: latest
+        COVERALLS_FLAG_NAME: ${{ matrix.ki_release }}
         COVERALLS_PARALLEL: true
       run: coveralls
 
   coveralls:
     name: Finish Coveralls
-    needs: test_normal
+    needs: test
     runs-on: ubuntu-latest
     steps:
     - name: Finished
