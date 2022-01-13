@@ -83,6 +83,7 @@ if __name__ == '__main__':
     parser.add_argument('--grid-origin', help='Use Grid Origin for output origin', action='store_true')
     parser.add_argument('--user-origin', nargs=1, help='User-specified output origin ex. 1x1in, 1x1inch, 25.4x25.4mm (default mm)')
     parser.add_argument('--no-virtual', help="exclude 3D models for components with 'virtual' attribute", action='store_true')
+    parser.add_argument('--subst-models', help='Substitute STEP or IGS models with the same name in place of VRML models (KiCad 6)', action='store_true')
     parser.add_argument('--min-distance', nargs=1, help='Minimum distance between points to treat them as separate ones (default 0.01 mm)')
     # Our options
     parser.add_argument('--record', '-r', help='Record the UI automation', action='store_true')
@@ -129,6 +130,8 @@ if __name__ == '__main__':
         cmd.append('--no-virtual')
     if args.min_distance:
         cmd.append('--min-distance='+args.min_distance[0])
+    if args.subst_models and cfg.kicad_version_major > 5:
+        cmd.append('--subst-models')
     cmd.append(args.pcb_filename)
     logger.debug("Command: "+str(cmd))
 

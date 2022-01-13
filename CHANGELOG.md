@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.1] - 2022-01-13
+### Added
+- Support for `--subst-models` option
+
 ## [1.6.0] - 2021-12-28
 ### Added
 - `kicad2step_do` a wrapper for `kicad2step`, a GUI tool in KiCad 6
