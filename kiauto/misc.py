@@ -130,7 +130,7 @@ class Config(object):
             kicad_version = kicad_version[really_index+6:]
         except ValueError:
             pass
-        m = re.match(r'(\d+)\.(\d+)\.(\d+)', kicad_version)
+        m = re.search(r'(\d+)\.(\d+)\.(\d+)', kicad_version)
         if m is None:
             logger.error("Unable to detect KiCad version, got: `{}`".format(kicad_version))
             exit(NO_PCBNEW_MODULE)
