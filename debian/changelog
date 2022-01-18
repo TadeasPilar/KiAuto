@@ -1,3 +1,10 @@
+kiauto (1.6.2-1) stable; urgency=medium
+
+  * Added error message when the `import` tool isn't installed.
+  * Added missing package dependency.
+
+ -- Salvador Eduardo Tropea <salvador@inti.gob.ar>  Tue, 18 Jan 2022 11:44:12 -0300
+
 kiauto (1.6.1-1) stable; urgency=medium
 
   * Added support for `--subst-models` option

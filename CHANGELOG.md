@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.2] - 2022-01-18
+### Added
+- Error message when the `import` tool isn't installed.
+
 ## [1.6.1] - 2022-01-13
 ### Added
 - Support for `--subst-models` option

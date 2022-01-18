@@ -61,6 +61,8 @@ If you are installing from a Debian package you don't need to worry about depend
 - [**KiCad**](http://kicad.org/) 5.1.x
 - [**xdotool**](https://github.com/jordansissel/xdotool)
 - [**xsltproc**](http://xmlsoft.org/xslt/) (usually installed as a KiCad dependency). Only needed for BoMs.
+- [**import**](https://imagemagick.org/) from Image Magick. Also provided by Graphics Magick. Only needed for ERC with KiCad 6.
+- [**xclip**](https://github.com/astrand/xclip). Only needed by kicad2step_do when using KiCad 6.
 
 If you want to debug problems you could also need:
 

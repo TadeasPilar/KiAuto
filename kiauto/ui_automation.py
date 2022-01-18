@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Copyright (c) 2020-2021 Salvador E. Tropea
-# Copyright (c) 2020-2021 Instituto Nacional de Tecnologïa Industrial
+# Copyright (c) 2020-2022 Salvador E. Tropea
+# Copyright (c) 2020-2022 Instituto Nacional de Tecnologïa Industrial
 # Copyright (c) 2019 Jesse Vincent (@obra)
 # Copyright (c) 2018-2019 Seppe Stas (@seppestas) (Productize SPRL)
 # Copyright (c) 2015-2016 Scott Bezek (@scottbez1)
@@ -17,6 +17,7 @@ Based on splitflap/electronics/scripts/export_util.py by Scott Bezek
 """
 import re
 import os
+import sys
 from subprocess import Popen, CalledProcessError, TimeoutExpired, call, check_output, STDOUT, DEVNULL, run, PIPE
 import time
 import shutil
@@ -26,7 +27,7 @@ from contextlib import contextmanager
 # python3-xvfbwrapper
 from xvfbwrapper import Xvfb
 from kiauto.file_util import get_log_files
-from kiauto.misc import KICAD_VERSION_5_99
+from kiauto.misc import KICAD_VERSION_5_99, MISSING_TOOL
 
 from kiauto import log
 logger = log.get_logger(__name__)
@@ -409,6 +410,9 @@ def capture_window_region(window_id, x, y, w, h, name):
     geometry = '{}x{}+{}+{}'.format(w, h, x, y)
     logger.debug('Capturing region {} from window {}'.format(geometry, window_id))
     name = os.path.join(img_tmp_dir, name)
+    if not shutil.which('import'):
+        logger.error("import isn't installed, please install it.\nThis is part of ImageMagick and GraphicsMagic packages.")
+        sys.exit(MISSING_TOOL)
     res = check_output(['import', '-window', str(window_id), '-crop', geometry, name], stderr=DEVNULL).decode()
     logger.debug('Import output: ' + res)
 

@@ -32,6 +32,7 @@ NO_PCBNEW_MODULE = 11
 USER_HOTKEYS_PRESENT = 12
 CORRUPTED_PCB = 13
 NO_EN_LOCALE = 14
+MISSING_TOOL = 15
 # Wait 40 s to pcbnew/eeschema window to be present
 WAIT_START = 60
 # Name for testing versions
@@ -276,10 +277,10 @@ def get_en_locale(logger):
 
 
 __author__ = 'Salvador E. Tropea'
-__copyright__ = 'Copyright 2018-2021, INTI/Productize SPRL'
+__copyright__ = 'Copyright 2018-2022, INTI/Productize SPRL'
 __credits__ = ['Salvador E. Tropea', 'Seppe Stas', 'Jesse Vincent', 'Scott Bezek']
 __license__ = 'Apache 2.0'
 __email__ = 'stropea@inti.gob.ar'
 __status__ = 'beta'
 __url__ = 'https://github.com/INTI-CMNB/KiAuto/'
-__version__ = '1.6.1'
+__version__ = '1.6.2'
