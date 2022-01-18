@@ -1,3 +1,9 @@
+kiauto (1.6.3-1) stable; urgency=medium
+
+  *  Fixed KiCad 6: pcbnew_do problems when KiCad isn't configured.
+
+ -- Salvador Eduardo Tropea <salvador@inti.gob.ar>  Tue, 18 Jan 2022 13:09:36 -0300
+
 kiauto (1.6.2-1) stable; urgency=medium
 
   * Added error message when the `import` tool isn't installed.

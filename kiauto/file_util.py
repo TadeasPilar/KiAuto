@@ -20,8 +20,9 @@ import atexit
 from subprocess import DEVNULL
 # python3-psutil
 import psutil
+import json
 
-from kiauto.misc import (WRONG_ARGUMENTS, KICAD_VERSION_5_99)
+from kiauto.misc import (WRONG_ARGUMENTS, KICAD_VERSION_5_99, Config)
 from kiauto import log
 logger = log.get_logger(__name__)
 time_out_scale = 1.0
@@ -203,6 +204,31 @@ def create_user_hotkeys(cfg):
         text_file.write('eeschema.InspectionTool.runERC\tCtrl+Shift+I\n')
         text_file.write('pcbnew.DRCTool.runDRC\tCtrl+Shift+I\n')
         text_file.write('pcbnew.ZoneFiller.zoneFillAll\tB\n')
+
+
+def create_kicad_config(cfg):
+    logger.debug('Creating a KiCad common config')
+    with open(cfg.conf_kicad, "wt") as text_file:
+        if cfg.conf_kicad_json:
+            kiconf = {"environment": {"show_warning_dialog": False}}
+            kiconf['system'] = {"editor_name": "/bin/cat"}
+            # Copy the environment vars if available
+            if cfg.conf_kicad_bkp:
+                vars = Config.get_config_vars_json(cfg.conf_kicad_bkp)
+                if vars:
+                    kiconf['environment']['vars'] = vars
+            text_file.write(json.dumps(kiconf))
+            logger.debug(json.dumps(kiconf))
+        else:
+            text_file.write('ShowEnvVarWarningDialog=0\n')
+            text_file.write('Editor=/bin/cat\n')
+            # Copy the environment vars if available
+            if cfg.conf_kicad_bkp:
+                vars = Config.get_config_vars_ini(cfg.conf_kicad_bkp)
+                if vars:
+                    text_file.write('[EnvironmentVariables]\n')
+                    for key in vars:
+                        text_file.write(key.upper()+'='+vars[key]+'\n')
 
 
 def check_input_file(cfg, no_file, no_ext):

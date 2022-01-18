@@ -39,7 +39,7 @@ logger = log.init()
 
 from kiauto.file_util import (load_filters, wait_for_file_created_by_process, apply_filters, list_errors, list_warnings,
                               check_kicad_config_dir, restore_config, backup_config, check_lib_table, create_user_hotkeys,
-                              check_input_file, memorize_project, restore_project, get_log_files)
+                              check_input_file, memorize_project, restore_project, get_log_files, create_kicad_config)
 from kiauto.file_util import set_time_out_scale as set_time_out_scale_f
 from kiauto.misc import (REC_W, REC_H, __version__, NO_SCHEMATIC, EESCHEMA_CFG_PRESENT, KICAD_CFG_PRESENT,
                          WAIT_START, WRONG_SCH_NAME, EESCHEMA_ERROR, Config, KICAD_VERSION_5_99,
@@ -471,31 +471,6 @@ def set_output_file(cfg, ext):
         # Note: what if we are exporting multiple files and *all* of them exists?
         # No problem KiCad will overwrite them without even asking ;-)
     cfg.output_file = output_file
-
-
-def create_kicad_config(cfg):
-    logger.debug('Creating a KiCad common config')
-    with open(cfg.conf_kicad, "wt") as text_file:
-        if cfg.conf_kicad_json:
-            kiconf = {"environment": {"show_warning_dialog": False}}
-            kiconf['system'] = {"editor_name": "/bin/cat"}
-            # Copy the environment vars if available
-            if cfg.conf_kicad_bkp:
-                vars = Config.get_config_vars_json(cfg.conf_kicad_bkp)
-                if vars:
-                    kiconf['environment']['vars'] = vars
-            text_file.write(json.dumps(kiconf))
-            logger.debug(json.dumps(kiconf))
-        else:
-            text_file.write('ShowEnvVarWarningDialog=0\n')
-            text_file.write('Editor=/bin/cat\n')
-            # Copy the environment vars if available
-            if cfg.conf_kicad_bkp:
-                vars = Config.get_config_vars_ini(cfg.conf_kicad_bkp)
-                if vars:
-                    text_file.write('[EnvironmentVariables]\n')
-                    for key in vars:
-                        text_file.write(key.upper()+'='+vars[key]+'\n')
 
 
 if __name__ == '__main__':

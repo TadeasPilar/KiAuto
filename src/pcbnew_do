@@ -41,11 +41,11 @@ logger = log.init()
 
 from kiauto.file_util import (load_filters, wait_for_file_created_by_process, apply_filters, list_errors, list_warnings,
                               check_kicad_config_dir, restore_config, backup_config, check_lib_table, create_user_hotkeys,
-                              check_input_file, memorize_project, restore_project, get_log_files)
+                              check_input_file, memorize_project, restore_project, get_log_files, create_kicad_config)
 from kiauto.file_util import set_time_out_scale as set_time_out_scale_f
 from kiauto.misc import (REC_W, REC_H, __version__, NO_PCB, PCBNEW_CFG_PRESENT, WAIT_START, WRONG_LAYER_NAME,
                          WRONG_PCB_NAME, PCBNEW_ERROR, WRONG_ARGUMENTS, Config, KICAD_VERSION_5_99, USER_HOTKEYS_PRESENT,
-                         CORRUPTED_PCB, __copyright__, __license__, TIME_OUT_MULT, get_en_locale)
+                         CORRUPTED_PCB, __copyright__, __license__, TIME_OUT_MULT, get_en_locale, KICAD_CFG_PRESENT)
 from kiauto.ui_automation import (PopenContext, xdotool, wait_not_focused, wait_for_window, recorded_xvfb,
                                   wait_point, text_replace, set_time_out_scale)
 
@@ -911,12 +911,17 @@ if __name__ == '__main__':
     cfg.conf_pcbnew_bkp = backup_config('PCBnew', cfg.conf_pcbnew, PCBNEW_CFG_PRESENT, cfg)
     # Create a suitable configuration
     create_pcbnew_config(cfg)
+    # Hotkeys
     if cfg.kicad_version >= KICAD_VERSION_5_99:
         # KiCad 6 breaks menu short-cuts, but we can configure user hotkeys
         # Back-up the current user.hotkeys configuration
         cfg.conf_hotkeys_bkp = backup_config('User hotkeys', cfg.conf_hotkeys, USER_HOTKEYS_PRESENT, cfg)
         # Create a suitable configuration
         create_user_hotkeys(cfg)
+    # Back-up the current kicad_common configuration
+    cfg.conf_kicad_bkp = backup_config('KiCad common', cfg.conf_kicad, KICAD_CFG_PRESENT, cfg)
+    # Create a suitable configuration
+    create_kicad_config(cfg)
     # Make sure the user has fp-lib-table
     check_lib_table(cfg.user_fp_lib_table, cfg.sys_fp_lib_table)
     # Create output dir, compute full name for output file and remove it
