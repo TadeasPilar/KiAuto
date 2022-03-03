@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.4] - 2022-03-03
+### Added
+- pcbnew_do SVG export
+
 ## [1.6.3] - 2022-01-18
 ### Fixed
 - KiCad 6: pcbnew_do problems when KiCad isn't configured.
