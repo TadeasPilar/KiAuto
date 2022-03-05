@@ -405,9 +405,13 @@ def run_drc(cfg):
     # Exit
     exit_pcbnew(cfg)
 
+
 def export_gencad(cfg):
     wait_point(cfg)
-    xdotool(['key', 'alt+f', 'x', 'g'])
+    if cfg.kicad_version >= KICAD_VERSION_5_99:
+        xdotool(['key', 'alt+f', 'Down', 'Down', 'Down', 'Down', 'Down', 'Down', 'Down', 'Down', 'KP_Space', 'Down', 'Return'])
+    else:
+        xdotool(['key', 'alt+f', 'x', 'g'])
     wait_for_window('Export to GenCAD settings','Export to GenCAD settings')
     xdotool(['type', cfg.output_file])
     xdotool(['key', 'Down'])
@@ -781,16 +785,6 @@ if __name__ == '__main__':
     parser.add_argument('--time_out_scale', help='Timeout multiplier, affects most timeouts',
                         type=float, default=TIME_OUT_MULT)
 
-    export_gencad_parser = subparsers.add_parser('export_gencad', help='Export PCB as GenCAD')
-    export_gencad_parser.add_argument('kicad_pcb_file', help='KiCad PCB file')
-    export_gencad_parser.add_argument('output_dir', help='Output directory')
-    export_gencad_parser.add_argument('--output_name', '-o', nargs=1, help='Name of the output file', default=['pcb.cad'])
-    export_gencad_parser.add_argument('--flip_bottom_padstacks', '-f', help='Flip bottom footprint padstacks', action='store_true')
-    export_gencad_parser.add_argument('--unique_pin_names', '-u', help='Generate unique pin names', action='store_true')
-    export_gencad_parser.add_argument('--no_reuse_shapes', '-n', help='Generate a new shape for each footprint instance (Do not reuse shapes)', action='store_true')
-    export_gencad_parser.add_argument('--aux_origin', '-a', help='Use auxiliary axis as origin', action='store_true')
-    export_gencad_parser.add_argument('--save_origin', '-O', help='Save the origin coordinates in the file', action='store_true')
-
     # short commands: flmMopsSt
     export_parser = subparsers.add_parser('export', help='Export PCB layers')
     export_parser.add_argument('--fill_zones', '-f', help='Fill all zones before printing', action='store_true')
@@ -843,6 +837,16 @@ if __name__ == '__main__':
     v3d_parser.add_argument('--zoom', '-z', nargs=1, help='Zoom steps (use negative to reduce)', default=[0], type=int)
     v3d_parser.add_argument('kicad_pcb_file', help='KiCad PCB file')
     v3d_parser.add_argument('output_dir', help='Output directory')
+
+    export_gencad_parser = subparsers.add_parser('export_gencad', help='Export PCB as GenCAD')
+    export_gencad_parser.add_argument('kicad_pcb_file', help='KiCad PCB file')
+    export_gencad_parser.add_argument('output_dir', help='Output directory')
+    export_gencad_parser.add_argument('--output_name', '-o', nargs=1, help='Name of the output file', default=['pcb.cad'])
+    export_gencad_parser.add_argument('--flip_bottom_padstacks', '-f', help='Flip bottom footprint padstacks', action='store_true')
+    export_gencad_parser.add_argument('--unique_pin_names', '-u', help='Generate unique pin names', action='store_true')
+    export_gencad_parser.add_argument('--no_reuse_shapes', '-n', help='Generate a new shape for each footprint instance (Do not reuse shapes)', action='store_true')
+    export_gencad_parser.add_argument('--aux_origin', '-a', help='Use auxiliary axis as origin', action='store_true')
+    export_gencad_parser.add_argument('--save_origin', '-O', help='Save the origin coordinates in the file', action='store_true')
 
     args = parser.parse_args()
     # Set the specified verbosity
