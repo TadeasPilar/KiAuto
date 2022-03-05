@@ -427,14 +427,6 @@ def export_gencad(cfg):
         xdotool(['key', 'KP_Space'])
     xdotool(['key', 'Return'])
     wait_for_file_created_by_process(cfg.pcbnew_pid, cfg.output_file)
-    
-    # xdotool(['key', 'Down'])
-    # xdotool(['key', 'Down'])
-    # xdotool(['key', 'Down'])
-    # xdotool(['key', 'Down'])
-    # xdotool(['key', 'Right'])
-    # xdotool(['key', 'Down'])
-    # xdotool(['key', 'Enter'])
 
 
 def wait_3d_ready():
