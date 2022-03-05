@@ -26,7 +26,7 @@ PROG = 'pcbnew_do'
 def test_export_gencad(test_dir):
     """ Simple 3D Viewer test """
     ctx = context.TestContext(test_dir, 'export_gencad', 'good-project')
-    cmd = [PROG, 'export_gencad', '-r', '--output_name', 'good.cad' ]
+    cmd = [PROG, 'export_gencad', '--output_name', 'good.cad' ]
     ctx.run(cmd)
     ctx.expect_out_file('good.cad')
     ctx.clean_up()
