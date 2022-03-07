@@ -408,6 +408,34 @@ def run_drc(cfg):
     exit_pcbnew(cfg)
 
 
+def export_gencad(cfg):
+    wait_point(cfg)
+    if not cfg.ki5:
+        keys = ['key', 'alt+f', 'Down', 'Down', 'Down', 'Down', 'Down', 'Down', 'Down', 'Down', 'KP_Space', 'Down', 'Return']
+        
+    else:
+        keys = ['key', 'alt+f', 'x', 'g']
+    open_dialog_with_retry("Open GenCAD export", keys, "GenCAD settings", 'Export to GenCAD settings', cfg)
+    xdotool(['type', cfg.output_file])
+    xdotool(['key', 'Down'])
+    if cfg.flip_bottom_padstacks :
+        xdotool(['key', 'KP_Space'])
+    xdotool(['key', 'Down'])
+    if cfg.unique_pin_names :
+        xdotool(['key', 'KP_Space'])
+    xdotool(['key', 'Down'])
+    if cfg.no_reuse_shapes :
+        xdotool(['key', 'KP_Space'])
+    xdotool(['key', 'Down'])
+    if cfg.aux_origin :
+        xdotool(['key', 'KP_Space'])
+    xdotool(['key', 'Down'])
+    if cfg.save_origin :
+        xdotool(['key', 'KP_Space'])
+    xdotool(['key', 'Return'])
+    wait_for_file_created_by_process(cfg.pcbnew_pid, cfg.output_file)
+
+
 def wait_ray_tracer(cfg):
     # I can't find a mechanism to determine if the render finished.
     # I think this is a bug in KiCad, you can save unfinished images!!!!
@@ -870,6 +898,16 @@ if __name__ == '__main__':
     v3d_parser.add_argument('kicad_pcb_file', help='KiCad PCB file')
     v3d_parser.add_argument('output_dir', help='Output directory')
 
+    export_gencad_parser = subparsers.add_parser('export_gencad', help='Export PCB as GenCAD')
+    export_gencad_parser.add_argument('kicad_pcb_file', help='KiCad PCB file')
+    export_gencad_parser.add_argument('output_dir', help='Output directory')
+    export_gencad_parser.add_argument('--output_name', '-o', nargs=1, help='Name of the output file', default=['pcb.cad'])
+    export_gencad_parser.add_argument('--flip_bottom_padstacks', '-f', help='Flip bottom footprint padstacks', action='store_true')
+    export_gencad_parser.add_argument('--unique_pin_names', '-u', help='Generate unique pin names', action='store_true')
+    export_gencad_parser.add_argument('--no_reuse_shapes', '-n', help='Generate a new shape for each footprint instance (Do not reuse shapes)', action='store_true')
+    export_gencad_parser.add_argument('--aux_origin', '-a', help='Use auxiliary axis as origin', action='store_true')
+    export_gencad_parser.add_argument('--save_origin', '-O', help='Save the origin coordinates in the file', action='store_true')
+
     args = parser.parse_args()
     # Set the specified verbosity
     log.set_level(logger, args.verbose)
@@ -934,6 +972,13 @@ if __name__ == '__main__':
         cfg.monochrome = False
         cfg.separate = False
         cfg.mirror = False
+
+    if args.command == 'export_gencad':
+        cfg.flip_bottom_padstacks = args.flip_bottom_padstacks
+        cfg.unique_pin_names = args.unique_pin_names
+        cfg.no_reuse_shapes = args.no_reuse_shapes
+        cfg.aux_origin = args.aux_origin
+        cfg.save_origin = args.save_origin
 
     if args.command == '3d_view':
         cfg.zoom = int(args.zoom[0])
@@ -1034,6 +1079,8 @@ if __name__ == '__main__':
                             print_layers(cfg, id_pcbnew)
                         elif args.command == '3d_view':
                             capture_3d_view(cfg)
+                        elif args.command == 'export_gencad':
+                            export_gencad(cfg)
                         else:  # run_drc
                             run_drc(cfg)
                             error_level = process_drc_out(cfg)
