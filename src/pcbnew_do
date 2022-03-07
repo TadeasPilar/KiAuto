@@ -709,37 +709,38 @@ def create_pcbnew_config(cfg):
             text_file.write(json_text)
             logger.debug(json_text)
             # Colors for the 3D Viewer
-            conf = {}
-            conf["3d_viewer"] = {"background_bottom": to_rgb(cfg.bg_color_1),
-                                 "background_top": to_rgb(cfg.bg_color_2),
-                                 # TODO: support custom alpha
-                                 "board": to_rgb(cfg.board_color, 0.902),
-                                 "copper": to_rgb(cfg.copper_color),
-                                 # TODO: support both
-                                 "silkscreen_bottom": to_rgb(cfg.silk_color),
-                                 "silkscreen_top": to_rgb(cfg.silk_color),
-                                 # TODO: support both
-                                 "soldermask_bottom": to_rgb(cfg.sm_color, 0.831),
-                                 "soldermask_top": to_rgb(cfg.sm_color, 0.831),
-                                 "solderpaste": to_rgb(cfg.sp_color),
-                                 "use_board_stackup_colors": False}
-            json_text = json.dumps(conf)
-            with open(cfg.conf_colors, "wt") as color_file:
-                color_file.write(json_text)
-            logger.debug("Colors:")
-            logger.debug(json_text)
-            # 3D Viewer window
-            conf = {}
-            conf["window"] = {"pos_x": 0, "pos_y": 0, "size_x": cfg.rec_width, "size_y": cfg.rec_height}
-            conf["camera"] = {"projection_mode": int(not cfg.orthographic)}
-            conf["render"] = {"show_footprints_insert": not cfg.no_smd,
-                              "show_footprints_normal": not cfg.no_tht,
-                              "show_footprints_virtual": not cfg.no_virtual}
-            json_text = json.dumps(conf)
-            with open(cfg.conf_3dview, "wt") as viewer_file:
-                viewer_file.write(json_text)
-            logger.debug("3D Viewer:")
-            logger.debug(json_text)
+            if cfg.bg_color_1 is not None:
+                conf = {}
+                conf["3d_viewer"] = {"background_bottom": to_rgb(cfg.bg_color_1),
+                                     "background_top": to_rgb(cfg.bg_color_2),
+                                     # TODO: support custom alpha
+                                     "board": to_rgb(cfg.board_color, 0.902),
+                                     "copper": to_rgb(cfg.copper_color),
+                                     # TODO: support both
+                                     "silkscreen_bottom": to_rgb(cfg.silk_color),
+                                     "silkscreen_top": to_rgb(cfg.silk_color),
+                                     # TODO: support both
+                                     "soldermask_bottom": to_rgb(cfg.sm_color, 0.831),
+                                     "soldermask_top": to_rgb(cfg.sm_color, 0.831),
+                                     "solderpaste": to_rgb(cfg.sp_color),
+                                     "use_board_stackup_colors": False}
+                json_text = json.dumps(conf)
+                with open(cfg.conf_colors, "wt") as color_file:
+                    color_file.write(json_text)
+                logger.debug("Colors:")
+                logger.debug(json_text)
+                # 3D Viewer window
+                conf = {}
+                conf["window"] = {"pos_x": 0, "pos_y": 0, "size_x": cfg.rec_width, "size_y": cfg.rec_height}
+                conf["camera"] = {"projection_mode": int(not cfg.orthographic)}
+                conf["render"] = {"show_footprints_insert": not cfg.no_smd,
+                                  "show_footprints_normal": not cfg.no_tht,
+                                  "show_footprints_virtual": not cfg.no_virtual}
+                json_text = json.dumps(conf)
+                with open(cfg.conf_3dview, "wt") as viewer_file:
+                    viewer_file.write(json_text)
+                logger.debug("3D Viewer:")
+                logger.debug(json_text)
         else:
             text_file.write('canvas_type=2\n')
             text_file.write('RefillZonesBeforeDrc=1\n')
