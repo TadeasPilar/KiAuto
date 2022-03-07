@@ -409,11 +409,12 @@ def run_drc(cfg):
 
 def export_gencad(cfg):
     wait_point(cfg)
-    if cfg.kicad_version >= KICAD_VERSION_5_99:
-        xdotool(['key', 'alt+f', 'Down', 'Down', 'Down', 'Down', 'Down', 'Down', 'Down', 'Down', 'KP_Space', 'Down', 'Return'])
+    if not cfg.ki5:
+        keys = ['key', 'alt+f', 'Down', 'Down', 'Down', 'Down', 'Down', 'Down', 'Down', 'Down', 'KP_Space', 'Down', 'Return']
+        
     else:
-        xdotool(['key', 'alt+f', 'x', 'g'])
-    wait_for_window('Export to GenCAD settings','Export to GenCAD settings')
+        keys = ['key', 'alt+f', 'x', 'g']
+    open_dialog_with_retry("Open GenCAD export", keys, "GenCAD settings", 'Export to GenCAD settings', cfg)
     xdotool(['type', cfg.output_file])
     xdotool(['key', 'Down'])
     if cfg.flip_bottom_padstacks :
