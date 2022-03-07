@@ -470,12 +470,6 @@ def capture_3d_view(cfg):
     wait_point(cfg)
     wait_3d_ready(cfg)
 
-    # Ray tracing
-    if not cfg.ki5 and cfg.ray_tracing:
-        # Not persistent in KiCad 6!!!
-        xdotool(['key', 'alt+p', 'Return'])
-        sleep(0.1)
-
     # Switch to orthographic
     if cfg.orthographic and cfg.ki5:
         # Can easily break, no persistence, no option, no shortcut ... KiCad's way
@@ -521,6 +515,10 @@ def capture_3d_view(cfg):
             wait_3d_ready(cfg)
 
     if cfg.ray_tracing:
+        # Ray tracing
+        if not cfg.ki5:
+            # Not persistent in KiCad 6!!!
+            xdotool(['key', 'alt+p', 'Return'])
         wait_ray_tracer(cfg)
 
     # Save the image as PNG
