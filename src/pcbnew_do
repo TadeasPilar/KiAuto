@@ -44,8 +44,9 @@ from kiauto.file_util import (load_filters, wait_for_file_created_by_process, ap
                               check_input_file, memorize_project, restore_project, get_log_files, create_kicad_config)
 from kiauto.file_util import set_time_out_scale as set_time_out_scale_f
 from kiauto.misc import (REC_W, REC_H, __version__, NO_PCB, PCBNEW_CFG_PRESENT, WAIT_START, WRONG_LAYER_NAME,
-                         WRONG_PCB_NAME, PCBNEW_ERROR, WRONG_ARGUMENTS, Config, KICAD_VERSION_5_99, USER_HOTKEYS_PRESENT,
-                         CORRUPTED_PCB, __copyright__, __license__, TIME_OUT_MULT, get_en_locale, KICAD_CFG_PRESENT)
+                         WRONG_PCB_NAME, PCBNEW_ERROR, WRONG_ARGUMENTS, Config, USER_HOTKEYS_PRESENT,
+                         CORRUPTED_PCB, __copyright__, __license__, TIME_OUT_MULT, get_en_locale, KICAD_CFG_PRESENT,
+                         MISSING_TOOL)
 from kiauto.ui_automation import (PopenContext, xdotool, wait_not_focused, wait_for_window, recorded_xvfb,
                                   wait_point, text_replace, set_time_out_scale, open_dialog_with_retry)
 
@@ -290,11 +291,11 @@ def print_layers(cfg, id_pcbnew):
     format = 3*['Left'] if not cfg.svg else 3*['Right']
     xdotool(['key',
              # Format options
-             'Tab']+
-             # Be sure we are at left/right (PDF/SVG)
-             format+
-             # Print it
-             ['Return'])
+             'Tab'] +
+            # Be sure we are at left/right (PDF/SVG)
+            format +
+            # Print it
+            ['Return'])
     # Wait until the file is created
     wait_for_file_created_by_process(cfg.pcbnew_pid, cfg.output_file)
     wait_not_focused(id_printer_dialog)
@@ -407,6 +408,30 @@ def run_drc(cfg):
     exit_pcbnew(cfg)
 
 
+def wait_ray_tracer(cfg):
+    # I can't find a mechanism to determine if the render finished.
+    # I think this is a bug in KiCad, you can save unfinished images!!!!
+    logger.info('Waiting for the final render')
+    if cfg.detect_rt:
+        # Try to figure out meassuring the CPU usage
+        for process in psutil.process_iter():
+            if process.pid == cfg.pcbnew_pid:
+                pcbnew_process = process
+                break
+        end = time.clock_gettime(time.CLOCK_MONOTONIC) + cfg.wait_rt
+        counter = 5
+        while (counter > 0) and (time.clock_gettime(time.CLOCK_MONOTONIC) < end):
+            cpu_usage = pcbnew_process.cpu_percent(0.3)
+            if cpu_usage > 5:
+                if counter < 5:
+                    counter = counter + 1
+            else:
+                counter = counter - 1
+            logger.debug('CPU {} %, waiting ...'.format(cpu_usage))
+    else:
+        sleep(cfg.wait_rt)
+
+
 def wait_3d_ready(cfg):
     if not cfg.ki5:
         # Is this enough?
@@ -452,7 +477,7 @@ def capture_3d_view(cfg):
         sleep(0.1)
 
     # Switch to orthographic
-    if cfg.orthographic:
+    if cfg.orthographic and cfg.ki5:
         # Can easily break, no persistence, no option, no shortcut ... KiCad's way
         xdotool(['mousemove', '711', '44', 'click', '1', 'mousemove', 'restore'])
 
@@ -496,27 +521,7 @@ def capture_3d_view(cfg):
             wait_3d_ready(cfg)
 
     if cfg.ray_tracing:
-        # I can't find a mechanism to determine if the render finished.
-        # I think this is a bug in KiCad, you can save unfinished images!!!!
-        logger.info('Waiting for the final render')
-        if cfg.detect_rt:
-            # Try to figure out meassuring the CPU usage
-            for process in psutil.process_iter():
-                if process.name() == "pcbnew":
-                    pcbnew_process = process
-                    break
-            end = time.clock_gettime(time.CLOCK_MONOTONIC) + cfg.wait_rt
-            counter = 5
-            while (counter > 0) and (time.clock_gettime(time.CLOCK_MONOTONIC) < end):
-                cpu_usage = pcbnew_process.cpu_percent(0.3)
-                if cpu_usage > 5:
-                    if counter < 5:
-                        counter = counter + 1
-                else:
-                    counter = counter - 1
-                logger.debug('CPU {} %, waiting ...'.format(cpu_usage))
-        else:
-            sleep(cfg.wait_rt)
+        wait_ray_tracer(cfg)
 
     # Save the image as PNG
     logger.info('Saving the image')
@@ -545,10 +550,7 @@ def capture_3d_view(cfg):
     # Close the 3D viewer
     logger.info('Closing the 3D viewer')
     wait_point(cfg)
-    if cfg.ki5:
-        xdotool(['key', 'ctrl+q'])
-    else:
-        xdotool(['key', 'ctrl+w'])
+    xdotool(['key', 'ctrl+q' if cfg.ki5 else 'ctrl+w'])
     wait_pcbnew()
 
 
@@ -629,6 +631,12 @@ def write_color(out, name, color, post=''):
     out.write('%s=%f\n' % (name+'Blue'+post, color[2]))
 
 
+def to_rgb(color, alpha=1.0):
+    if alpha == 1.0:
+        return "rgb({}, {}, {})".format(round(color[0]*255.0), round(color[1]*255.0), round(color[2]*255.0))
+    return "rgba({}, {}, {}, {})".format(round(color[0]*255.0), round(color[1]*255.0), round(color[2]*255.0), alpha)
+
+
 def create_pcbnew_config(cfg):
     # Mark which layers are requested
     used_layers = set()
@@ -671,9 +679,40 @@ def create_pcbnew_config(cfg):
                             "pads_drill_mode": cfg.pads}
             conf["window"] = {"size_x": cfg.rec_width,
                               "size_y": cfg.rec_height}
-            # TODO: add the 3D viewer stuff
             json_text = json.dumps(conf)
             text_file.write(json_text)
+            logger.debug(json_text)
+            # Colors for the 3D Viewer
+            conf = {}
+            conf["3d_viewer"] = {"background_bottom": to_rgb(cfg.bg_color_1),
+                                 "background_top": to_rgb(cfg.bg_color_2),
+                                 # TODO: support custom alpha
+                                 "board": to_rgb(cfg.board_color, 0.902),
+                                 "copper": to_rgb(cfg.copper_color),
+                                 # TODO: support both
+                                 "silkscreen_bottom": to_rgb(cfg.silk_color),
+                                 "silkscreen_top": to_rgb(cfg.silk_color),
+                                 # TODO: support both
+                                 "soldermask_bottom": to_rgb(cfg.sm_color, 0.831),
+                                 "soldermask_top": to_rgb(cfg.sm_color, 0.831),
+                                 "solderpaste": to_rgb(cfg.sp_color),
+                                 "use_board_stackup_colors": False}
+            json_text = json.dumps(conf)
+            with open(cfg.conf_colors, "wt") as color_file:
+                color_file.write(json_text)
+            logger.debug("Colors:")
+            logger.debug(json_text)
+            # 3D Viewer window
+            conf = {}
+            conf["window"] = {"pos_x": 0, "pos_y": 0, "size_x": cfg.rec_width, "size_y": cfg.rec_height}
+            conf["camera"] = {"projection_mode": int(not cfg.orthographic)}
+            conf["render"] = {"show_footprints_insert": not cfg.no_smd,
+                              "show_footprints_normal": not cfg.no_tht,
+                              "show_footprints_virtual": not cfg.no_virtual}
+            json_text = json.dumps(conf)
+            with open(cfg.conf_3dview, "wt") as viewer_file:
+                viewer_file.write(json_text)
+            logger.debug("3D Viewer:")
             logger.debug(json_text)
         else:
             text_file.write('canvas_type=2\n')
@@ -932,6 +971,10 @@ if __name__ == '__main__':
     # Back-up the current pcbnew configuration
     check_kicad_config_dir(cfg)
     cfg.conf_pcbnew_bkp = backup_config('PCBnew', cfg.conf_pcbnew, PCBNEW_CFG_PRESENT, cfg)
+    if cfg.conf_colors:
+        cfg.conf_colors_bkp = backup_config('Colors', cfg.conf_colors, PCBNEW_CFG_PRESENT, cfg)
+    if cfg.conf_3dview:
+        cfg.conf_3dview_bkp = backup_config('3D Viewer', cfg.conf_3dview, PCBNEW_CFG_PRESENT, cfg)
     # Create a suitable configuration
     create_pcbnew_config(cfg)
     # Hotkeys

@@ -174,6 +174,8 @@ def restore_config(cfg):
     cfg.conf_kicad_bkp = restore_one_config('KiCad common', cfg.conf_kicad, cfg.conf_kicad_bkp)
     cfg.conf_hotkeys_bkp = restore_one_config('user hotkeys', cfg.conf_hotkeys, cfg.conf_hotkeys_bkp)
     cfg.conf_pcbnew_bkp = restore_one_config('pcbnew', cfg.conf_pcbnew, cfg.conf_pcbnew_bkp)
+    cfg.conf_colors_bkp = restore_one_config('colors', cfg.conf_colors, cfg.conf_colors_bkp)
+    cfg.conf_3dview_bkp = restore_one_config('3D viewer', cfg.conf_3dview, cfg.conf_3dview_bkp)
 
 
 def backup_config(name, file, err, cfg):

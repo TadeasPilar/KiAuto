@@ -190,11 +190,17 @@ class Config(object):
             self.conf_pcbnew_json = True
             self.pro_ext = 'kicad_pro'
             self.prl_ext = 'kicad_prl'
+            self.conf_colors = os.path.join(self.kicad_conf_path, 'colors', 'user.json')
+            self.conf_colors_bkp = None
+            self.conf_3dview = os.path.join(self.kicad_conf_path, '3d_viewer.json')
+            self.conf_3dview_bkp = None
         else:
             self.conf_eeschema_json = False
             self.conf_pcbnew_json = False
             self.pro_ext = 'pro'
             self.prl_ext = None
+            self.conf_colors = self.conf_colors_bkp = None
+            self.conf_3dview = self.conf_3dview_bkp = None
         # - hotkeys
         self.conf_hotkeys = os.path.join(self.kicad_conf_path, 'user.hotkeys')
         self.conf_hotkeys_bkp = None
