@@ -47,7 +47,7 @@ from kiauto.misc import (REC_W, REC_H, __version__, NO_PCB, PCBNEW_CFG_PRESENT, 
                          WRONG_PCB_NAME, PCBNEW_ERROR, WRONG_ARGUMENTS, Config, KICAD_VERSION_5_99, USER_HOTKEYS_PRESENT,
                          CORRUPTED_PCB, __copyright__, __license__, TIME_OUT_MULT, get_en_locale, KICAD_CFG_PRESENT)
 from kiauto.ui_automation import (PopenContext, xdotool, wait_not_focused, wait_for_window, recorded_xvfb,
-                                  wait_point, text_replace, set_time_out_scale)
+                                  wait_point, text_replace, set_time_out_scale, open_dialog_with_retry)
 
 TITLE_CONFIRMATION = '^Confirmation$'
 TITLE_ERROR = '^Error$'
@@ -63,7 +63,7 @@ def parse_drc(cfg):
     unconnected_pads = None
     in_errs = False
     in_wrns = False
-    if cfg.kicad_version >= KICAD_VERSION_5_99:
+    if not cfg.ki5:
         err_regex = re.compile(r'^\[(\S+)\]: (.*)')
     else:
         err_regex = re.compile(r'^ErrType\((\d+)\): (.*)')
@@ -233,7 +233,7 @@ def open_print_dialog(cfg, print_dialog_keys, id_pcbnew):
 
 
 def print_layers(cfg, id_pcbnew):
-    if cfg.kicad_version >= KICAD_VERSION_5_99:
+    if not cfg.ki5:
         print_dialog_keys = ['ctrl+p']
     else:
         # We should be able to use Ctrl+P, unless the user configured it
@@ -390,7 +390,7 @@ def run_drc_python(cfg):
 
 
 def run_drc(cfg):
-    if cfg.kicad_version >= KICAD_VERSION_5_99:
+    if not cfg.ki5:
         run_drc_6_0(cfg)
     else:
         run_drc_5_1(cfg)
@@ -407,13 +407,22 @@ def run_drc(cfg):
     exit_pcbnew(cfg)
 
 
-def wait_3d_ready():
+def wait_3d_ready(cfg):
+    if not cfg.ki5:
+        # Is this enough?
+        sleep(0.1)
+        return
     sleep(0.2)
+    keys = ['key', 'alt+p', 'Return']
+    dname = '3D Display Options'
+    if not cfg.ki5:
+        keys.insert(2, 'Down')
+        dname = 'Preferences'
     for retry in range(30):
-        xdotool(['key', 'alt+p', 'Return'])
+        xdotool(keys)
         found = True
         try:
-            wait_for_window('Options dialog', '3D Display Options', 1)
+            wait_for_window('Options dialog', dname, 1)
         except RuntimeError:  # pragma: no cover
             found = False
         if found:
@@ -426,13 +435,21 @@ def wait_3d_ready():
 
 
 def capture_3d_view(cfg):
+    if not cfg.ki5 and cfg.kicad_version < 6000002:
+        logger.error('Upgrade KiCad, this version has a bug')
+        exit(MISSING_TOOL)
     # Open the 3D viewer
-    logger.info('Open 3D viewer')
+    open_keys = ['key', 'alt+3']
+    dialog_name = '3D Viewer'
+    open_dialog_with_retry('Open 3D Viewer', open_keys, '3D viewer dialog', dialog_name, cfg)
     wait_point(cfg)
-    xdotool(['key', 'alt+3'])
-    wait_for_window('3D Viewer', '3D Viewer')[0]
-    wait_point(cfg)
-    wait_3d_ready()
+    wait_3d_ready(cfg)
+
+    # Ray tracing
+    if not cfg.ki5 and cfg.ray_tracing:
+        # Not persistent in KiCad 6!!!
+        xdotool(['key', 'alt+p', 'Return'])
+        sleep(0.1)
 
     # Switch to orthographic
     if cfg.orthographic:
@@ -442,7 +459,7 @@ def capture_3d_view(cfg):
     # Apply the view axis
     if cfg.view != 'z':
         xdotool(['key', cfg.view])
-        wait_3d_ready()
+        wait_3d_ready(cfg)
 
     # Apply the movements
     x = cfg.move_x
@@ -453,7 +470,7 @@ def capture_3d_view(cfg):
             x_key = 'Left'
         for _ in range(x):
             xdotool(['key', x_key])
-            wait_3d_ready()
+            wait_3d_ready(cfg)
     y = cfg.move_y
     if y:
         y_key = 'Up'
@@ -462,7 +479,7 @@ def capture_3d_view(cfg):
             y_key = 'Down'
         for _ in range(y):
             xdotool(['key', y_key])
-            wait_3d_ready()
+            wait_3d_ready(cfg)
 
     # Apply the zoom steps
     zoom = cfg.zoom
@@ -476,7 +493,7 @@ def capture_3d_view(cfg):
             # See discussion on #13 issue at GitHub
             sleep(0.05)
             xdotool(['click', zoom_b])
-            wait_3d_ready()
+            wait_3d_ready(cfg)
 
     if cfg.ray_tracing:
         # I can't find a mechanism to determine if the render finished.
@@ -528,7 +545,10 @@ def capture_3d_view(cfg):
     # Close the 3D viewer
     logger.info('Closing the 3D viewer')
     wait_point(cfg)
-    xdotool(['key', 'ctrl+q'])
+    if cfg.ki5:
+        xdotool(['key', 'ctrl+q'])
+    else:
+        xdotool(['key', 'ctrl+w'])
     wait_pcbnew()
 
 
@@ -583,7 +603,7 @@ def restore_pcb(cfg):
                     logger.error('Corrupted back-up file! (size = {})'.format(bkp_size))
             else:  # pragma: no cover
                 logger.error('No back-up available!')
-        if cfg.kicad_version >= KICAD_VERSION_5_99 and os.path.isfile(bkp):
+        if not cfg.ki5 and os.path.isfile(bkp):
             os.remove(bkp)
 
 
@@ -592,7 +612,7 @@ def memorize_pcb(cfg):
     cfg.pcb_date = os.path.getmtime(cfg.input_file)
     logger.debug('Current pcb ({}) size: {} date: {}'.
                  format(cfg.input_file, cfg.pcb_size, asctime(localtime(cfg.pcb_date))))
-    if cfg.kicad_version >= KICAD_VERSION_5_99:
+    if not cfg.ki5:
         # KiCad 6 no longer creates back-up, we do it
         shutil.copy2(cfg.input_file, cfg.input_file+'-bak')
     atexit.register(restore_pcb, cfg)
@@ -868,7 +888,7 @@ if __name__ == '__main__':
         cfg.separate = args.separate
         cfg.svg = args.svg
         cfg.mirror = args.mirror
-        if args.mirror and cfg.kicad_version < KICAD_VERSION_5_99:
+        if args.mirror and cfg.ki5:
             logger.warning("KiCad 5 doesn't support setting mirror print from the configuration file")
     else:
         cfg.scaling = 1.0
@@ -915,7 +935,7 @@ if __name__ == '__main__':
     # Create a suitable configuration
     create_pcbnew_config(cfg)
     # Hotkeys
-    if cfg.kicad_version >= KICAD_VERSION_5_99:
+    if not cfg.ki5:
         # KiCad 6 breaks menu short-cuts, but we can configure user hotkeys
         # Back-up the current user.hotkeys configuration
         cfg.conf_hotkeys_bkp = backup_config('User hotkeys', cfg.conf_hotkeys, USER_HOTKEYS_PRESENT, cfg)
@@ -942,7 +962,7 @@ if __name__ == '__main__':
     # Do all the work
     #
     error_level = 0
-    if args.command == 'run_drc' and cfg.kicad_version >= KICAD_VERSION_5_99:
+    if args.command == 'run_drc' and not cfg.ki5:
         # First command to migrate to Python!
         run_drc_python(cfg)
         error_level = process_drc_out(cfg)
