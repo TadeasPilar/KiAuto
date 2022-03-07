@@ -141,8 +141,9 @@ class Config(object):
         self.kicad_version = self.kicad_version_major*1000000+self.kicad_version_minor*1000+self.kicad_version_patch
         logger.debug('Detected KiCad v{}.{}.{} ({} {})'.format(self.kicad_version_major, self.kicad_version_minor,
                      self.kicad_version_patch, kicad_version, self.kicad_version))
+        self.ki5 = self.kicad_version < KICAD_VERSION_5_99
         # Config file names
-        if self.kicad_version >= KICAD_VERSION_5_99:
+        if not self.ki5:
             self.kicad_conf_path = pcbnew.GetSettingsManager().GetUserSettingsPath()
             # No longer needed for 202112021512+6.0.0+rc1+287+gbb08ef2f41+deb11
             # if ng_ver:
@@ -158,7 +159,7 @@ class Config(object):
         # First we solve kicad_common because it can redirect to another config dir
         self.conf_kicad = os.path.join(self.kicad_conf_path, 'kicad_common')
         self.conf_kicad_bkp = None
-        if self.kicad_version >= KICAD_VERSION_5_99:
+        if not self.ki5:
             self.conf_kicad += '.json'
             self.conf_kicad_json = True
         else:
@@ -166,7 +167,7 @@ class Config(object):
         # Read the environment redefinitions used by KiCad
         if os.path.isfile(self.conf_kicad):
             self.load_kicad_environment(logger)
-            if 'KICAD_CONFIG_HOME' in self.env and self.kicad_version < KICAD_VERSION_5_99:
+            if 'KICAD_CONFIG_HOME' in self.env and self.ki5:
                 # The user is redirecting the configuration
                 # KiCad 5 unintentionally allows it, is a bug, and won't be fixed:
                 # https://forum.kicad.info/t/kicad-config-home-inconsistencies-and-detail/26875
@@ -182,7 +183,7 @@ class Config(object):
         self.conf_pcbnew_bkp = None
         # Config files that migrated to JSON
         # Note that they remain in the old format until saved
-        if self.kicad_version >= KICAD_VERSION_5_99:
+        if not self.ki5:
             self.conf_eeschema += '.json'
             self.conf_pcbnew += '.json'
             self.conf_eeschema_json = True
@@ -207,7 +208,7 @@ class Config(object):
             self.sys_sym_lib_table.insert(0, KICAD_NIGHTLY_SHARE+'template/sym-lib-table')
             self.sys_fp_lib_table.insert(0, KICAD_NIGHTLY_SHARE+'template/fp-lib-table')
         # Some details about the UI
-        if self.kicad_version >= KICAD_VERSION_5_99:
+        if not self.ki5:
             # KiCad 5.99.0
             # self.ee_window_title = r'\[.*\] — Eeschema$'  # "PROJECT [HIERARCHY_PATH] - Eeschema"
             # KiCad 6.0.0 rc1
@@ -283,4 +284,4 @@ __license__ = 'Apache 2.0'
 __email__ = 'stropea@inti.gob.ar'
 __status__ = 'beta'
 __url__ = 'https://github.com/INTI-CMNB/KiAuto/'
-__version__ = '1.6.3'
+__version__ = '1.6.4'
