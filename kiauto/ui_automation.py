@@ -208,7 +208,10 @@ def recorded_xvfb(cfg, num_try=0):
                     yield
 
 
-def xdotool(command):
+def xdotool(command, id=None):
+    if id is not None:
+        command.insert(1, str(id))
+        command.insert(1, '--window')
     return check_output(['xdotool'] + command, stderr=DEVNULL).decode()
     # return check_output(['xdotool'] + command)
 

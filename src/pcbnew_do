@@ -462,10 +462,11 @@ def wait_ray_tracer(cfg):
 
 def wait_3d_ready(cfg):
     if not cfg.ki5:
-        # Is this enough?
-        sleep(2)
+        # On my system this huge delay is needed only when using docker.
+        # I don't know why and also don't know why the KiCad 5 methode fails.
+        sleep(1*cfg.time_out_scale)
         return
-    sleep(0.2)
+    sleep(0.2*cfg.time_out_scale)
     keys = ['key', 'alt+p', 'Return']
     dname = '3D Display Options'
     if not cfg.ki5:
@@ -494,18 +495,18 @@ def capture_3d_view(cfg):
     # Open the 3D viewer
     open_keys = ['key', 'alt+3']
     dialog_name = '3D Viewer'
-    open_dialog_with_retry('Open 3D Viewer', open_keys, '3D viewer dialog', dialog_name, cfg)
+    id = open_dialog_with_retry('Open 3D Viewer', open_keys, '3D viewer dialog', dialog_name, cfg)[0]
     wait_point(cfg)
     wait_3d_ready(cfg)
 
-    # Switch to orthographic
+    # Switch to orthographic (KiCad 6 has persistence)
     if cfg.orthographic and cfg.ki5:
         # Can easily break, no persistence, no option, no shortcut ... KiCad's way
         xdotool(['mousemove', '711', '44', 'click', '1', 'mousemove', 'restore'])
 
     # Apply the view axis
     if cfg.view != 'z':
-        xdotool(['key', cfg.view])
+        xdotool(['key', cfg.view], id)
         wait_3d_ready(cfg)
 
     # Apply the movements
@@ -516,7 +517,7 @@ def capture_3d_view(cfg):
             x = -x
             x_key = 'Left'
         for _ in range(x):
-            xdotool(['key', x_key])
+            xdotool(['key', x_key], id)
             wait_3d_ready(cfg)
     y = cfg.move_y
     if y:
@@ -525,7 +526,7 @@ def capture_3d_view(cfg):
             y = -y
             y_key = 'Down'
         for _ in range(y):
-            xdotool(['key', y_key])
+            xdotool(['key', y_key], id)
             wait_3d_ready(cfg)
 
     # Apply the zoom steps
@@ -539,20 +540,20 @@ def capture_3d_view(cfg):
             # Wait some time before sending commands
             # See discussion on #13 issue at GitHub
             sleep(0.05)
-            xdotool(['click', zoom_b])
+            xdotool(['click', zoom_b], id)
             wait_3d_ready(cfg)
 
     if cfg.ray_tracing:
         # Ray tracing
         if not cfg.ki5:
             # Not persistent in KiCad 6!!!
-            xdotool(['key', 'alt+p', 'Return'])
+            xdotool(['key', 'alt+p', 'Return'], id)
         wait_ray_tracer(cfg)
 
     # Save the image as PNG
     logger.info('Saving the image')
     for retry in range(10):
-        xdotool(['key', 'alt+f', 'Return'])
+        xdotool(['key', 'alt+f', 'Return'], id)
         found = True
         try:
             wait_for_window('File save dialog', '3D Image File Name', 3)
@@ -576,7 +577,7 @@ def capture_3d_view(cfg):
     # Close the 3D viewer
     logger.info('Closing the 3D viewer')
     wait_point(cfg)
-    xdotool(['key', 'ctrl+q' if cfg.ki5 else 'ctrl+w'])
+    xdotool(['key', 'ctrl+q' if cfg.ki5 else 'ctrl+w'], id)
     wait_pcbnew()
 
 
