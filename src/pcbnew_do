@@ -577,7 +577,7 @@ def capture_3d_view(cfg):
     # Close the 3D viewer
     logger.info('Closing the 3D viewer')
     wait_point(cfg)
-    xdotool(['key', 'ctrl+q' if cfg.ki5 else 'ctrl+w'], id)
+    xdotool(['key', 'ctrl+q' if cfg.ki5 else 'ctrl+w'])
     wait_pcbnew()
 
 
@@ -900,6 +900,7 @@ if __name__ == '__main__':
     v3d_parser.add_argument('kicad_pcb_file', help='KiCad PCB file')
     v3d_parser.add_argument('output_dir', help='Output directory')
 
+    # short commands: afnoOu
     export_gencad_parser = subparsers.add_parser('export_gencad', help='Export PCB as GenCAD')
     export_gencad_parser.add_argument('kicad_pcb_file', help='KiCad PCB file')
     export_gencad_parser.add_argument('output_dir', help='Output directory')
