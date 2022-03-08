@@ -1,3 +1,10 @@
+kiauto (1.6.5-1) stable; urgency=medium
+
+  * 3D View support for KiCad 6 (now that bug 9890 is fixed)
+  * Gencad export (#17)
+
+ -- Salvador Eduardo Tropea <salvador@inti.gob.ar>  Tue, 08 Mar 2022 11:39:56 -0300
+
 kiauto (1.6.4-1) stable; urgency=medium
 
   * Added pcbnew_do SVG export
