@@ -696,8 +696,7 @@ def create_pcbnew_config(cfg):
                                   "test_all_track_errors": True}
             conf["system"] = {"first_run_shown": True}
             conf["printing"] = {"monochrome": cfg.monochrome,
-                                # TODO: Allow configuration
-                                "color_theme": "_builtin_classic",
+                                "color_theme": cfg.color_theme,
                                 "use_theme": True,
                                 "title_block": not cfg.no_title,
                                 "scale": cfg.scaling,
@@ -859,17 +858,18 @@ if __name__ == '__main__':
     parser.add_argument('--time_out_scale', help='Timeout multiplier, affects most timeouts',
                         type=float, default=TIME_OUT_MULT)
 
-    # short commands: flmMopsStv
+    # short commands: cflmMopsStv
     export_parser = subparsers.add_parser('export', help='Export PCB layers')
+    export_parser.add_argument('--color_theme', '-c', nargs=1, help='KiCad 6 color theme (i.e. _builtin_default, user)', default=['_builtin_classic'])
     export_parser.add_argument('--fill_zones', '-f', help='Fill all zones before printing', action='store_true')
     export_parser.add_argument('--list', '-l', help='Print a list of layers in LIST PCB and exit', nargs=1, action=ListLayers)
-    export_parser.add_argument('--output_name', '-o', nargs=1, help='Name of the output file', default=['printed.pdf'])
-    export_parser.add_argument('--scaling', '-s', nargs=1, help='Scale factor (0 fit page)', default=[1.0])
-    export_parser.add_argument('--pads', '-p', nargs=1, help='Pads style (0 none, 1 small, 2 full)', default=[2])
-    export_parser.add_argument('--no-title', '-t', help='Remove the title-block', action='store_true')
     export_parser.add_argument('--monochrome', '-m', help='Print in blanck and white', action='store_true')
     export_parser.add_argument('--mirror', '-M', help='Print mirrored', action='store_true')
+    export_parser.add_argument('--output_name', '-o', nargs=1, help='Name of the output file', default=['printed.pdf'])
+    export_parser.add_argument('--pads', '-p', nargs=1, help='Pads style (0 none, 1 small, 2 full)', default=[2])
+    export_parser.add_argument('--scaling', '-s', nargs=1, help='Scale factor (0 fit page)', default=[1.0])
     export_parser.add_argument('--separate', '-S', help='Layers in separated sheets', action='store_true')
+    export_parser.add_argument('--no-title', '-t', help='Remove the title-block', action='store_true')
     export_parser.add_argument('--svg', '-v', help='SVG output instead of PDF', action='store_true')
     export_parser.add_argument('kicad_pcb_file', help='KiCad PCB file')
     export_parser.add_argument('output_dir', help='Output directory')
@@ -978,6 +978,7 @@ if __name__ == '__main__':
         cfg.monochrome = args.monochrome
         cfg.separate = args.separate
         cfg.svg = args.svg
+        cfg.color_theme = args.color_theme[0]
         cfg.mirror = args.mirror
         if args.mirror and cfg.ki5:
             logger.warning("KiCad 5 doesn't support setting mirror print from the configuration file")
