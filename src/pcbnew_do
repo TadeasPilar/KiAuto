@@ -658,10 +658,12 @@ def write_color(out, name, color, post=''):
     out.write('%s=%f\n' % (name+'Blue'+post, color[2]))
 
 
-def to_rgb(color, alpha=1.0):
+def to_rgb(color, bottom=False):
+    index = 4 if bottom and len(color) > 4 else 0
+    alpha = color[index+3]
     if alpha == 1.0:
-        return "rgb({}, {}, {})".format(round(color[0]*255.0), round(color[1]*255.0), round(color[2]*255.0))
-    return "rgba({}, {}, {}, {})".format(round(color[0]*255.0), round(color[1]*255.0), round(color[2]*255.0), alpha)
+        return "rgb({}, {}, {})".format(round(color[index]*255.0), round(color[index+1]*255.0), round(color[index+2]*255.0))
+    return "rgba({}, {}, {}, {})".format(round(color[index]*255.0), round(color[index+1]*255.0), round(color[index+2]*255.0), alpha)
 
 
 def create_pcbnew_config(cfg):
@@ -714,15 +716,12 @@ def create_pcbnew_config(cfg):
                 conf = {}
                 conf["3d_viewer"] = {"background_bottom": to_rgb(cfg.bg_color_1),
                                      "background_top": to_rgb(cfg.bg_color_2),
-                                     # TODO: support custom alpha
-                                     "board": to_rgb(cfg.board_color, 0.902),
+                                     "board": to_rgb(cfg.board_color),
                                      "copper": to_rgb(cfg.copper_color),
-                                     # TODO: support both
-                                     "silkscreen_bottom": to_rgb(cfg.silk_color),
+                                     "silkscreen_bottom": to_rgb(cfg.silk_color, bottom=True),
                                      "silkscreen_top": to_rgb(cfg.silk_color),
-                                     # TODO: support both
-                                     "soldermask_bottom": to_rgb(cfg.sm_color, 0.831),
-                                     "soldermask_top": to_rgb(cfg.sm_color, 0.831),
+                                     "soldermask_bottom": to_rgb(cfg.sm_color, bottom=True),
+                                     "soldermask_top": to_rgb(cfg.sm_color),
                                      "solderpaste": to_rgb(cfg.sp_color),
                                      "use_board_stackup_colors": False}
                 json_text = json.dumps(conf)
@@ -736,7 +735,8 @@ def create_pcbnew_config(cfg):
                 conf["camera"] = {"projection_mode": int(not cfg.orthographic)}
                 conf["render"] = {"show_footprints_insert": not cfg.no_smd,
                                   "show_footprints_normal": not cfg.no_tht,
-                                  "show_footprints_virtual": not cfg.no_virtual}
+                                  "show_footprints_virtual": not cfg.no_virtual,
+                                  "show_axis": False}
                 json_text = json.dumps(conf)
                 with open(cfg.conf_3dview, "wt") as viewer_file:
                     viewer_file.write(json_text)
@@ -819,13 +819,26 @@ def process_drc_out(cfg):
     return error_level
 
 
-def parse_color(color):
-    match = re.match(r'#([\da-fA-F]{2})([\da-fA-F]{2})([\da-fA-F]{2})', color[0])
+def parse_one_color(color):
+    match = re.match(r'#([\da-fA-F]{2})([\da-fA-F]{2})([\da-fA-F]{2})([\da-fA-F]{2})?', color)
     if match is None:
-        logger.error('Malformed color: `{}` please use `#RRGGBB` where RR, GG and BB are hexadecimal numbers')
+        logger.error('Malformed color: `{}` please use `#RRGGBBAA` where RR, GG, BB and AA are hexadecimal numbers.')
+        logger.error('AA is the transparency (FF opaque) and is optional. Only supported by KiCad 6.')
         exit(WRONG_ARGUMENTS)
     res = match.groups()
-    return (int(res[0], 16)/255.0, int(res[1], 16)/255.0, int(res[2], 16)/255.0)
+    alpha = 1.0
+    if res[3] is not None:
+        alpha = int(res[3], 16)/255.0
+    return (int(res[0], 16)/255.0, int(res[1], 16)/255.0, int(res[2], 16)/255.0, alpha)
+
+
+def parse_color(color):
+    res = color[0].split(',')
+    if len(res) == 2 and res[0][0] == '#' and res[1][0] == '#':
+        c1 = parse_one_color(res[0])
+        c2 = parse_one_color(res[1])
+        return c1+c2
+    return parse_one_color(color[0])
 
 
 if __name__ == '__main__':
@@ -875,7 +888,7 @@ if __name__ == '__main__':
     v3d_parser = subparsers.add_parser('3d_view', help='Capture the 3D view')
     v3d_parser.add_argument('--bg_color_1', '-b', nargs=1, help='Background color 1', default=['#66667F'])
     v3d_parser.add_argument('--bg_color_2', '-B', nargs=1, help='Background color 2', default=['#CCCCE5'])
-    v3d_parser.add_argument('--board_color', nargs=1, help='Board body color', default=['#332B16'])
+    v3d_parser.add_argument('--board_color', nargs=1, help='Board body color', default=['#332B16E6'])
     v3d_parser.add_argument('--copper_color', '-c', nargs=1, help='Copper color', default=['#B29C00'])
     v3d_parser.add_argument('--detect_rt', '-d', help='Try to detect when the rey tracing render finshes,'
                             ' wait_rt value is the time-out (experimental)', action='store_true')
@@ -889,8 +902,8 @@ if __name__ == '__main__':
     v3d_parser.add_argument('--orthographic', '-O', help='Enable the orthographic projection', action='store_true')
     v3d_parser.add_argument('--output_name', '-o', nargs=1, help='Name of the output file (PNG)', default=['capture.png'])
     v3d_parser.add_argument('--ray_tracing', '-r', help='Enable the realistic render', action='store_true')
-    v3d_parser.add_argument('--silk_color', nargs=1, help='Silk color', default=['#E5E5E5'])
-    v3d_parser.add_argument('--sm_color', nargs=1, help='Solder mask color', default=['#143324'])
+    v3d_parser.add_argument('--silk_color', nargs=1, help='Silk color (KiCad 6 supports color1,color2 for top/bottom)', default=['#E5E5E5'])
+    v3d_parser.add_argument('--sm_color', nargs=1, help='Solder mask color (KiCad 6 supports color1,color2 for top/bottom)', default=['#143324D4'])
     v3d_parser.add_argument('--sp_color', nargs=1, help='Solder paste color', default=['#808080'])
     v3d_parser.add_argument('--view', '-v', nargs=1, help='Axis view, uppercase is reversed (i.e. Z is bottom)',
                             default=['z'], choices=['x', 'y', 'z', 'X', 'Y', 'Z'],)
