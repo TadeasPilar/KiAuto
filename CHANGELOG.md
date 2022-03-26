@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.7] - 2022-03-26
+### Added
+- PCB export: support for KiCad 6 color theme selection
+
 ## [1.6.6] - 2022-03-26
 ### Added
 - 3D View: support for alpha channel
