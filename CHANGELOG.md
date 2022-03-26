@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [1.6.6] - 2022-03-26
 ### Added
 - 3D View: support for alpha channel
 - 3D View: support for solder mask and silk screen bottom colors
