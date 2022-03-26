@@ -989,7 +989,7 @@ if __name__ == '__main__':
         cfg.monochrome = False
         cfg.separate = False
         cfg.mirror = False
-        cfg.color_theme = '_builtin_default'
+        cfg.color_theme = '_builtin_classic'
 
     if args.command == 'export_gencad':
         cfg.flip_bottom_padstacks = args.flip_bottom_padstacks
