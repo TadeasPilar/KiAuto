@@ -1,3 +1,9 @@
+kiauto (1.6.8-1) stable; urgency=medium
+
+  * 3D View: added support for X, Y, Z rotation in steps (KiCad 6 only)
+
+ -- Salvador Eduardo Tropea <salvador@inti.gob.ar>  Tue, 29 Mar 2022 15:24:17 -0300
+
 kiauto (1.6.7-1) stable; urgency=medium
 
   * PCB export: support for KiCad 6 color theme selection
