@@ -206,6 +206,12 @@ def create_user_hotkeys(cfg):
         text_file.write('eeschema.InspectionTool.runERC\tCtrl+Shift+I\n')
         text_file.write('pcbnew.DRCTool.runDRC\tCtrl+Shift+I\n')
         text_file.write('pcbnew.ZoneFiller.zoneFillAll\tB\n')
+        text_file.write('3DViewer.Control.rotateXclockwise\tAlt+X\n')
+        text_file.write('3DViewer.Control.rotateXcounterclockwise\tAlt+Shift+X\n')
+        text_file.write('3DViewer.Control.rotateYclockwise\tAlt+Y\n')
+        text_file.write('3DViewer.Control.rotateYcounterclockwise\tAlt+Shift+Y\n')
+        text_file.write('3DViewer.Control.rotateZclockwise\tAlt+Z\n')
+        text_file.write('3DViewer.Control.rotateZcounterclockwise\tAlt+Shift+Z\n')
 
 
 def create_kicad_config(cfg):

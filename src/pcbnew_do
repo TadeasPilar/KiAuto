@@ -488,6 +488,17 @@ def wait_3d_ready(cfg):
     wait_for_window('3D Viewer', '3D Viewer')
 
 
+def apply_steps(steps, key, neg_key, id, cfg):
+    if steps:
+        k = key
+        if steps < 0:
+            steps = -steps
+            k = neg_key
+        for _ in range(steps):
+            xdotool(['key', k], id)
+            wait_3d_ready(cfg)
+
+
 def capture_3d_view(cfg):
     if not cfg.ki5 and cfg.kicad_version < 6000002:
         logger.error('Upgrade KiCad, this version has a bug')
@@ -510,24 +521,14 @@ def capture_3d_view(cfg):
         wait_3d_ready(cfg)
 
     # Apply the movements
-    x = cfg.move_x
-    if x:
-        x_key = 'Right'
-        if x < 0:
-            x = -x
-            x_key = 'Left'
-        for _ in range(x):
-            xdotool(['key', x_key], id)
-            wait_3d_ready(cfg)
-    y = cfg.move_y
-    if y:
-        y_key = 'Up'
-        if y < 0:
-            y = -y
-            y_key = 'Down'
-        for _ in range(y):
-            xdotool(['key', y_key], id)
-            wait_3d_ready(cfg)
+    apply_steps(cfg.move_x, 'Right', 'Left', id, cfg)
+    apply_steps(cfg.move_y, 'Up', 'Down', id, cfg)
+
+    # Apply the rotations
+    if not cfg.ki5:
+        apply_steps(cfg.rotate_x, 'alt+x', 'shift+alt+x', id, cfg)
+        apply_steps(cfg.rotate_y, 'alt+y', 'shift+alt+y', id, cfg)
+        apply_steps(cfg.rotate_z, 'alt+z', 'shift+alt+z', id, cfg)
 
     # Apply the zoom steps
     zoom = cfg.zoom
@@ -884,7 +885,7 @@ if __name__ == '__main__':
     drc_parser.add_argument('kicad_pcb_file', help='KiCad PCB file')
     drc_parser.add_argument('output_dir', help='Output directory')
 
-    # short commands: bcdBoOrSTvVwxyz
+    # short commands: bcdBoOrSTvVwxXyYzZ
     v3d_parser = subparsers.add_parser('3d_view', help='Capture the 3D view')
     v3d_parser.add_argument('--bg_color_1', '-b', nargs=1, help='Background color 1', default=['#66667F'])
     v3d_parser.add_argument('--bg_color_2', '-B', nargs=1, help='Background color 2', default=['#CCCCE5'])
@@ -896,6 +897,12 @@ if __name__ == '__main__':
                             default=[0], type=int)
     v3d_parser.add_argument('--move_y', '-y', nargs=1, help='Steps to move in the Y axis (positive is up)', default=[0],
                             type=int)
+    v3d_parser.add_argument('--rotate_x', '-X', nargs=1, help='Steps to rotate around the X axis (positive is clockwise) KiCad 6',
+                            default=[0], type=int)
+    v3d_parser.add_argument('--rotate_y', '-Y', nargs=1, help='Steps to rotate around the Y axis (positive is clockwise) KiCad 6',
+                            default=[0], type=int)
+    v3d_parser.add_argument('--rotate_z', '-Z', nargs=1, help='Steps to rotate around the Y axis (positive is clockwise) KiCad 6',
+                            default=[0], type=int)
     v3d_parser.add_argument('--no_smd', '-S', help='Do not include surface mount components', action='store_true')
     v3d_parser.add_argument('--no_tht', '-T', help='Do not include through-hole components', action='store_true')
     v3d_parser.add_argument('--virtual', '-V', help='Include virtual components', action='store_true')
@@ -1006,6 +1013,9 @@ if __name__ == '__main__':
         cfg.no_virtual = not args.virtual
         cfg.move_x = args.move_x[0]
         cfg.move_y = args.move_y[0]
+        cfg.rotate_x = args.rotate_x[0]
+        cfg.rotate_y = args.rotate_y[0]
+        cfg.rotate_z = args.rotate_z[0]
         cfg.ray_tracing = args.ray_tracing
         cfg.wait_rt = args.wait_rt[0]
         cfg.detect_rt = args.detect_rt

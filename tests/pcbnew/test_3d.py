@@ -27,7 +27,8 @@ PROG = 'pcbnew_do'
 def test_3d_view_1(test_dir):
     """ Simple 3D Viewer test """
     ctx = context.TestContext(test_dir, '3DView_1', 'good-project')
-    cmd = [PROG, '-vvv', '3d_view', '--zoom', '3', '-x', '1', '--output_name', 'good_3d_rt_1.png', '-r', '-d', '-w', '600']
+    cmd = [PROG, '-vvv', '3d_view', '--zoom', '3', '-x', '1', '--output_name', 'good_3d_rt_1.png', '-r', '-d', '-w', '600',
+           '-X', '3', '-Z', '3']
     ctx.run(cmd)
     ctx.compare_image('good_3d_rt_1.png', fuzz='50%')
     ctx.clean_up()
