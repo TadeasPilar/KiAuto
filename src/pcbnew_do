@@ -583,7 +583,7 @@ def capture_3d_view(cfg):
 
 
 def load_layers(pcb):
-    layer_names = ['-']*50
+    layer_names = []
     with open(pcb, "rt") as pcb_file:
         collect_layers = False
         for line in pcb_file:
@@ -595,7 +595,7 @@ def load_layers(pcb):
                     id, name = z.groups()
                     if name[0] == '"':
                         name = name[1:-1]
-                    layer_names[int(id)] = name
+                    layer_names.append(name)
                 else:
                     if re.search(r'^\s+\)$', line):
                         collect_layers = False
@@ -611,8 +611,7 @@ class ListLayers(argparse.Action):
     def __call__(self, parser, namespace, values, option_string):
         layer_names = load_layers(values[0])
         for layer in layer_names:
-            if layer != '-':
-                print(layer)
+            print(layer)
         parser.exit()  # exits the program with no more arg parsing and checking
 
 
