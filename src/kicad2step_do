@@ -47,7 +47,7 @@ def run_gui_version(cmd, cfg, flog_out, flog_err):
                 xdotool(['key', 'ctrl+a', 'ctrl+c'])
                 text = clipboard_retrieve()
                 res = proc.poll()
-                if 'STRING not available' in text:
+                if ('STRING not available' in text) or ('There is no owner' in text):
                     if res is not None:
                         logger.error('KiCad to STEP died')
                         break

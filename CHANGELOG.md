@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Fixed
 - `--list` option was limited to layer IDs upto 50. Now isn't limited.
+- Problems with xclip messages for the version found on Fedora 35.
 
 ## [1.6.8] - 2022-03-29
 ### Added
