@@ -1,3 +1,9 @@
+kiauto (1.6.9-1) stable; urgency=medium
+
+  * Fixes in --list and support for newer xclip versions
+
+ -- Salvador Eduardo Tropea <salvador@inti.gob.ar>  Sun, 10 Apr 2022 13:42:38 -0300
+
 kiauto (1.6.8-1) stable; urgency=medium
 
   * 3D View: added support for X, Y, Z rotation in steps (KiCad 6 only)
