@@ -213,9 +213,10 @@ def open_print_dialog(cfg, print_dialog_keys, id_pcbnew):
     xdotool(['key']+print_dialog_keys)
     retry = False
     try:
-        id = wait_for_window('Print dialog', '^Print', skip_id=id_pcbnew)
+        # Do a first try with small time-out, perhaps we sent the keys before the window was available
+        id = wait_for_window('Print dialog', '^Print', skip_id=id_pcbnew, timeout=2)
     except RuntimeError:  # pragma: no cover
-        # Perhaps the fill took too muchm try again
+        # Perhaps the fill took too much try again
         retry = True
     # Retry the open dialog
     if retry:  # pragma: no cover
@@ -285,7 +286,15 @@ def print_layers(cfg, id_pcbnew):
              # Select this name
              'Return'])
     # Back to print
-    wait_not_focused(id_sel_f[0])
+    retry = False
+    try:
+        wait_not_focused(id_sel_f[0])
+    except RuntimeError:
+        retry = True
+    if retry:
+        logger.debug('Retrying the Return to select the filename')
+        xdotool(['key','Return'])
+        wait_not_focused(id_sel_f[0])
     wait_for_window('Printer dialog', '^(Print|%s)$' % cfg.print_dlg_name, skip_id=id_print_dialog)
     wait_point(cfg)
     format = 3*['Left'] if not cfg.svg else 3*['Right']
