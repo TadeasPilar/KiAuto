@@ -121,6 +121,7 @@ def wait_eeschema(cfg, time, others=None):
 def wait_eeschema_start(cfg):
     wait_start = cfg.wait_start
     retry = 3
+    retry_loading = False
     while retry:
         failed_focuse = False
         other = None
@@ -157,7 +158,11 @@ def wait_eeschema_start(cfg):
             exit(EESCHEMA_ERROR)
         elif other == KI6_LOADING:
             # KiCad is loading the file
-            pass
+            if not retry_loading:
+                # Give the same time-out, but waiting in steps of 1 s
+                retry = WAIT_START
+                retry_loading = True
+                wait_start = 1
         else:
             # One more time, just 5 seconds
             if retry > 2:
