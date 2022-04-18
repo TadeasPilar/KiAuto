@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2020-2021 Salvador E. Tropea
-# Copyright (c) 2020-2021 Instituto Nacional de Tecnologïa Industrial
+# Copyright (c) 2020-2022 Salvador E. Tropea
+# Copyright (c) 2020-2022 Instituto Nacional de Tecnologïa Industrial
 # License: Apache 2.0
 # Project: KiAuto (formerly kicad-automation-scripts)
 import os
@@ -33,7 +33,7 @@ USER_HOTKEYS_PRESENT = 12
 CORRUPTED_PCB = 13
 NO_EN_LOCALE = 14
 MISSING_TOOL = 15
-# Wait 40 s to pcbnew/eeschema window to be present
+# Wait 60 s to pcbnew/eeschema window to be present
 WAIT_START = 60
 # Name for testing versions
 NIGHTLY = 'nightly'
@@ -290,4 +290,4 @@ __license__ = 'Apache 2.0'
 __email__ = 'stropea@inti.gob.ar'
 __status__ = 'stable'
 __url__ = 'https://github.com/INTI-CMNB/KiAuto/'
-__version__ = '1.6.9'
+__version__ = '1.6.10'

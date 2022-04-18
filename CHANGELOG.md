@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.10] - 2022-04-18
+### Fixed
+- eeschema_do fails when loading the schematics took more than 3 seconds.
+
+### Changed
+- Time-outs when waiting for the PCB print dialog. Should make things faster.
+
 ## [1.6.9] - 2022-04-10
 ### Fixed
 - `--list` option was limited to layer IDs upto 50. Now isn't limited.
