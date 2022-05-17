@@ -444,6 +444,20 @@ def export_gencad(cfg):
     wait_for_file_created_by_process(cfg.pcbnew_pid, cfg.output_file)
 
 
+def ipc_netlist(cfg):
+    wait_point(cfg)
+    if cfg.ki5:
+        keys = ['key', 'alt+f', 'f', 'Down', 'Down', 'Down', 'Return']
+    else:
+        keys = ['key', 'shift+alt+e']
+    open_dialog_with_retry("Open file save for IPC netlist", keys, "Dialog to save the IPC netlist",
+                           'Export D-356 Test File', cfg)
+    xdotool(['key', 'ctrl+a'])
+    xdotool(['type', cfg.output_file])
+    xdotool(['key', 'Return'])
+    wait_for_file_created_by_process(cfg.pcbnew_pid, cfg.output_file)
+
+
 def wait_ray_tracer(cfg):
     # I can't find a mechanism to determine if the render finished.
     # I think this is a bug in KiCad, you can save unfinished images!!!!
@@ -946,6 +960,12 @@ if __name__ == '__main__':
     export_gencad_parser.add_argument('--save_origin', '-O', help='Save the origin coordinates in the file',
                                       action='store_true')
 
+    # short commands: afnoOu
+    ipc_netlist_parser = subparsers.add_parser('ipc_netlist', help='Create the IPC-D-356 netlist')
+    ipc_netlist_parser.add_argument('kicad_pcb_file', help='KiCad PCB file')
+    ipc_netlist_parser.add_argument('output_dir', help='Output directory')
+    ipc_netlist_parser.add_argument('--output_name', '-o', nargs=1, help='Name of the output file', default=['pcb.d356'])
+
     args = parser.parse_args()
     # Set the specified verbosity
     log.set_level(logger, args.verbose)
@@ -1124,6 +1144,8 @@ if __name__ == '__main__':
                             capture_3d_view(cfg)
                         elif args.command == 'export_gencad':
                             export_gencad(cfg)
+                        elif args.command == 'ipc_netlist':
+                            ipc_netlist(cfg)
                         else:  # run_drc
                             run_drc(cfg)
                             error_level = process_drc_out(cfg)

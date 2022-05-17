@@ -212,6 +212,7 @@ def xdotool(command, id=None):
     if id is not None:
         command.insert(1, str(id))
         command.insert(1, '--window')
+    # logger.debug(['xdotool'] + command)
     return check_output(['xdotool'] + command, stderr=DEVNULL).decode()
     # return check_output(['xdotool'] + command)
 

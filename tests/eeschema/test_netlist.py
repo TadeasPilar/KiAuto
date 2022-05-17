@@ -37,3 +37,13 @@ def test_netlist(test_dir):
                              r'\(node \(ref "?R1"?\) \(pin "?2"?\)( \(pinfunction "2"\))?( \(pintype "passive"\))?\)',
                              r'\(export \(version "?[DE]"?\)'])
     ctx.clean_up()
+
+
+def test_ipc_netlist(test_dir):
+    prj = 'good-project'
+    net = prj+'.d356'
+    ctx = context.TestContext(test_dir, 'IPC_Netlist', prj)
+    cmd = ['pcbnew_do', 'ipc_netlist', '-o', net]
+    ctx.run(cmd)
+    ctx.expect_out_file(net)
+    ctx.clean_up()
