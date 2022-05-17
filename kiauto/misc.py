@@ -33,6 +33,7 @@ USER_HOTKEYS_PRESENT = 12
 CORRUPTED_PCB = 13
 NO_EN_LOCALE = 14
 MISSING_TOOL = 15
+KICAD_DIED = 16
 # Wait 60 s to pcbnew/eeschema window to be present
 WAIT_START = 60
 # Name for testing versions

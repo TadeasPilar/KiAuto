@@ -27,7 +27,7 @@ from contextlib import contextmanager
 # python3-xvfbwrapper
 from xvfbwrapper import Xvfb
 from kiauto.file_util import get_log_files
-from kiauto.misc import KICAD_VERSION_5_99, MISSING_TOOL
+from kiauto.misc import KICAD_VERSION_5_99, MISSING_TOOL, KICAD_DIED
 
 from kiauto import log
 logger = log.get_logger(__name__)
@@ -454,13 +454,20 @@ def open_dialog_with_retry(msg, keys, desc, w_name, cfg):
     xdotool(keys)
     retry = False
     try:
-        id = wait_for_window(desc, w_name)
+        id = wait_for_window(desc, w_name, popen_obj=cfg.popen_obj)
     except RuntimeError:  # pragma: no cover
         # Perhaps the main window wasn't available yet
         retry = True
+    except CalledProcessError as e:
+        logger.error(str(e))
+        sys.exit(KICAD_DIED)
     if retry:
         logger.info('"{}" did not open, retrying'.format(desc))
         # wait_eeschema_start(cfg)
         xdotool(keys)
-        id = wait_for_window(desc, w_name)
+        try:
+            id = wait_for_window(desc, w_name, popen_obj=cfg.popen_obj)
+        except CalledProcessError as e:
+            logger.error(str(e))
+            sys.exit(KICAD_DIED)
     return id
