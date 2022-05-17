@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.11] - 2022-05-17
+### Added
+- Added IPC-D-356 netlist generation
+
 ## [1.6.10] - 2022-04-18
 ### Fixed
 - eeschema_do fails when loading the schematics took more than 3 seconds.
