@@ -12,6 +12,9 @@ GROUP_ID=$(shell id -g)
 deb:
 	fakeroot dpkg-buildpackage -uc -b
 
+deb_sig:
+	fakeroot dpkg-buildpackage -b
+
 deb_clean:
 	fakeroot debian/rules clean
 	-@rm -rf kiauto.egg-info
