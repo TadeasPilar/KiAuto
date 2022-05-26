@@ -4,6 +4,7 @@ KiAuto
 [![Regression tests](https://img.shields.io/github/workflow/status/INTI-CMNB/KiAuto/Regression%20tests?style=plastic)](https://github.com/INTI-CMNB/KiAuto/actions)
 [![Coverage Status](https://img.shields.io/coveralls/github/INTI-CMNB/KiAuto?style=plastic)](https://coveralls.io/github/INTI-CMNB/KiAuto?branch=master)
 [![PyPI version](https://img.shields.io/pypi/v/kiauto?style=plastic)](https://pypi.org/project/kiauto/)
+[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg?style=plastic)](https://www.paypal.com/donate/?hosted_button_id=K2T86GDTTMRPL)
 
 KiCad automation scripts.
 In particular to automate tasks that can't be done using the KiCad native Python interface.
@@ -43,8 +44,10 @@ Currently tested and working:
 - Exporting layouts (PCBs) to PDF
 - Running ERC on schematics
 - Running DRC on layouts
-- Netlist generation
+- Netlist generation (including IPC-D-356 format)
 - Basic BoM generation (mainly the XML needed for [KiBoM](https://github.com/SchrodingersGat/KiBoM))
+- PCB 3D render
+- Export PCB in Gencad format
 
 If you are looking for Gerbers, Drill, Position, STEP and more take a look at [KiBot](https://github.com/INTI-CMNB/KiBot).
 
@@ -58,11 +61,18 @@ A docker image containg the scripts and other tools can be found at [DockerHub](
 
 If you are installing from a Debian package you don't need to worry about dependencies, otherwise you need to install:
 
-- [**KiCad**](http://kicad.org/) 5.1.x
+- **Python 3.4** or newer
+- [**KiCad**](http://kicad.org/) 5.1.x or newer, KiCad 6.x is supported
+- [**Xvfb**](https://www.x.org/releases/X11R7.6/doc/man/man1/Xvfb.1.xhtml) This is the X Virtual Frame Buffer, part of X, but usually available as a separated package (i.e. `xvfb`)
 - [**xdotool**](https://github.com/jordansissel/xdotool)
 - [**xsltproc**](http://xmlsoft.org/xslt/) (usually installed as a KiCad dependency). Only needed for BoMs.
 - [**import**](https://imagemagick.org/) from Image Magick. Also provided by Graphics Magick. Only needed for ERC with KiCad 6.
 - [**xclip**](https://github.com/astrand/xclip). Only needed by kicad2step_do when using KiCad 6.
+
+The following Python modules are also needed, they are installed by the Debian package and `pip`:
+
+- [**xvfbwrapper**](https://pypi.org/project/xvfbwrapper/)
+- [**psutil**](https://pypi.org/project/psutil/)
 
 If you want to debug problems you could also need:
 
@@ -73,14 +83,15 @@ If you want to debug problems you could also need:
 ### Installation using pip
 
 ```shell
-pip install kiauto
+pip3 install kiauto
 ```
 
+Note: the `pip` command is usually installed as `pip3` on modern systems. To avoid confusing it with Python 2 version.
 You can also install the current git code running:
 
 
 ```shell
-pip install .
+pip3 install .
 ```
 
 In the root of the repo.
