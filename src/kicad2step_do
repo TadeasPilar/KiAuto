@@ -101,7 +101,7 @@ if __name__ == '__main__':
     parser.add_argument('--wait_start', help='Timeout to pcbnew start ['+str(WAIT_START)+']', type=int, default=WAIT_START)
     parser.add_argument('--time_out_scale', help='Timeout multiplier, affects most timeouts',
                         type=float, default=TIME_OUT_MULT)
-    parser.add_argument('--output-dir', '-d', nargs=1, help='output directory')
+    parser.add_argument('--output-dir', '-d', nargs=1, help="output directory, only used when the name doesn't contain a path")
     args = parser.parse_args()
     log.set_level(logger, args.verbose)
     if args.output_dir is None:
@@ -113,6 +113,7 @@ if __name__ == '__main__':
     # Create output dir, compute full name for output file and remove it
     output_dir = os.path.abspath(args.output_dir)
     cfg.video_dir = cfg.output_dir = output_dir
+    logger.debug('Output dir: '+output_dir)
     cfg.video_name = 'kicad2step_screencast.ogv'
     os.makedirs(output_dir, exist_ok=True)
 
@@ -120,7 +121,10 @@ if __name__ == '__main__':
 
     cmd = [cfg.kicad2step]
     if args.output_filename:
-        cmd.extend(['-o', args.output_filename[0]])
+        fname = args.output_filename[0]
+        if os.path.basename(fname) == fname:
+            fname = os.path.abspath(os.path.join(output_dir, fname))
+        cmd.extend(['-o', fname])
     if args.force:
         cmd.append('-f')
     if args.drill_origin:
