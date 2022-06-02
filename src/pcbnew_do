@@ -993,6 +993,8 @@ if __name__ == '__main__':
 
     # Force english + UTF-8
     os.environ['LANG'] = get_en_locale(logger)
+    # Force Mesa software rendering (otherwise, the 3D viewer may crash)
+    os.environ['LIBGL_ALWAYS_SOFTWARE'] = "1"
     # Make sure the input file exists and has an extension
     check_input_file(cfg, NO_PCB, WRONG_PCB_NAME)
     cfg.board = load_pcb(cfg.input_file)
