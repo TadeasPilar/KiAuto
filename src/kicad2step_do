@@ -54,9 +54,12 @@ def run_gui_version(cmd, cfg, flog_out, flog_err):
                     sleep(DELAY)
                 else:
                     logger.info(text)
-                    xdotool(['key', 'Tab', 'Return'])
-                    sleep(DELAY)
-                    res = proc.poll()
+                    for _ in range(int(timeout/DELAY)):
+                        xdotool(['key', 'Tab', 'Return'])
+                        sleep(DELAY)
+                        res = proc.poll()
+                        if res is not None:
+                           break
                     if res is None:
                         logger.error('Still running')
                         res = -1
