@@ -168,13 +168,14 @@ class TestContext(object):
         TestContext.pty_data += data
         return data
 
-    def run(self, cmd, ret_val=None, extra=None, use_a_tty=False, filename=None, ignore_ret=False):
+    def run(self, cmd, ret_val=None, extra=None, use_a_tty=False, filename=None, ignore_ret=False, no_dir=False):
         logging.debug('Running '+self.test_name)
         # Change the command to be local and add the board and output arguments
         cmd[0] = os.path.abspath(os.path.dirname(os.path.abspath(__file__))+'/../../src/'+cmd[0])
         cmd = [COVERAGE_SCRIPT, 'run', '-a']+cmd
         cmd.append(filename if filename else self.board_file)
-        cmd.append(self.output_dir)
+        if not no_dir:
+            cmd.append(self.output_dir)
         if extra is not None:
             cmd = cmd+extra
         logging.debug(usable_cmd(cmd))
