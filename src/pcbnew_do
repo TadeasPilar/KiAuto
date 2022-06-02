@@ -55,6 +55,7 @@ TITLE_ERROR = '^Error$'
 TITLE_WARNING = '^Warning$'
 # This is very Debian specific, you need to install `gdb` and the kicad-nightly-dbg package
 DEBUG_KICAD_NG = False
+DEBUG_KICAD = False
 
 
 def parse_drc(cfg):
@@ -995,6 +996,10 @@ if __name__ == '__main__':
     os.environ['LANG'] = get_en_locale(logger)
     # Force Mesa software rendering (otherwise, the 3D viewer may crash)
     os.environ['LIBGL_ALWAYS_SOFTWARE'] = "1"
+    if DEBUG_KICAD:
+        os.environ['MESA_DEBUG'] = "1"
+        os.environ['MESA_LOG_FILE'] = "/tmp/mesa.log"
+        os.environ['MESA_NO_ERROR'] = "1"
     # Make sure the input file exists and has an extension
     check_input_file(cfg, NO_PCB, WRONG_PCB_NAME)
     cfg.board = load_pcb(cfg.input_file)
@@ -1129,6 +1134,10 @@ if __name__ == '__main__':
                     os.environ['KICAD_PATH'] = '/usr/share/kicad-nightly'
                     cmd = ['gdb', '-batch', '-n', '-ex', 'set pagination off', '-ex', 'run', '-ex', 'bt',
                            '-ex', 'bt full', '-ex', 'thread apply all bt full', '--args', '/usr/lib/kicad-nightly/bin/pcbnew',
+                           cfg.input_file]
+                elif DEBUG_KICAD:
+                    cmd = ['gdb', '-batch', '-n', '-ex', 'set pagination off', '-ex', 'run', '-ex', 'bt', '-ex', 'set new-console on',
+                           '-ex', 'bt full', '-ex', 'thread apply all bt full', '--args', '/usr/bin/pcbnew',
                            cfg.input_file]
                 else:
                     cmd = [cfg.pcbnew, cfg.input_file]
