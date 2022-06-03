@@ -147,6 +147,12 @@ def check_kicad_config_dir(cfg):
         os.makedirs(cfg.kicad_conf_path, exist_ok=True)
 
 
+def remove_lib_table(fname):
+    if os.path.isfile(fname):
+        logger.debug('Removing '+fname)
+        os.remove(fname)
+
+
 def check_lib_table(fuser, fsys):
     if not os.path.isfile(fuser):
         logger.debug('Missing default sym-lib-table')
@@ -155,7 +161,10 @@ def check_lib_table(fuser, fsys):
                 shutil.copy2(f, fuser)
                 return
         logger.warning('Missing default system symbol table '+fsys[0] +
-                       ' KiCad will most probably fail')  # pragma: no cover
+                       ' creating an empty one')  # pragma: no cover
+        with open(fuser, 'wt') as f:
+            f.write('({} )\n'.format(os.path.basename(fuser).replace('-', '_')))
+        atexit.register(remove_lib_table, fuser)
 
 
 def restore_one_config(name, fname, fbkp):

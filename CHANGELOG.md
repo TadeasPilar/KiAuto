@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Force Mesa GL to use sofware render. Helps on some setups. (#22)
+- Support missing fp/sym-lib-table template. (#24)
 
 ## [1.6.12] - 2022-06-02
 ### Fixed
