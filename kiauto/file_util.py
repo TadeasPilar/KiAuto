@@ -229,6 +229,7 @@ def create_kicad_config(cfg):
     with open(cfg.conf_kicad, "wt") as text_file:
         if cfg.conf_kicad_json:
             kiconf = {"environment": {"show_warning_dialog": False}}
+            kiconf['graphics'] = {"cairo_antialiasing_mode": 0, "opengl_antialiasing_mode": 0}
             kiconf['system'] = {"editor_name": "/bin/cat"}
             # Copy the environment vars if available
             if cfg.conf_kicad_bkp:

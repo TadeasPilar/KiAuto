@@ -759,7 +759,8 @@ def create_pcbnew_config(cfg):
                 conf["render"] = {"show_footprints_insert": not cfg.no_smd,
                                   "show_footprints_normal": not cfg.no_tht,
                                   "show_footprints_virtual": not cfg.no_virtual,
-                                  "show_axis": False}
+                                  "show_axis": False,
+                                  "opengl_AA_mode": 0}
                 json_text = json.dumps(conf)
                 with open(cfg.conf_3dview, "wt") as viewer_file:
                     viewer_file.write(json_text)
