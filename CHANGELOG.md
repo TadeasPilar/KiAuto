@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - An option to use the ray trace end detection with regular (OpenGL) renders
   (See #23)
 
+### Changed
+- Increased some timeouts, specially when waiting for the file creation (See #23)
+
 ### Fixed
 - Problems when using PCBs in a read-only dir
 

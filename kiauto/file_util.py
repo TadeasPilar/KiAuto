@@ -38,30 +38,38 @@ def wait_for_file_created_by_process(pid, file):
     timeout = 15*time_out_scale
     process = psutil.Process(pid)
     DELAY = 0.2
-    logger.debug('Waiting for file %s (pid %d) (timeout: %f)', file, pid, timeout)
-    for i in range(int(timeout/DELAY)):
-        kicad_died = False
-        try:
-            open_files = process.open_files()
-        except psutil.AccessDenied:
-            # Is our child, this access denied is because we are listing
-            # files for other process that took the pid of the old KiCad.
-            kicad_died = True
-        if kicad_died:
-            raise RuntimeError('KiCad unexpectedly died')
-        logger.debug(open_files)
-        if os.path.isfile(file):
-            file_open = False
-            for open_file in open_files:
-                if open_file.path == file:
-                    file_open = True
-            if file_open:
-                logger.debug('Waiting for process to close file')
+    for j in range(2):
+        # 2 passes: 1) for the file to be created 2) extend the timeout if created
+        logger.debug('Waiting for file %s (pid %d) (timeout: %f)', file, pid, timeout)
+        for i in range(int(timeout/DELAY)):
+            kicad_died = False
+            try:
+                open_files = process.open_files()
+            except psutil.AccessDenied:
+                # Is our child, this access denied is because we are listing
+                # files for other process that took the pid of the old KiCad.
+                kicad_died = True
+            if kicad_died:
+                raise RuntimeError('KiCad unexpectedly died')
+            logger.debug(open_files)
+            if os.path.isfile(file):
+                file_open = False
+                for open_file in open_files:
+                    if open_file.path == file:
+                        file_open = True
+                if file_open:
+                    logger.debug('Waiting for process to close file')
+                else:
+                    return
             else:
-                return
+                logger.debug('Waiting for process to create file')
+            time.sleep(DELAY)
+        # If the file was created assume KiCad is working
+        if os.path.isfile(file):
+            timeout = 45*time_out_scale
         else:
-            logger.debug('Waiting for process to create file')
-        time.sleep(DELAY)
+            # The file wasn't even created, don't wait much
+            timeout = 1*time_out_scale
 
     raise RuntimeError('Timed out waiting for creation of %s' % file)
 
