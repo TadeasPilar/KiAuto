@@ -569,11 +569,12 @@ def capture_3d_view(cfg):
             logger.debug('Zoom')
             wait_3d_ready(cfg)
 
-    if cfg.ray_tracing:
-        # Ray tracing
-        if not cfg.ki5:
-            # Not persistent in KiCad 6!!!
-            xdotool(['key', 'alt+p', 'Return'], id)
+    if cfg.ray_tracing and not cfg.ki5:
+        # Ray tracing is not persistent in KiCad 6!!!
+        xdotool(['key', 'alt+p', 'Return'], id)
+        logger.debug('Ray tracing')
+
+    if cfg.ray_tracing or cfg.use_rt_wait:
         wait_ray_tracer(cfg)
 
     # Save the image as PNG
@@ -918,13 +919,13 @@ if __name__ == '__main__':
     drc_parser.add_argument('kicad_pcb_file', help='KiCad PCB file')
     drc_parser.add_argument('output_dir', help='Output directory')
 
-    # short commands: bcdBoOrSTvVwxXyYzZ
+    # short commands: bcdBoOrSTuvVwxXyYzZ
     v3d_parser = subparsers.add_parser('3d_view', help='Capture the 3D view')
     v3d_parser.add_argument('--bg_color_1', '-b', nargs=1, help='Background color 1', default=['#66667F'])
     v3d_parser.add_argument('--bg_color_2', '-B', nargs=1, help='Background color 2', default=['#CCCCE5'])
     v3d_parser.add_argument('--board_color', nargs=1, help='Board body color', default=['#332B16E6'])
     v3d_parser.add_argument('--copper_color', '-c', nargs=1, help='Copper color', default=['#B29C00'])
-    v3d_parser.add_argument('--detect_rt', '-d', help='Try to detect when the rey tracing render finshes,'
+    v3d_parser.add_argument('--detect_rt', '-d', help='Try to detect when the ray tracing render finshes,'
                             ' wait_rt value is the time-out (experimental)', action='store_true')
     v3d_parser.add_argument('--move_x', '-x', nargs=1, help='Steps to move in the X axis (positive is to the right)',
                             default=[0], type=int)
@@ -947,6 +948,7 @@ if __name__ == '__main__':
     v3d_parser.add_argument('--sm_color', nargs=1, help='Solder mask color (KiCad 6 supports color1,color2 for top/bottom)',
                             default=['#143324D4'])
     v3d_parser.add_argument('--sp_color', nargs=1, help='Solder paste color', default=['#808080'])
+    v3d_parser.add_argument('--use_rt_wait', '-u', help='Use the ray tracing end detection even on normal renders', action='store_true')
     v3d_parser.add_argument('--view', '-v', nargs=1, help='Axis view, uppercase is reversed (i.e. Z is bottom)',
                             default=['z'], choices=['x', 'y', 'z', 'X', 'Y', 'Z'],)
     v3d_parser.add_argument('--wait_rt', '-w', nargs=1, help='Seconds to wait for the ray tracing render [5]', default=[5],
@@ -1078,6 +1080,7 @@ if __name__ == '__main__':
         cfg.sm_color = parse_color(args.sm_color)
         cfg.sp_color = parse_color(args.sp_color)
         cfg.orthographic = args.orthographic
+        cfg.use_rt_wait = args.use_rt_wait
     else:
         cfg.no_tht = False
         cfg.no_smd = False
