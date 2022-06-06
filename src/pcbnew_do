@@ -597,6 +597,8 @@ def capture_3d_view(cfg):
     # Wait for the image to be created
     logger.info('Wait for the image file creation')
     wait_point(cfg)
+    # Wait before confirming the file name
+    sleep(0.1*cfg.time_out_scale)
     xdotool(['key', 'Return'])
     wait_for_file_created_by_process(cfg.pcbnew_pid, cfg.output_file)
 
