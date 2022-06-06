@@ -666,7 +666,11 @@ def memorize_pcb(cfg):
                  format(cfg.input_file, cfg.pcb_size, asctime(localtime(cfg.pcb_date))))
     if not cfg.ki5:
         # KiCad 6 no longer creates back-up, we do it
-        shutil.copy2(cfg.input_file, cfg.input_file+'-bak')
+        try:
+            shutil.copy2(cfg.input_file, cfg.input_file+'-bak')
+        except PermissionError:
+            logger.warning("Unable to create a back-up for the PCB (read-only?)")
+            return
     atexit.register(restore_pcb, cfg)
 
 
