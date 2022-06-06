@@ -478,7 +478,7 @@ def wait_ray_tracer(cfg):
                     counter = counter + 1
             else:
                 counter = counter - 1
-            logger.debug('CPU {} %, waiting ...'.format(cpu_usage))
+            logger.debug('CPU {} %, ({}) waiting ...'.format(cpu_usage, counter))
     else:
         sleep(cfg.wait_rt)
 
@@ -519,6 +519,7 @@ def apply_steps(steps, key, neg_key, id, cfg):
             k = neg_key
         for _ in range(steps):
             xdotool(['key', k], id)
+            logger.debug('Step '+key)
             wait_3d_ready(cfg)
 
 
@@ -565,6 +566,7 @@ def capture_3d_view(cfg):
             # See discussion on #13 issue at GitHub
             sleep(0.05)
             xdotool(['click', zoom_b], id)
+            logger.debug('Zoom')
             wait_3d_ready(cfg)
 
     if cfg.ray_tracing:
