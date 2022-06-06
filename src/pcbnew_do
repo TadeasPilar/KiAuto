@@ -1004,7 +1004,7 @@ if __name__ == '__main__':
     # Make sure the input file exists and has an extension
     check_input_file(cfg, NO_PCB, WRONG_PCB_NAME)
     cfg.board = load_pcb(cfg.input_file)
-    if not cfg.save:
+    if not cfg.save and args.command in ['run_drc', 'export']:
         memorize_pcb(cfg)
 
     if args.command == 'export':
@@ -1171,7 +1171,7 @@ if __name__ == '__main__':
     # Exit clean-up
     #
     # The following code is here only to make coverage tool properly meassure atexit code.
-    if not cfg.save:
+    if not cfg.save and args.command in ['run_drc', 'export']:
         atexit.unregister(restore_pcb)
         restore_pcb(cfg)
     atexit.unregister(restore_config)
