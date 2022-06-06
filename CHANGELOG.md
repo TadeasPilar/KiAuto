@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [1.6.13] - 2022-06-06
 ### Added
 - Force Mesa GL to use sofware render. Helps on some setups. (#22)
 - Support missing fp/sym-lib-table template. (#24)

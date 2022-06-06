@@ -1,3 +1,13 @@
+kiauto (1.6.13-1) stable; urgency=medium
+
+  * Added Support missing fp/sym-lib-table template.
+  * Added better pcbnew window available mechanism.
+  * Added an option to use the ray trace end detection with regular (OpenGL) renders
+  * Fixed problems when using PCBs in a read-only dir
+  * Adjusted time-outs
+
+ -- Salvador E. Tropea <salvador@inti.gob.ar>  Mon, 06 Jun 2022 11:13:16 -0300
+
 kiauto (1.6.12-1) stable; urgency=medium
 
   * Fixed in kicad2step: very small wait on exit and output dir option ignored
