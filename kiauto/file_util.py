@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2020-2021 Salvador E. Tropea
-# Copyright (c) 2020-2021 Instituto Nacional de Tecnologïa Industrial
+# Copyright (c) 2020-2022 Salvador E. Tropea
+# Copyright (c) 2020-2022 Instituto Nacional de Tecnologïa Industrial
 # Copyright (c) 2019 Jesse Vincent (@obra)
 # Copyright (c) 2018-2019 Seppe Stas (@seppestas) (Productize SPRL)
 # Based on ideas by: Scott Bezek (@scottbez1)
@@ -22,7 +22,7 @@ from subprocess import DEVNULL
 import psutil
 import json
 
-from kiauto.misc import (WRONG_ARGUMENTS, KICAD_VERSION_5_99, Config)
+from kiauto.misc import (WRONG_ARGUMENTS, KICAD_VERSION_5_99, Config, READ_ONLY_PROBLEM)
 from kiauto import log
 logger = log.get_logger(__name__)
 time_out_scale = 1.0
@@ -258,6 +258,14 @@ def create_kicad_config(cfg):
                         text_file.write(key.upper()+'='+vars[key]+'\n')
 
 
+def restore_autosave(name):
+    """ Restores de auto save information """
+    old_name = name[:-11]
+    if os.path.isfile(name):
+        logger.debug('Restoring {} -> {}'.format(name, old_name))
+        os.rename(name, old_name)
+
+
 def check_input_file(cfg, no_file, no_ext):
     # Check the schematic/PCB is there
     if not os.path.isfile(cfg.input_file):
@@ -271,6 +279,21 @@ def check_input_file(cfg, no_file, no_ext):
         exit(no_ext)
     if cfg.kicad_version >= KICAD_VERSION_5_99 and ext == '.sch':
         logger.warning('Using old format files is not recommended. Convert them first.')
+    # KiCad 6 uses #auto_saved_files# to store autosave info
+    fauto = os.path.join(os.path.dirname(cfg.input_file), '#auto_saved_files#')
+    if os.path.isfile(fauto):
+        logger.warning('Partially saved project detected, please double check it')
+        # Rename it so KiCad doesn't ask about restoring autosaved files
+        fauto_new = fauto+'.moved_away'
+        logger.debug('Renaming {} -> {}'.format(fauto, fauto_new))
+        try:
+            os.rename(fauto, fauto_new)
+        except PermissionError:
+            # Read-only directory or file system, give up
+            logger.error('Unable to rename `{}` please remove it manually'.format(fauto))
+            exit(READ_ONLY_PROBLEM)
+        # Restore it at exit
+        atexit.register(restore_autosave, fauto_new)
 
 
 def memorize_project(cfg):
