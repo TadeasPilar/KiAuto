@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Support for partially saved projects (KiCad 6). (See INTI-CMNB/kicad_auto#11)
+- The typing delay of pasted text is now scaled by the time-out scale.
 
 ## [1.6.13] - 2022-06-06
 ### Added

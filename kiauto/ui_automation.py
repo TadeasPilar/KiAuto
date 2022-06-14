@@ -248,7 +248,10 @@ def xdotool(command, id=None):
 
 def text_replace(string):
     """ Used to replace a text in an input text widget. """
-    xdotool(['key', 'ctrl+a', 'type', string])
+    delay = str(int(12*time_out_scale))
+    cmd = ['key', '--delay', delay, 'ctrl+a', 'type', '--delay', delay, string]
+    logger.debug('text_replace with: {}'.format(cmd))
+    xdotool(cmd)
 
 
 def clipboard_retrieve():
