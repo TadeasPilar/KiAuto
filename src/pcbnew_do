@@ -137,6 +137,10 @@ def parse_drc_ki6(lines):
 
     unconnected = [v for v in violations if v['type'] == "unconnected_items"]
     drc_errors = [v for v in violations if v['severity'] == "error" and not v in unconnected]
+    drc_warns = [v for v in violations if v['severity'] == "warning" and not v in unconnected]
+
+    cfg.errs = ['({}) {}'.format(e['type'], e['message']) for e in drc_errors]
+    cfg.wrns = ['({}) {}'.format(w['type'], w['message']) for w in drc_warns]
 
     return len(drc_errors), len(unconnected)
 
