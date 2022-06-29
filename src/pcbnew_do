@@ -57,18 +57,12 @@ TITLE_WARNING = '^Warning$'
 DEBUG_KICAD_NG = False
 DEBUG_KICAD = False
 
-
-def parse_drc(cfg):
-    with open(cfg.output_file, 'rt') as f:
-        lines = f.read().splitlines()
+def parse_drc_ki5(lines):
     drc_errors = None
     unconnected_pads = None
     in_errs = False
     in_wrns = False
-    if not cfg.ki5:
-        err_regex = re.compile(r'^\[(\S+)\]: (.*)')
-    else:
-        err_regex = re.compile(r'^ErrType\((\d+)\): (.*)')
+    err_regex = re.compile(r'^ErrType\((\d+)\): (.*)')
     for line in lines:
         m = re.search(r'^\*\* Found ([0-9]+) DRC (errors|violations) \*\*$', line)
         if m:
@@ -107,6 +101,52 @@ def parse_drc(cfg):
 
     return int(drc_errors), int(unconnected_pads)
 
+
+def parse_drc_ki6(lines):
+
+    # A violation entry looks something like:
+    #
+    # [courtyards_overlap]: Courtyards overlap
+    #     Local override; Severity: error (excluded)
+    #     @(107.9891 mm, 114.3683 mm): Footprint SW104
+    #     @(100.0000 mm, 119.3700 mm): Footprint J201
+    #
+    # Some violations may have fewer lines (eg missing courtyard will have only one location)
+    # We are only interested in the first two lines of each violation.
+    #
+    # Unconnected traces are presented similarly:
+    # 
+    # [unconnected_items]: Missing connection between items
+    #     Local override; Severity: error
+    #     @(99.4000 mm, 112.8900 mm): Pad 1 [Net-(J201-PadB5)] of R201 on B.Cu
+    #     @(99.4000 mm, 114.5700 mm): Pad B5 [Net-(J201-PadB5)] of J201 on B.Cu
+
+    violations = []
+
+    err_regex = re.compile(r'^\[(\S+)\]: (.*)')
+    sev_regex = re.compile(r'^    (.*); Severity: (.*)')
+
+    for pair in zip(lines[:-1], lines[1:]):
+        m = err_regex.search(pair[0])
+        s = sev_regex.search(pair[1])
+        if m and s: # Found a violation in this pair of lines
+            violation = {'type': m.group(1), 'message': m.group(2), 'rule': s.group(1), 'severity': s.group(2)}
+            assert violation['severity'] in ["error (excluded)", "error", "warning (excluded)", "warning"]
+            violations.append(violation)
+            print(f"Found violation of type {violation['type']}, severity {violation['severity']}")
+
+    unconnected = [v for v in violations if v['type'] == "unconnected_items"]
+    drc_errors = [v for v in violations if v['severity'] == "error" and not v in unconnected]
+
+    return len(drc_errors), len(unconnected)
+
+def parse_drc(cfg):
+    with open(cfg.output_file, 'rt') as f:
+        lines = f.read().splitlines()
+    if(cfg.ki5):
+        return parse_drc_ki5(lines)
+    else:
+        return parse_drc_ki6(lines)
 
 def dismiss_already_running():
     # The "Confirmation" modal pops up if pcbnew is already running
