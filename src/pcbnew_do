@@ -126,21 +126,27 @@ def parse_drc_ki6(lines):
     err_regex = re.compile(r'^\[(\S+)\]: (.*)')
     sev_regex = re.compile(r'^    (.*); Severity: (.*)')
 
-    for pair in zip(lines[:-1], lines[1:]):
-        m = err_regex.search(pair[0])
-        s = sev_regex.search(pair[1])
+    for offset in range(len(lines) - 2):
+        m = err_regex.search(lines[offset])
+        s = sev_regex.search(lines[offset + 1])
         if m and s: # Found a violation in this pair of lines
             violation = {'type': m.group(1), 'message': m.group(2), 'rule': s.group(1), 'severity': s.group(2)}
             assert violation['severity'] in ["error (excluded)", "error", "warning (excluded)", "warning"]
             violations.append(violation)
-            print(f"Found violation of type {violation['type']}, severity {violation['severity']}")
+            context = []
+            while(offset + len(context) < len(lines)):
+                l = lines[offset + 2 + len(context)]
+                if not l.startswith("    "):
+                    break;
+                context.append(l[:-1]) # Strip out ending \n
+            violation['context'] = "\n".join(context)
 
     unconnected = [v for v in violations if v['type'] == "unconnected_items"]
     drc_errors = [v for v in violations if v['severity'] == "error" and not v in unconnected]
     drc_warns = [v for v in violations if v['severity'] == "warning" and not v in unconnected]
 
-    cfg.errs = ['({}) {}; Severity: error'.format(e['type'], e['message']) for e in drc_errors]
-    cfg.wrns = ['({}) {}; Severity: warning'.format(w['type'], w['message']) for w in drc_warns]
+    cfg.errs = ['({}) {}; Severity: error\n{}'.format(e['type'], e['message'], e['context']) for e in drc_errors]
+    cfg.wrns = ['({}) {}; Severity: warning\n{}'.format(w['type'], w['message'], w['context']) for w in drc_warns]
 
     return len(drc_errors), len(unconnected)
 
