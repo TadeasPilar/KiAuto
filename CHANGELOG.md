@@ -5,9 +5,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [1.6.14] - 2022-07-01
 ### Added
 - Support for partially saved projects (KiCad 6). (See INTI-CMNB/kicad_auto#11)
 - The typing delay of pasted text is now scaled by the time-out scale.
+- Delay before trying to paste the filename in the 3D render.
+- Discard DRC errors explicitly excluded by KiCad 6 configuration. (#25)
+
+### Fixed
+- Problems to parse some KiCad 6 DRC messages. (#25)
+
 
 ## [1.6.13] - 2022-06-06
 ### Added
