@@ -581,6 +581,8 @@ def capture_3d_view(cfg):
     logger.info('Saving the image')
     for retry in range(10):
         xdotool(['key', 'alt+f', 'Return'], id)
+        if (cfg.ray_tracing or cfg.use_rt_wait) and cfg.detect_rt:
+            wait_ray_tracer(cfg)
         found = True
         try:
             wait_for_window('File save dialog', '3D Image File Name', 3)
