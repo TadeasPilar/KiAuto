@@ -45,6 +45,7 @@ jobs:
         COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
         COVERALLS_FLAG_NAME: ${{ matrix.ki_release }}
         COVERALLS_PARALLEL: true
+        GITHUB_TOKEN: ¤{{ secrets.GITHUB_TOKEN }}
       run: coveralls
 
   coveralls:
