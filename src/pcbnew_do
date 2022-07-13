@@ -142,12 +142,12 @@ def parse_drc_ki6(lines):
     # Classify the violations
     unconnected = [v for v in violations if v['type'] == "unconnected_items"]
     drc_errors = [v for v in violations if v['severity'] == "error" and not v in unconnected]
-    drc_warns = [v for v in violations if v['severity'] == "warning" and not v in unconnected]
+    drc_warns = [v for v in violations if v['severity'] == "warning" or v['type'] == "unconnected_items"]
     # Add the errors and warnings
     cfg.errs = ['({}) {}; Severity: error\n{}'.format(e['type'], e['message'], e['context']) for e in drc_errors]
     cfg.wrns = ['({}) {}; Severity: warning\n{}'.format(w['type'], w['message'], w['context']) for w in drc_warns]
 
-    return len(drc_errors), len(unconnected)
+    return len(drc_errors), len(drc_warns)
 
 
 def parse_drc(cfg):
@@ -887,9 +887,9 @@ def load_pcb(fname):
 def process_drc_out(cfg):
     error_level = 0
     drc_errors, unconnected_pads = parse_drc(cfg)
-    logger.debug('Found {} DRC errors and {} unconnected pads'.format(drc_errors, unconnected_pads))
+    logger.debug('Found {} DRC errors and {} unconnected pads/warnings'.format(drc_errors, unconnected_pads))
     # Apply filters
-    skip_err, skip_unc = apply_filters(cfg, 'DRC error/s', 'unconnected pad/s')
+    skip_err, skip_unc = apply_filters(cfg, 'DRC error/s', 'unconnected pad/s or warnings')
     drc_errors = drc_errors-skip_err
     unconnected_pads = unconnected_pads-skip_unc
     if drc_errors == 0 and unconnected_pads == 0:
