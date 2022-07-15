@@ -29,6 +29,8 @@ import gettext
 import json
 import shutil
 import psutil
+from threading  import Thread
+from queue import Queue, Empty
 
 # Look for the 'kiauto' module from where the script is running
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -39,6 +41,7 @@ from kiauto import log
 log.set_domain(os.path.splitext(os.path.basename(__file__))[0])
 logger = log.init()
 
+import kiauto.misc
 from kiauto.file_util import (load_filters, wait_for_file_created_by_process, apply_filters, list_errors, list_warnings,
                               check_kicad_config_dir, restore_config, backup_config, check_lib_table, create_user_hotkeys,
                               check_input_file, memorize_project, restore_project, get_log_files, create_kicad_config)
@@ -191,15 +194,15 @@ def dismiss_error():
     xdotool(['key', 'Return'])
 
 
-def wait_pcbnew(time=10, others=None, popen_obj=None):
-    return wait_for_window('Main pcbnew window', cfg.pn_window_title, time, others=others, popen_obj=popen_obj)
+def wait_pcbnew(time=10, others=None):
+    return wait_for_window('Main pcbnew window', cfg.pn_window_title, time, others=others, popen_obj=cfg.popen_obj)
 
 
 def wait_pcbew_start(cfg):
     failed_focuse = False
     other = None
     try:
-        id = wait_pcbnew(args.wait_start, [TITLE_CONFIRMATION, TITLE_WARNING, TITLE_ERROR], cfg.popen_obj)
+        id = wait_pcbnew(args.wait_start, [TITLE_CONFIRMATION, TITLE_WARNING, TITLE_ERROR])
     except RuntimeError:  # pragma: no cover
         logger.debug('Time-out waiting for pcbnew, will retry')
         failed_focuse = True
@@ -510,7 +513,20 @@ def ipc_netlist(cfg):
     wait_for_file_created_by_process(cfg.pcbnew_pid, cfg.output_file)
 
 
+def wait_swap(times=1):
+    """ Wait an OpenGL draw (buffer swap) """
+    if not cfg.interposer_lib:
+        return
+    wait_queue('GLX:Swap', starts=True, times=times)
+
+
 def wait_ray_tracer(cfg):
+    if cfg.interposer_lib:
+        # Wait until we see the 100% rendered and the time is reported
+        wait_queue('PANGO:Rendering: 100 %')
+        wait_queue('PANGO:Rendering time', starts=True)
+        wait_swap()
+        return
     # I can't find a mechanism to determine if the render finished.
     # I think this is a bug in KiCad, you can save unfinished images!!!!
     logger.info('Waiting for the final render')
@@ -534,8 +550,11 @@ def wait_ray_tracer(cfg):
         sleep(cfg.wait_rt)
 
 
-def wait_3d_ready(cfg):
+def wait_3d_ready(cfg, swaps=2):
     if not cfg.ki5:
+        if cfg.interposer_lib:
+            wait_swap(swaps)
+            return
         # On my system this huge delay is needed only when using docker.
         # I don't know why and also don't know why the KiCad 5 methode fails.
         sleep(1*cfg.time_out_scale)
@@ -574,6 +593,33 @@ def apply_steps(steps, key, neg_key, id, cfg):
             wait_3d_ready(cfg)
 
 
+def check_text_replace(name):
+    """ Wait until we get the file name """
+    wait_queue('PANGO:'+name)
+
+
+def open_save_image(cfg, id):
+    keys = ['key', 'alt+f', 'Return']
+    if cfg.interposer_lib:
+        xdotool(keys, id)
+        wait_swap(2)
+        return
+    for retry in range(10):
+        xdotool(keys, id)
+        if (cfg.ray_tracing or cfg.use_rt_wait) and cfg.detect_rt:
+            wait_ray_tracer(cfg)
+        found = True
+        try:
+            wait_for_window('File save dialog', '3D Image File Name', 3)
+        except RuntimeError:  # pragma: no cover
+            found = False
+        if found:
+            break
+    if not found:
+        logger.error('Failed to open the file save dialog')
+        exit(PCBNEW_ERROR)
+
+
 def capture_3d_view(cfg):
     if not cfg.ki5 and cfg.kicad_version < 6000002:
         logger.error('Upgrade KiCad, this version has a bug')
@@ -581,9 +627,22 @@ def capture_3d_view(cfg):
     # Open the 3D viewer
     open_keys = ['key', 'alt+3']
     dialog_name = '3D Viewer'
+    inter = cfg.interposer_lib
+    if inter:
+        # Start with an empty queue
+        logger.debug('Queue flushed')
+        flush_queue()
     id = open_dialog_with_retry('Open 3D Viewer', open_keys, '3D viewer dialog', dialog_name, cfg)[0]
     wait_point(cfg)
-    wait_3d_ready(cfg)
+    if inter:
+        logger.debug('Waiting for swap')
+        wait_swap()
+        logger.debug('3D Viewer is drawing')
+        wait_queue(['PANGO:Loading…', 'PANGO:Loading...'])
+        logger.debug('3D Viewer is loading the 3D models')
+        wait_queue('PANGO:Reload time', starts=True)
+        logger.debug('Load finished')
+    wait_3d_ready(cfg, 3)
 
     # Switch to orthographic (KiCad 6 has persistence)
     if cfg.orthographic and cfg.ki5:
@@ -618,49 +677,53 @@ def capture_3d_view(cfg):
             sleep(0.05)
             xdotool(['click', zoom_b], id)
             logger.debug('Zoom')
-            wait_3d_ready(cfg)
+            # An extra swap is done because we used the mouse (mouse "moved")
+            wait_3d_ready(cfg, 3)
 
     if cfg.ray_tracing and not cfg.ki5:
         # Ray tracing is not persistent in KiCad 6!!!
         xdotool(['key', 'alt+p', 'Return'], id)
         logger.debug('Ray tracing')
+        wait_queue('PANGO:Raytracing')
 
     if cfg.ray_tracing or cfg.use_rt_wait:
         wait_ray_tracer(cfg)
 
     # Save the image as PNG
     logger.info('Saving the image')
-    for retry in range(10):
-        xdotool(['key', 'alt+f', 'Return'], id)
-        if (cfg.ray_tracing or cfg.use_rt_wait) and cfg.detect_rt:
-            wait_ray_tracer(cfg)
-        found = True
-        try:
-            wait_for_window('File save dialog', '3D Image File Name', 3)
-        except RuntimeError:  # pragma: no cover
-            found = False
-        if found:
-            break
-    if not found:
-        logger.error('Failed to open the file save dialog')
-        exit(PCBNEW_ERROR)
+    open_save_image(cfg, id)
+
     # Paste the name
     logger.info('Pasting output file')
     wait_point(cfg)
     text_replace(cfg.output_file)
+    if inter:
+        # Look for the echo
+        check_text_replace(cfg.output_file)
+
     # Wait for the image to be created
     logger.info('Wait for the image file creation')
     wait_point(cfg)
-    # Wait before confirming the file name
-    sleep(0.1*cfg.time_out_scale)
-    xdotool(['key', 'Return'])
-    wait_for_file_created_by_process(cfg.pcbnew_pid, cfg.output_file)
+    if inter:
+        xdotool(['key', 'Return'])
+        wait_swap(3)
+    else:
+        # Wait before confirming the file name
+        sleep(0.1*cfg.time_out_scale)
+        xdotool(['key', 'Return'])
+        wait_for_file_created_by_process(cfg.pcbnew_pid, cfg.output_file)
 
     # Close the 3D viewer
     logger.info('Closing the 3D viewer')
     wait_point(cfg)
     xdotool(['key', 'ctrl+q' if cfg.ki5 else 'ctrl+w'])
-    wait_pcbnew()
+
+    if inter:
+        # Wait one more draw and close pcbnew
+        wait_swap()
+        exit_pcbnew(cfg)
+    else:
+        wait_pcbnew()
 
 
 def load_layers(pcb):
@@ -810,6 +873,7 @@ def create_pcbnew_config(cfg):
                                      "solderpaste": to_rgb(cfg.sp_color),
                                      "use_board_stackup_colors": False}
                 json_text = json.dumps(conf)
+                os.makedirs(os.path.dirname(cfg.conf_colors), exist_ok=True)
                 with open(cfg.conf_colors, "wt") as color_file:
                     color_file.write(json_text)
                 logger.debug("Colors:")
@@ -817,7 +881,7 @@ def create_pcbnew_config(cfg):
                 # 3D Viewer window
                 conf = {}
                 conf["window"] = {"pos_x": 0, "pos_y": 0, "size_x": cfg.rec_width, "size_y": cfg.rec_height}
-                conf["camera"] = {"projection_mode": int(not cfg.orthographic)}
+                conf["camera"] = {"projection_mode": int(not cfg.orthographic), "animation_enabled": False}
                 conf["render"] = {"show_footprints_insert": not cfg.no_smd,
                                   "show_footprints_normal": not cfg.no_tht,
                                   "show_footprints_virtual": not cfg.no_virtual,
@@ -925,6 +989,62 @@ def parse_color(color):
         c2 = parse_one_color(res[1])
         return c1+c2
     return parse_one_color(color[0])
+
+
+def enqueue_output(out, queue):
+    """ Read 1 line from the interposer and add it to the queue.
+        Notes:
+        * The queue is thread safe.
+        * When we get an empty string we finish, this is the case for KiCad finished """
+    for line in iter(out.readline, ''):
+        queue.put(line)
+    out.close()
+
+
+def flush_queue():
+    """ Thread safe queue flush """
+    with cfg.kicad_q.mutex:
+        cfg.kicad_q.queue.clear()
+
+
+def wait_queue(strs, starts=False, times=1):
+    """ Wait for a string in the queue """
+    if not cfg.interposer_lib:
+        return
+    if isinstance(strs, str):
+        strs = [strs]
+    end_time = time.time() + 300*cfg.time_out_scale
+    if cfg.verbose > 1:
+        logger.debug('Waiting for `{}` starts={} times={}'.format(strs, starts, times))
+    while time.time() < end_time:
+        try:
+            line = cfg.kicad_q.get(timeout=.1)
+            if cfg.verbose > 1:
+                logger.debug('>>Interposer<<:'+line[:-1])
+        except Empty:
+            line = ''
+        for s in strs:
+            if starts:
+                if line.startswith(s):
+                    times -= 1
+                    break
+            elif line[:-1] == s:
+                times -= 1
+                break
+        if times == 0:
+            return
+    raise RuntimeError('Timed out waiting for `%s`'.format(str))
+
+
+# https://stackoverflow.com/questions/375427/a-non-blocking-read-on-a-subprocess-pipe-in-python
+def start_queue(cfg):
+    """ Create a communication queue in a separated thread.
+        It will collect all messages from the interposer. """
+    logger.debug('Starting queue thread')
+    cfg.kicad_q = Queue()
+    cfg.kicad_t = Thread(target=enqueue_output, args=(cfg.popen_obj.stdout, cfg.kicad_q))
+    cfg.kicad_t.daemon = True   # thread dies with the program
+    cfg.kicad_t.start()
 
 
 if __name__ == '__main__':
@@ -1041,6 +1161,7 @@ if __name__ == '__main__':
         exit(WRONG_ARGUMENTS)
 
     cfg = Config(logger, args.kicad_pcb_file, args)
+    cfg.verbose = args.verbose
     set_time_out_scale(cfg.time_out_scale)
     set_time_out_scale_f(cfg.time_out_scale)
     # Empty values by default, we'll fill them for export
@@ -1179,6 +1300,13 @@ if __name__ == '__main__':
     cfg.output_file = output_file
     # Name for the video
     cfg.video_name = 'pcbnew_'+args.command+'_screencast.ogv'
+    # Name of the interposer library
+    interposer_lib = os.path.abspath(os.path.join(os.path.dirname(kiauto.misc.__file__), 'interposer', 'libinterposer.so'))
+    if not os.path.isfile(interposer_lib):
+        interposer_lib = None
+    else:
+        os.environ['LD_PRELOAD'] = interposer_lib
+        logger.debug('** Using interposer: '+interposer_lib)
     #
     # Do all the work
     #
@@ -1190,6 +1318,10 @@ if __name__ == '__main__':
         do_retry = False
     else:
         flog_out, flog_err = get_log_files(output_dir, 'pcbnew')
+        real_flog_out = None
+        if interposer_lib and args.command == '3d_view':
+            real_flog_out = flog_out
+            flog_out = subprocess.PIPE
         for retry in range(3):
             do_retry = False
             with recorded_xvfb(cfg, retry):
@@ -1206,10 +1338,14 @@ if __name__ == '__main__':
                            cfg.input_file]
                 else:
                     cmd = [cfg.pcbnew, cfg.input_file]
-                with PopenContext(cmd, stderr=flog_err, close_fds=True,
+                # bufsize=1 is line buffered
+                with PopenContext(cmd, stderr=flog_err, close_fds=True, bufsize=1, text=True,
                                   stdout=flog_out, start_new_session=True) as pcbnew_proc:
                     cfg.pcbnew_pid = pcbnew_proc.pid
                     cfg.popen_obj = pcbnew_proc
+                    cfg.interposer_lib = interposer_lib
+                    if interposer_lib and args.command == '3d_view':
+                        start_queue(cfg)
                     id_pcbnew = wait_pcbew_start(cfg)
                     if pcbnew_proc.poll() is not None:
                         do_retry = True
@@ -1242,4 +1378,5 @@ if __name__ == '__main__':
     restore_config(cfg)
     atexit.unregister(restore_project)
     restore_project(cfg)
+    logger.error(error_level)
     exit(error_level)
