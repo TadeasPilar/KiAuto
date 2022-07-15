@@ -1302,7 +1302,7 @@ if __name__ == '__main__':
     cfg.video_name = 'pcbnew_'+args.command+'_screencast.ogv'
     # Name of the interposer library
     interposer_lib = os.path.abspath(os.path.join(os.path.dirname(kiauto.misc.__file__), 'interposer', 'libinterposer.so'))
-    if not os.path.isfile(interposer_lib):
+    if cfg.ki5 or not os.path.isfile(interposer_lib):
         interposer_lib = None
     else:
         os.environ['LD_PRELOAD'] = interposer_lib
