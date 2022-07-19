@@ -262,15 +262,28 @@ def wait_pcbew_start_by_msg(cfg):
     logger.debug('Waiting pcbnew to open the main window')
     wait_queue(pre+'PCB Editor', starts=True, timeout=15)
     logger.debug('Waiting pcbnew to load the PCB')
+    # Inform the elapsed time for slow loads
+    pres = [pre, 'PANGO:0:']
+    elapsed_r = re.compile(r'PANGO:(\d:\d\d:\d\d)')
+    with_elapsed = False
     while True:
         # Wait for any window
-        res = wait_queue(pre, starts=True, timeout=args.wait_start)
+        res = wait_queue(pres, starts=True, timeout=args.wait_start)
+        logger.debug('wait_pcbew_start_by_msg got '+res)
+        match = elapsed_r.match(res)
         if res.endswith(' — PCB Editor'):
+            if with_elapsed:
+                sys.stderr.write("\n")
+                sys.stderr.flush()
             # KiCad finished the load process
             return
         elif res.endswith('Loading PCB'):
             # This is the dialog for the loading progress, wait
             pass
+        elif match is not None:
+            sys.stderr.write('\rElapsed time: '+match.group(1))
+            sys.stderr.flush()
+            with_elapsed = True
         elif res.endswith(':Error'):
             dismiss_error()
         elif res.endswith(':File Open Error'):
@@ -646,6 +659,7 @@ def apply_steps(steps, key, neg_key, id, cfg):
             steps = -steps
             k = neg_key
         for _ in range(steps):
+            logger.info('Step ({})'.format(k))
             xdotool(['key', k], id)
             logger.debug('Step '+key)
             wait_3d_ready(cfg)
@@ -660,7 +674,10 @@ def open_save_image(cfg, id):
     keys = ['key', 'alt+f', 'Return']
     if cfg.interposer_lib:
         xdotool(keys, id)
-        wait_swap(2)
+        # Here we can get an optional swap, but before the menu
+        wait_queue('PANGO:Export Current View as PNG', starts=True)
+        # A final swap
+        wait_swap()
         return
     for retry in range(10):
         xdotool(keys, id)
@@ -705,9 +722,24 @@ def capture_3d_view(cfg):
         wait_swap()
         logger.debug('3D Viewer is drawing')
         wait_queue(['PANGO:Loading…', 'PANGO:Loading...'])
-        logger.debug('3D Viewer is loading the 3D models')
-        wait_queue('PANGO:Reload time', starts=True)
-        logger.debug('Load finished')
+        logger.info('Loading 3D models')
+        reload_time_msg = 'PANGO:Reload time'
+        loading_msg = 'PANGO:Loading '
+        loading_msg_l = len(loading_msg)
+        with_loading = False
+        padding = 80*' '
+        while True:
+            res = wait_queue([reload_time_msg, 'PANGO:Loading '], starts=True)
+            if res.startswith(reload_time_msg):
+                if with_loading:
+                    sys.stderr.write("\n")
+                    sys.stderr.flush()
+                break
+            with_loading = True
+            msg = '\rLoading '+res[loading_msg_l:]+padding
+            sys.stderr.write(msg[:80])
+            sys.stderr.flush()
+        logger.info('Finished loading 3D models')
 
     wait_3d_ready(cfg, 2)
     if inter:
@@ -747,6 +779,7 @@ def capture_3d_view(cfg):
             # Wait some time before sending commands
             # See discussion on #13 issue at GitHub
             sleep(0.05)
+            logger.info('Zoom')
             xdotool(['click', zoom_b], id)
             logger.debug('Zoom')
             # An extra swap is done because we used the mouse (mouse "moved")
@@ -1011,6 +1044,7 @@ def create_pcbnew_config(cfg):
 
 def load_pcb(fname):
     import pcbnew
+    logger.info('Loading '+fname)
     try:
         board = pcbnew.LoadBoard(fname)
     except OSError as e:
@@ -1084,7 +1118,7 @@ def flush_queue():
 last_msg_time = 0
 
 
-def wait_queue(strs='', starts=False, times=1, timeout=300):
+def wait_queue(strs='', starts=False, times=1, timeout=60):
     """ Wait for a string in the queue """
     if not cfg.interposer_lib:
         return None
@@ -1107,8 +1141,11 @@ def wait_queue(strs='', starts=False, times=1, timeout=300):
         except Empty:
             line = ''
         for s in strs:
-            if s == '' and line != '':
-                return line[:-1]
+            if s == '':
+                # Waiting for anything ... but not for nothing
+                if line != '':
+                    return line[:-1]
+                continue
             if starts:
                 if line.startswith(s):
                     times -= 1
@@ -1118,7 +1155,7 @@ def wait_queue(strs='', starts=False, times=1, timeout=300):
                 break
         if times == 0:
             return line[:-1]
-    raise RuntimeError('Timed out waiting for `%s`'.format(str))
+    raise RuntimeError('Timed out waiting for `{}`'.format(str))
 
 
 # https://stackoverflow.com/questions/375427/a-non-blocking-read-on-a-subprocess-pipe-in-python
@@ -1423,6 +1460,7 @@ if __name__ == '__main__':
                            cfg.input_file]
                 else:
                     cmd = [cfg.pcbnew, cfg.input_file]
+                logger.info('Starting pcbnew ...')
                 # bufsize=1 is line buffered
                 with PopenContext(cmd, stderr=flog_err, close_fds=True, bufsize=1, text=True,
                                   stdout=flog_out, start_new_session=True) as pcbnew_proc:
