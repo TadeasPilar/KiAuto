@@ -15,6 +15,7 @@
 #include <string.h>
 #include <pango/pango.h>
 #include <GL/glx.h>
+#include <gtk/gtk.h>
 
 void glXSwapBuffers(Display *dpy, GLXDrawable drawable)
 {
@@ -66,3 +67,44 @@ void pango_layout_set_text(PangoLayout *layout, const char *text, int length)
  return next_func(layout, text, length);
 }
 
+
+GtkWidget *gtk_scrolled_window_new(GtkAdjustment *hadjustment, GtkAdjustment *vadjustment)
+{
+ static GtkWidget *(*next_func)(GtkAdjustment *, GtkAdjustment *)=NULL;
+ GtkWidget *res;
+
+ if (next_func==NULL)
+   { /* Initialization */
+    char *msg;
+    printf("* wrapping window creation\n");
+    next_func=dlsym(RTLD_NEXT,"gtk_scrolled_window_new");
+    if ((msg=dlerror())!=NULL)
+       printf("** dlopen failed : %s\n", msg);
+   }
+
+ res=next_func(hadjustment, vadjustment);
+ printf("GTK:Window_Creation\n");
+ fflush(stdout);
+
+ return res;
+}
+
+
+void gtk_window_set_title(GtkWindow *window, const gchar *title)
+{
+ static GtkWidget *(*next_func)(GtkWindow *window, const gchar *title)=NULL;
+ GtkWidget *res;
+
+ if (next_func==NULL)
+   { /* Initialization */
+    char *msg;
+    printf("* wrapping window title change\n");
+    next_func=dlsym(RTLD_NEXT,"gtk_window_set_title");
+    if ((msg=dlerror())!=NULL)
+       printf("** dlopen failed : %s\n", msg);
+   }
+
+ next_func(window, title);
+ printf("GTK:Window Title:%s\n", title);
+ fflush(stdout);
+}

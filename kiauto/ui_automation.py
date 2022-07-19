@@ -48,8 +48,9 @@ class PopenContext(Popen):
         # I keep them in case they are needed, but excluded from the coverage.
         # Also note that closing stdin needs extra handling, implemented in the parent class
         # but not here.
-        if self.stdout:
-            self.stdout.close()  # pragma: no cover
+        # This can generate a deadlock
+        # if self.stdout:
+        #     self.stdout.close()  # pragma: no cover
         if self.stderr:
             self.stderr.close()  # pragma: no cover
         if self.stdin:

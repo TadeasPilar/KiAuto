@@ -234,6 +234,52 @@ def wait_pcbew_start(cfg):
     return id[0]
 
 
+def dismiss_file_open_error(title):
+    # Look for the next messages to confirm this is the already open case
+    logger.info(title+' dialog found ...')
+    open_anyway_found = False
+    is_already_open_found = False
+    for msg in range(12):
+        res = wait_queue()
+        if res.endswith('Open Anyway'):
+            open_anyway_found = True
+        elif res.endswith('is already open.'):
+            is_already_open_found = True
+    if open_anyway_found and is_already_open_found:
+        logger.info('Skipping already open dialog ...')
+        wait_for_window(title, title, 1)
+        xdotool(['key', 'Left', 'Return'])
+        return
+    logger.error('KiCad dialog: '+title)
+    exit(PCBNEW_ERROR)
+
+
+def wait_pcbew_start_by_msg(cfg):
+    logger.info('Waiting for PCB new window ...')
+    pre = 'GTK:Window Title:'
+    # This is the title of the main window before loading the PCB
+    # 0.7 s on a 2nd gen i5
+    logger.debug('Waiting pcbnew to open the main window')
+    wait_queue(pre+'PCB Editor', starts=True, timeout=15)
+    logger.debug('Waiting pcbnew to load the PCB')
+    while True:
+        # Wait for any window
+        res = wait_queue(pre, starts=True, timeout=args.wait_start)
+        if res.endswith(' — PCB Editor'):
+            # KiCad finished the load process
+            return
+        elif res.endswith('Loading PCB'):
+            # This is the dialog for the loading progress, wait
+            pass
+        elif res.endswith(':Error'):
+            dismiss_error()
+        elif res.endswith(':File Open Error'):
+            dismiss_file_open_error('File Open Error')
+        else:
+            logger.error('KiCad dialog: '+res[len(pre):])
+            exit(PCBNEW_ERROR)
+
+
 def exit_pcbnew(cfg):
     # Wait until the dialog is closed, useful when more than one file are created
     id = wait_pcbnew(10)
@@ -523,7 +569,18 @@ def wait_swap(times=1):
 def wait_ray_tracer(cfg):
     if cfg.interposer_lib:
         # Wait until we see the 100% rendered and the time is reported
-        wait_queue('PANGO:Rendering: 100 %')
+        msg = 'PANGO:Rendering: '
+        msg_l = len(msg)
+        while True:
+            res = wait_queue(msg, starts=True)[msg_l:]
+            if cfg.verbose:
+                sys.stdout.write('\rRendering '+res)
+                sys.stdout.flush()
+            if res == '100 %':
+                if cfg.verbose:
+                    sys.stdout.write("\n")
+                    sys.stdout.flush()
+                break
         wait_queue('PANGO:Rendering time', starts=True)
         wait_swap()
         return
@@ -632,7 +689,15 @@ def capture_3d_view(cfg):
         # Start with an empty queue
         logger.debug('Queue flushed')
         flush_queue()
-    id = open_dialog_with_retry('Open 3D Viewer', open_keys, '3D viewer dialog', dialog_name, cfg)[0]
+        logger.debug('Waiting for '+dialog_name)
+        # Send the keys
+        xdotool(open_keys)
+        # Wait until the dilog name is set
+        wait_queue('GTK:Window Title:'+dialog_name, starts=True)
+        # Now we'll find the window
+        id = wait_for_window('3D viewer dialog', dialog_name, popen_obj=cfg.popen_obj)
+    else:
+        id = open_dialog_with_retry('Open 3D Viewer', open_keys, '3D viewer dialog', dialog_name, cfg)[0]
     wait_point(cfg)
     if inter:
         logger.debug('Waiting for swap')
@@ -642,7 +707,11 @@ def capture_3d_view(cfg):
         logger.debug('3D Viewer is loading the 3D models')
         wait_queue('PANGO:Reload time', starts=True)
         logger.debug('Load finished')
-    wait_3d_ready(cfg, 3)
+
+    wait_3d_ready(cfg, 2)
+    if inter:
+        # TODO: This isn't an error, is just to debug it
+        logger.error(wait_queue())
 
     # Switch to orthographic (KiCad 6 has persistence)
     if cfg.orthographic and cfg.ki5:
@@ -996,8 +1065,10 @@ def enqueue_output(out, queue):
         Notes:
         * The queue is thread safe.
         * When we get an empty string we finish, this is the case for KiCad finished """
+    tm_start = time.time()
     for line in iter(out.readline, ''):
-        queue.put(line)
+        queue.put((time.time()-tm_start, line))
+        # logger.error((time.time()-tm_start, line))
     out.close()
 
 
@@ -1007,23 +1078,34 @@ def flush_queue():
         cfg.kicad_q.queue.clear()
 
 
-def wait_queue(strs, starts=False, times=1):
+last_msg_time = 0
+
+
+def wait_queue(strs='', starts=False, times=1, timeout=300):
     """ Wait for a string in the queue """
     if not cfg.interposer_lib:
-        return
+        return None
     if isinstance(strs, str):
         strs = [strs]
-    end_time = time.time() + 300*cfg.time_out_scale
+    end_time = time.time()+timeout*cfg.time_out_scale
     if cfg.verbose > 1:
         logger.debug('Waiting for `{}` starts={} times={}'.format(strs, starts, times))
+    global last_msg_time
     while time.time() < end_time:
         try:
-            line = cfg.kicad_q.get(timeout=.1)
+            tm, line = cfg.kicad_q.get(timeout=.1)
             if cfg.verbose > 1:
-                logger.debug('>>Interposer<<:'+line[:-1])
+                tm *= 1000
+                diff = 0
+                if last_msg_time:
+                    diff = tm-last_msg_time
+                last_msg_time = tm
+                logger.debug('>>Interposer<<:{} (@{} D {})'.format(line[:-1], round(tm, 3), round(diff, 3)))
         except Empty:
             line = ''
         for s in strs:
+            if s == '':
+                return line[:-1]
             if starts:
                 if line.startswith(s):
                     times -= 1
@@ -1032,7 +1114,7 @@ def wait_queue(strs, starts=False, times=1):
                 times -= 1
                 break
         if times == 0:
-            return
+            return line[:-1]
     raise RuntimeError('Timed out waiting for `%s`'.format(str))
 
 
@@ -1346,7 +1428,9 @@ if __name__ == '__main__':
                     cfg.interposer_lib = interposer_lib
                     if interposer_lib and args.command == '3d_view':
                         start_queue(cfg)
-                    id_pcbnew = wait_pcbew_start(cfg)
+                        id_pcbnew = wait_pcbew_start_by_msg(cfg)
+                    else:
+                        id_pcbnew = wait_pcbew_start(cfg)
                     if pcbnew_proc.poll() is not None:
                         do_retry = True
                     else:
@@ -1378,5 +1462,4 @@ if __name__ == '__main__':
     restore_config(cfg)
     atexit.unregister(restore_project)
     restore_project(cfg)
-    logger.error(error_level)
     exit(error_level)
