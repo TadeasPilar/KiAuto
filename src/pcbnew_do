@@ -711,7 +711,9 @@ def capture_3d_view(cfg):
     wait_3d_ready(cfg, 2)
     if inter:
         # TODO: This isn't an error, is just to debug it
-        logger.error(wait_queue())
+        res = wait_queue()
+        if res != 'GLX:Swap 8':
+            logger.error(res)
 
     # Switch to orthographic (KiCad 6 has persistence)
     if cfg.orthographic and cfg.ki5:
@@ -1104,7 +1106,7 @@ def wait_queue(strs='', starts=False, times=1, timeout=300):
         except Empty:
             line = ''
         for s in strs:
-            if s == '':
+            if s == '' and line != '':
                 return line[:-1]
             if starts:
                 if line.startswith(s):
