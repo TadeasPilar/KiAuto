@@ -572,14 +572,15 @@ def wait_ray_tracer(cfg):
         msg = 'PANGO:Rendering: '
         msg_l = len(msg)
         while True:
+            # Show the progress
             res = wait_queue(msg, starts=True)[msg_l:]
             if cfg.verbose:
-                sys.stdout.write('\rRendering '+res)
-                sys.stdout.flush()
+                sys.stderr.write('\rRendering '+res)
+                sys.stderr.flush()
             if res == '100 %':
                 if cfg.verbose:
-                    sys.stdout.write("\n")
-                    sys.stdout.flush()
+                    sys.stderr.write("\n")
+                    sys.stderr.flush()
                 break
         wait_queue('PANGO:Rendering time', starts=True)
         wait_swap()
