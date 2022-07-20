@@ -353,11 +353,17 @@ def restore_project(cfg):
         _restore_project(cfg.prl_name, cfg.prl_stat, cfg.prl_content)
 
 
-def get_log_files(out_dir, app_name):
+def get_log_files(out_dir, app_name, also_interposer=False):
     if log.get_level() > 2:
         flog_out = open(os.path.join(out_dir, app_name+'_out.log'), 'wt')
         flog_err = open(os.path.join(out_dir, app_name+'_err.log'), 'wt')
         logger.debug('Redirecting '+app_name+' output to '+app_name+'*.log')
     else:
         flog_out = flog_err = DEVNULL
-    return (flog_out, flog_err)
+    if also_interposer:
+        fname = os.path.join(out_dir, app_name+'_interposer.log')
+        flog_int = open(fname, 'wt')
+        logger.debug('Saving '+app_name+' interposer dialog to '+fname)
+    else:
+        flog_int = DEVNULL
+    return (flog_out, flog_err, flog_int)

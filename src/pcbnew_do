@@ -39,7 +39,7 @@ sys.path.insert(0, os.path.dirname(script_dir))
 # Log functionality first
 from kiauto import log
 log.set_domain(os.path.splitext(os.path.basename(__file__))[0])
-logger = log.init()
+logger = None
 
 import kiauto.misc
 from kiauto.file_util import (load_filters, wait_for_file_created_by_process, apply_filters, list_errors, list_warnings,
@@ -273,16 +273,14 @@ def wait_pcbew_start_by_msg(cfg):
         match = elapsed_r.match(res)
         if res.endswith(' — PCB Editor'):
             if with_elapsed:
-                sys.stderr.write("\n")
-                sys.stderr.flush()
+                log.flush_info()
             # KiCad finished the load process
             return
         elif res.endswith('Loading PCB'):
             # This is the dialog for the loading progress, wait
             pass
         elif match is not None:
-            sys.stderr.write('\rElapsed time: '+match.group(1))
-            sys.stderr.flush()
+            log.info_progress('Elapsed time: '+match.group(1))
             with_elapsed = True
         elif res.endswith(':Error'):
             dismiss_error()
@@ -588,12 +586,10 @@ def wait_ray_tracer(cfg):
             # Show the progress
             res = wait_queue(msg, starts=True)[msg_l:]
             if cfg.verbose:
-                sys.stderr.write('\rRendering '+res)
-                sys.stderr.flush()
+                log.info_progress('Rendering '+res)
             if res == '100 %':
                 if cfg.verbose:
-                    sys.stderr.write("\n")
-                    sys.stderr.flush()
+                    log.flush_info()
                 break
         wait_queue('PANGO:Rendering time', starts=True)
         wait_swap()
@@ -732,13 +728,11 @@ def capture_3d_view(cfg):
             res = wait_queue([reload_time_msg, 'PANGO:Loading '], starts=True)
             if res.startswith(reload_time_msg):
                 if with_loading:
-                    sys.stderr.write("\n")
-                    sys.stderr.flush()
+                    log.flush_info()
                 break
             with_loading = True
-            msg = '\rLoading '+res[loading_msg_l:]+padding
-            sys.stderr.write(msg[:80])
-            sys.stderr.flush()
+            msg = 'Loading '+res[loading_msg_l:]+padding
+            log.info_progress(msg[:80])
         logger.info('Finished loading 3D models')
 
     wait_3d_ready(cfg, 2)
@@ -1116,17 +1110,27 @@ def flush_queue():
 
 
 last_msg_time = 0
+interposer_dialog = []
 
 
-def wait_queue(strs='', starts=False, times=1, timeout=60):
+def dump_interposer_dialog(f):
+    logger.debug('Storing interposer dialog ({})'.format(f.name))
+    for l in interposer_dialog:
+        f.write(l+'\n')
+    f.close()
+
+
+def wait_queue(strs='', starts=False, times=1, timeout=300):
     """ Wait for a string in the queue """
     if not cfg.interposer_lib:
         return None
     if isinstance(strs, str):
         strs = [strs]
     end_time = time.time()+timeout*cfg.time_out_scale
+    msg = 'Waiting for `{}` starts={} times={}'.format(strs, starts, times)
+    interposer_dialog.append('KiAuto:'+msg)
     if cfg.verbose > 1:
-        logger.debug('Waiting for `{}` starts={} times={}'.format(strs, starts, times))
+        logger.debug(msg)
     global last_msg_time
     while time.time() < end_time:
         try:
@@ -1138,8 +1142,10 @@ def wait_queue(strs='', starts=False, times=1, timeout=60):
                     diff = tm-last_msg_time
                 last_msg_time = tm
                 logger.debug('>>Interposer<<:{} (@{} D {})'.format(line[:-1], round(tm, 3), round(diff, 3)))
+            interposer_dialog.append(line[:-1])
         except Empty:
             line = ''
+        old_times = times
         for s in strs:
             if s == '':
                 # Waiting for anything ... but not for nothing
@@ -1154,7 +1160,10 @@ def wait_queue(strs='', starts=False, times=1, timeout=60):
                 times -= 1
                 break
         if times == 0:
+            interposer_dialog.append('KiAuto:match')
             return line[:-1]
+        if old_times != times:
+            interposer_dialog.append('KiAuto:times '+str(times))
     raise RuntimeError('Timed out waiting for `{}`'.format(str))
 
 
@@ -1173,10 +1182,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='KiCad PCB automation')
     subparsers = parser.add_subparsers(help='Command:', dest='command')
 
-    # short commands: rmsvVw
+    # short commands: rmsSvVw
     parser.add_argument('--record', '-r', help='Record the UI automation', action='store_true')
     parser.add_argument('--rec_width', help='Record width ['+str(REC_W)+']', type=int, default=REC_W)
     parser.add_argument('--rec_height', help='Record height ['+str(REC_H)+']', type=int, default=REC_H)
+    parser.add_argument('--separate_info', '-S', help='Send info debug level to stdout', action='store_true')
     parser.add_argument('--start_x11vnc', '-s', help='Start x11vnc (debug)', action='store_true')
     parser.add_argument('--use_wm', '-m', help='Use a window manager (fluxbox)', action='store_true')
     parser.add_argument('--verbose', '-v', action='count', default=0)
@@ -1274,6 +1284,7 @@ if __name__ == '__main__':
     ipc_netlist_parser.add_argument('--output_name', '-o', nargs=1, help='Name of the output file', default=['pcb.d356'])
 
     args = parser.parse_args()
+    logger = log.init(args.separate_info)
     # Set the specified verbosity
     log.set_level(logger, args.verbose)
 
@@ -1439,11 +1450,10 @@ if __name__ == '__main__':
         error_level = process_drc_out(cfg)
         do_retry = False
     else:
-        flog_out, flog_err = get_log_files(output_dir, 'pcbnew')
-        real_flog_out = None
+        flog_out, flog_err, flog_int = get_log_files(output_dir, 'pcbnew', also_interposer=True)
         if interposer_lib and args.command == '3d_view':
-            real_flog_out = flog_out
             flog_out = subprocess.PIPE
+            atexit.register(dump_interposer_dialog, flog_int)
         for retry in range(3):
             do_retry = False
             with recorded_xvfb(cfg, retry):
@@ -1503,4 +1513,9 @@ if __name__ == '__main__':
     restore_config(cfg)
     atexit.unregister(restore_project)
     restore_project(cfg)
+    # We dump the dialog only on abnormal situations
+    logger.debug('Removing interposer dialog ({})'.format(flog_int.name))
+    atexit.unregister(dump_interposer_dialog)
+    flog_int.close()
+    os.remove(flog_int.name)
     exit(error_level)

@@ -35,7 +35,7 @@ sys.path.insert(0, os.path.dirname(script_dir))
 # Log functionality first
 from kiauto import log
 log.set_domain(os.path.splitext(os.path.basename(__file__))[0])
-logger = log.init()
+logger = None
 
 from kiauto.file_util import (load_filters, wait_for_file_created_by_process, apply_filters, list_errors, list_warnings,
                               check_kicad_config_dir, restore_config, backup_config, check_lib_table, create_user_hotkeys,
@@ -485,10 +485,11 @@ if __name__ == '__main__':
     parser.add_argument('schematic', help='KiCad schematic file')
     parser.add_argument('output_dir', help='Output directory')
 
-    # mrsvVw
+    # mrsSvVw
     parser.add_argument('--record', '-r', help='Record the UI automation', action='store_true')
     parser.add_argument('--rec_width', help='Record width ['+str(REC_W)+']', type=int, default=REC_W)
     parser.add_argument('--rec_height', help='Record height ['+str(REC_H)+']', type=int, default=REC_H)
+    parser.add_argument('--separate_info', '-S', help='Send info debug level to stdout', action='store_true')
     parser.add_argument('--start_x11vnc', '-s', help='Start x11vnc (debug)', action='store_true')
     parser.add_argument('--use_wm', '-m', help='Use a window manager (fluxbox)', action='store_true')
     parser.add_argument('--verbose', '-v', action='count', default=0)
@@ -516,6 +517,7 @@ if __name__ == '__main__':
     bom_xml_parser = subparsers.add_parser('bom_xml', help='Create the BoM in XML format')
 
     args = parser.parse_args()
+    logger = log.init(args.separate_info)
     # Set the verbosity
     log.set_level(logger, args.verbose)
 
@@ -567,7 +569,7 @@ if __name__ == '__main__':
     #
     cfg.output_file_no_ext = os.path.join(output_dir, os.path.splitext(os.path.basename(cfg.input_file))[0])
     error_level = 0
-    flog_out, flog_err = get_log_files(output_dir, 'eeschema')
+    flog_out, flog_err, _ = get_log_files(output_dir, 'eeschema')
     for retry in range(3):
         do_retry = False
         problem = False

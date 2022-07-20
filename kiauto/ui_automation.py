@@ -100,7 +100,7 @@ def wait_xserver(out_dir, num_try):
         logger.warning('No setxkbmap nor xset available, unable to verify if X is running')
     for i in range(int(timeout/DELAY)):
         logger.debug('Checking using '+str(cmd))
-        flog_out, flog_err = get_log_files(out_dir, cmd[0])
+        flog_out, flog_err, _ = get_log_files(out_dir, cmd[0])
         ret = call(cmd, stdout=flog_out, stderr=flog_err, close_fds=True)
         if not ret:
             time_wait = 0.5*(num_try+1)*(num_try+1)*time_out_scale
@@ -162,7 +162,7 @@ def start_record(do_record, video_dir, video_name):
         cmd = ['recordmydesktop', '--overwrite', '--no-sound', '--no-frame', '--on-the-fly-encoding',
                '-o', video_filename]
         logger.debug('Recording session with: '+str(cmd))
-        flog_out, flog_err = get_log_files(video_dir, cmd[0])
+        flog_out, flog_err, _ = get_log_files(video_dir, cmd[0])
         with PopenContext(cmd, stdout=flog_out, stderr=flog_err, close_fds=True, start_new_session=True) as screencast_proc:
             try:
                 yield

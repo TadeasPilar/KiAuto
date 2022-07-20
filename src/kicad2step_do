@@ -142,7 +142,7 @@ if __name__ == '__main__':
     cmd.append(args.pcb_filename)
     logger.debug("Command: "+str(cmd))
 
-    flog_out, flog_err = get_log_files(output_dir, 'kicad2step')
+    flog_out, flog_err, _ = get_log_files(output_dir, 'kicad2step')
 
     if cfg.kicad_version_major == 5:
         res = run_cli_version(cmd, cfg)
