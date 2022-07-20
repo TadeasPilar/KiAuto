@@ -1467,7 +1467,7 @@ if __name__ == '__main__':
         do_retry = False
         use_interposer = enable_interposer = False
     else:
-        flog_out, flog_err, flog_int = get_log_files(output_dir, 'pcbnew', also_interposer=True)
+        flog_out, flog_err, flog_int = get_log_files(output_dir, 'pcbnew', also_interposer=enable_interposer)
         if enable_interposer:
             flog_out = subprocess.PIPE
             atexit.register(dump_interposer_dialog, flog_int)
