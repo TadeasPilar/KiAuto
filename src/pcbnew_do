@@ -698,7 +698,7 @@ def capture_3d_view(cfg):
     # Open the 3D viewer
     open_keys = ['key', 'alt+3']
     dialog_name = '3D Viewer'
-    inter = cfg.interposer_lib
+    inter = use_interposer
     if inter:
         # Start with an empty queue
         logger.debug('Queue flushed')
@@ -1115,6 +1115,19 @@ interposer_dialog = []
 
 def dump_interposer_dialog(f):
     logger.debug('Storing interposer dialog ({})'.format(f.name))
+    if enable_interposer and not use_interposer:
+        try:
+            global last_msg_time
+            while True:
+                tm, line = cfg.kicad_q.get(timeout=.1)
+                tm *= 1000
+                diff = 0
+                if last_msg_time:
+                    diff = tm-last_msg_time
+                last_msg_time = tm
+                interposer_dialog.append('>>Interposer<<:{} (@{} D {})'.format(line[:-1], round(tm, 3), round(diff, 3)))
+        except Empty:
+            pass
     for l in interposer_dialog:
         f.write(l+'\n')
     f.close()
@@ -1182,7 +1195,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='KiCad PCB automation')
     subparsers = parser.add_subparsers(help='Command:', dest='command')
 
-    # short commands: rmsSvVw
+    # short commands: irmsSvVw
+    parser.add_argument('--interposer_sniff', '-i', help="Log interposer info, but don't use it", action='store_true')
     parser.add_argument('--record', '-r', help='Record the UI automation', action='store_true')
     parser.add_argument('--rec_width', help='Record width ['+str(REC_W)+']', type=int, default=REC_W)
     parser.add_argument('--rec_height', help='Record height ['+str(REC_H)+']', type=int, default=REC_H)
@@ -1435,11 +1449,13 @@ if __name__ == '__main__':
     cfg.video_name = 'pcbnew_'+args.command+'_screencast.ogv'
     # Name of the interposer library
     interposer_lib = os.path.abspath(os.path.join(os.path.dirname(kiauto.misc.__file__), 'interposer', 'libinterposer.so'))
-    if cfg.ki5 or not os.path.isfile(interposer_lib):
+    if (cfg.ki5 and not args.interposer_sniff) or not os.path.isfile(interposer_lib):
         interposer_lib = None
     else:
         os.environ['LD_PRELOAD'] = interposer_lib
         logger.debug('** Using interposer: '+interposer_lib)
+    use_interposer = interposer_lib and args.command == '3d_view'
+    enable_interposer = (interposer_lib and args.interposer_sniff) or use_interposer
     #
     # Do all the work
     #
@@ -1451,7 +1467,7 @@ if __name__ == '__main__':
         do_retry = False
     else:
         flog_out, flog_err, flog_int = get_log_files(output_dir, 'pcbnew', also_interposer=True)
-        if interposer_lib and args.command == '3d_view':
+        if enable_interposer:
             flog_out = subprocess.PIPE
             atexit.register(dump_interposer_dialog, flog_int)
         for retry in range(3):
@@ -1477,11 +1493,9 @@ if __name__ == '__main__':
                     cfg.pcbnew_pid = pcbnew_proc.pid
                     cfg.popen_obj = pcbnew_proc
                     cfg.interposer_lib = interposer_lib
-                    if interposer_lib and args.command == '3d_view':
+                    if enable_interposer:
                         start_queue(cfg)
-                        id_pcbnew = wait_pcbew_start_by_msg(cfg)
-                    else:
-                        id_pcbnew = wait_pcbew_start(cfg)
+                    id_pcbnew = wait_pcbew_start_by_msg(cfg) if use_interposer else wait_pcbew_start(cfg)
                     if pcbnew_proc.poll() is not None:
                         do_retry = True
                     else:
@@ -1514,8 +1528,9 @@ if __name__ == '__main__':
     atexit.unregister(restore_project)
     restore_project(cfg)
     # We dump the dialog only on abnormal situations
-    logger.debug('Removing interposer dialog ({})'.format(flog_int.name))
-    atexit.unregister(dump_interposer_dialog)
-    flog_int.close()
-    os.remove(flog_int.name)
+    if use_interposer:
+        logger.debug('Removing interposer dialog ({})'.format(flog_int.name))
+        atexit.unregister(dump_interposer_dialog)
+        flog_int.close()
+        os.remove(flog_int.name)
     exit(error_level)
