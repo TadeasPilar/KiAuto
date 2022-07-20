@@ -917,7 +917,8 @@ def to_rgb(color, bottom=False):
 def create_pcbnew_config(cfg):
     # Mark which layers are requested
     used_layers = set()
-    layer_cnt = cfg.board.GetCopperLayerCount()
+    if cfg.layers:
+        layer_cnt = cfg.board.GetCopperLayerCount()
     for layer in cfg.layers:
         # Support for kiplot inner layers
         if layer.startswith("Inner"):
@@ -1334,9 +1335,12 @@ if __name__ == '__main__':
         os.environ['MESA_NO_ERROR'] = "1"
     # Make sure the input file exists and has an extension
     check_input_file(cfg, NO_PCB, WRONG_PCB_NAME)
-    cfg.board = load_pcb(cfg.input_file)
-    if not cfg.save and args.command in ['run_drc', 'export']:
-        memorize_pcb(cfg)
+    if args.command in ['run_drc', 'export']:
+        cfg.board = load_pcb(cfg.input_file)
+        if not cfg.save:
+            memorize_pcb(cfg)
+    else:
+        cfg.board = None
 
     if args.command == 'export':
         # Read the layer names from the PCB
