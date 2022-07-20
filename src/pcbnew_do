@@ -702,7 +702,7 @@ def capture_3d_view(cfg):
     if inter:
         # Start with an empty queue
         logger.debug('Queue flushed')
-        flush_queue()
+        # flush_queue()
         logger.debug('Waiting for '+dialog_name)
         # Send the keys
         xdotool(open_keys)
@@ -1104,10 +1104,10 @@ def enqueue_output(out, queue):
     out.close()
 
 
-def flush_queue():
-    """ Thread safe queue flush """
-    with cfg.kicad_q.mutex:
-        cfg.kicad_q.queue.clear()
+# def flush_queue():
+#     """ Thread safe queue flush """
+#     with cfg.kicad_q.mutex:
+#         cfg.kicad_q.queue.clear()
 
 
 last_msg_time = 0
