@@ -450,13 +450,13 @@ def wait_window_change(window_id, x, y, w, h, time_out):
     shutil.rmtree(img_tmp_dir)
 
 
-def open_dialog_with_retry(msg, keys, desc, w_name, cfg):
+def open_dialog_with_retry(msg, keys, desc, w_name, cfg, id_dest=None):
     logger.info(msg)
     wait_point(cfg)
     if cfg.kicad_version >= KICAD_VERSION_5_99:
         # KiCad 6 has a very slow start-up
         time.sleep(1)
-    xdotool(keys)
+    xdotool(keys, id=id_dest)
     retry = False
     try:
         id = wait_for_window(desc, w_name, popen_obj=cfg.popen_obj)
@@ -469,7 +469,7 @@ def open_dialog_with_retry(msg, keys, desc, w_name, cfg):
     if retry:
         logger.info('"{}" did not open, retrying'.format(desc))
         # wait_eeschema_start(cfg)
-        xdotool(keys)
+        xdotool(keys, id=id_dest)
         try:
             id = wait_for_window(desc, w_name, popen_obj=cfg.popen_obj)
         except CalledProcessError as e:
