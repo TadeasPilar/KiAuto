@@ -59,6 +59,7 @@ TITLE_WARNING = '^Warning$'
 # This is very Debian specific, you need to install `gdb` and the kicad-nightly-dbg package
 DEBUG_KICAD_NG = False
 DEBUG_KICAD = False
+IGNORED_DIALOG_MSGS = {'The quick brown fox jumps over the lazy dog.', '0123456789'}
 
 
 def parse_drc_ki5(lines):
@@ -234,23 +235,42 @@ def wait_pcbew_start(cfg):
     return id[0]
 
 
+def collect_dialog_messages():
+    logger.debug('Gathering potential dialog content')
+    msgs = set()
+    for msg in range(12):
+        res = wait_queue()
+        if res.startswith('PANGO:'):
+            res = res[6:]
+            if res not in IGNORED_DIALOG_MSGS:
+                msgs.add(res)
+    logger.debug('Messages: '+str(msgs))
+    return msgs
+
+
 def dismiss_file_open_error(title):
     # Look for the next messages to confirm this is the already open case
     logger.info(title+' dialog found ...')
-    open_anyway_found = False
-    is_already_open_found = False
-    for msg in range(12):
-        res = wait_queue()
-        if res.endswith('Open Anyway'):
-            open_anyway_found = True
-        elif res.endswith('is already open.'):
-            is_already_open_found = True
-    if open_anyway_found and is_already_open_found:
+    msgs = collect_dialog_messages()
+    if 'Open Anyway' in msgs and "PCB '"+os.path.basename(cfg.input_file)+"' is already open." in msgs:
         logger.info('Skipping already open dialog ...')
+        logger.debug('Skipping already open dialog ...')
         wait_for_window(title, title, 1)
         xdotool(['key', 'Left', 'Return'])
         return
     logger.error('KiCad dialog: '+title)
+    logger.error('Potential dialog messages: '+str(msgs))
+    exit(PCBNEW_ERROR)
+
+
+def dismiss_error_by_msg(title):
+    logger.info(title+' dialog found ...')
+    msgs = collect_dialog_messages()
+    if "Error loading PCB '"+cfg.input_file+"'." in msgs:
+        logger.error('Error loading PCB file. Corrupted?')
+        exit(CORRUPTED_PCB)
+    logger.error('KiCad dialog: '+title)
+    logger.error('Potential dialog messages: '+str(msgs))
     exit(PCBNEW_ERROR)
 
 
@@ -271,11 +291,17 @@ def wait_pcbew_start_by_msg(cfg):
         res = wait_queue(pres, starts=True, timeout=args.wait_start)
         logger.debug('wait_pcbew_start_by_msg got '+res)
         match = elapsed_r.match(res)
+        if not match and with_elapsed:
+            log.flush_info()
         if res.endswith(' — PCB Editor'):
-            if with_elapsed:
-                log.flush_info()
             # KiCad finished the load process
-            return
+            if res[len(pre)] == '*':
+                # This is an old format file that will be saved in the new format
+                logger.warning('Old file format detected, please convert it to KiCad 6 if experimenting problems')
+                # The following message doesn't help
+                # wait_queue('PANGO:This file was created', starts=True, timeout=10, times=2)
+                # Problem: When KiCad 6 detects a KiCad 5 file changes the window title before loading, not after
+            return  # wait_pcbnew()[0] Using the window id doesn't help
         elif res.endswith('Loading PCB'):
             # This is the dialog for the loading progress, wait
             pass
@@ -283,7 +309,7 @@ def wait_pcbew_start_by_msg(cfg):
             log.info_progress('Elapsed time: '+match.group(1))
             with_elapsed = True
         elif res.endswith(':Error'):
-            dismiss_error()
+            dismiss_error_by_msg('Error')
         elif res.endswith(':File Open Error'):
             dismiss_file_open_error('File Open Error')
         else:
@@ -699,18 +725,22 @@ def capture_3d_view(cfg):
     open_keys = ['key', 'alt+3']
     dialog_name = '3D Viewer'
     inter = use_interposer
+    open_with_retry = True
     if inter:
         # Start with an empty queue
-        logger.debug('Queue flushed')
+        # logger.debug('Queue flushed')
         # flush_queue()
         logger.debug('Waiting for '+dialog_name)
         # Send the keys
         xdotool(open_keys)
         # Wait until the dilog name is set
-        wait_queue('GTK:Window Title:'+dialog_name, starts=True)
-        # Now we'll find the window
-        id = wait_for_window('3D viewer dialog', dialog_name, popen_obj=cfg.popen_obj)
-    else:
+        res = wait_queue('GTK:Window Title:'+dialog_name, starts=True, timeout=1, do_to=False)
+        if res is not None:
+            # Now we'll find the window
+            id = wait_for_window('3D viewer dialog', dialog_name, popen_obj=cfg.popen_obj)
+            open_with_retry = False
+            # Note that when loading old format files the title is changed earlier and we don't know if the load is finished
+    if open_with_retry:
         id = open_dialog_with_retry('Open 3D Viewer', open_keys, '3D viewer dialog', dialog_name, cfg)[0]
     wait_point(cfg)
     if inter:
@@ -1134,7 +1164,7 @@ def dump_interposer_dialog(f):
     f.close()
 
 
-def wait_queue(strs='', starts=False, times=1, timeout=300):
+def wait_queue(strs='', starts=False, times=1, timeout=300, do_to=True):
     """ Wait for a string in the queue """
     if not cfg.interposer_lib:
         return None
@@ -1178,7 +1208,8 @@ def wait_queue(strs='', starts=False, times=1, timeout=300):
             return line[:-1]
         if old_times != times:
             interposer_dialog.append('KiAuto:times '+str(times))
-    raise RuntimeError('Timed out waiting for `{}`'.format(str))
+    if do_to:
+        raise RuntimeError('Timed out waiting for `{}`'.format(strs))
 
 
 # https://stackoverflow.com/questions/375427/a-non-blocking-read-on-a-subprocess-pipe-in-python
