@@ -599,8 +599,8 @@ def ipc_netlist(cfg):
 def wait_swap(times=1):
     """ Wait an OpenGL draw (buffer swap) """
     if not cfg.interposer_lib:
-        return
-    wait_queue('GLX:Swap', starts=True, times=times)
+        return None
+    return wait_queue('GLX:Swap', starts=True, times=times)
 
 
 def wait_ray_tracer(cfg):
@@ -646,8 +646,7 @@ def wait_ray_tracer(cfg):
 def wait_3d_ready(cfg, swaps=2):
     if not cfg.ki5:
         if cfg.interposer_lib:
-            wait_swap(swaps)
-            return
+            return wait_swap(swaps)
         # On my system this huge delay is needed only when using docker.
         # I don't know why and also don't know why the KiCad 5 methode fails.
         sleep(1*cfg.time_out_scale)
@@ -765,12 +764,13 @@ def capture_3d_view(cfg):
             log.info_progress(msg[:80])
         logger.info('Finished loading 3D models')
 
-    wait_3d_ready(cfg, 2)
+    res = wait_3d_ready(cfg, 2)
     if inter:
         # TODO: This isn't an error, is just to debug it
-        res = wait_queue()
         if res != 'GLX:Swap 8':
-            logger.error(res)
+            res = wait_queue()
+            if res != 'GLX:Swap 8':
+                logger.error(res)
 
     # Switch to orthographic (KiCad 6 has persistence)
     if cfg.orthographic and cfg.ki5:
@@ -1489,7 +1489,7 @@ if __name__ == '__main__':
     else:
         os.environ['LD_PRELOAD'] = interposer_lib
         logger.debug('** Using interposer: '+interposer_lib)
-    use_interposer = interposer_lib and args.command == '3d_view'
+    use_interposer = interposer_lib and args.command == '3d_view' and not cfg.ki5
     enable_interposer = (interposer_lib and args.interposer_sniff) or use_interposer
     #
     # Do all the work
@@ -1528,7 +1528,7 @@ if __name__ == '__main__':
                                   stdout=flog_out, start_new_session=True) as pcbnew_proc:
                     cfg.pcbnew_pid = pcbnew_proc.pid
                     cfg.popen_obj = pcbnew_proc
-                    cfg.interposer_lib = interposer_lib
+                    cfg.interposer_lib = use_interposer
                     if enable_interposer:
                         start_queue(cfg)
                     id_pcbnew = wait_pcbew_start_by_msg(cfg) if use_interposer else wait_pcbew_start(cfg)
