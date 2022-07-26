@@ -267,7 +267,12 @@ def dismiss_error_by_msg(title):
     logger.info(title+' dialog found ...')
     msgs = collect_dialog_messages()
     if "Error loading PCB '"+cfg.input_file+"'." in msgs:
+        # KiCad 6 loading error
         logger.error('Error loading PCB file. Corrupted?')
+        exit(CORRUPTED_PCB)
+    if 'KiCad was unable to open this file, as it was created with' in msgs:
+        # KiCad 5 loading a KiCad 6 file
+        logger.error('Error loading PCB file. Needs KiCad 6?')
         exit(CORRUPTED_PCB)
     logger.error('KiCad dialog: '+title)
     logger.error('Potential dialog messages: '+str(msgs))
@@ -280,7 +285,7 @@ def wait_pcbew_start_by_msg(cfg):
     # This is the title of the main window before loading the PCB
     # 0.7 s on a 2nd gen i5
     logger.debug('Waiting pcbnew to open the main window')
-    wait_queue(pre+'PCB Editor', starts=True, timeout=15)
+    wait_queue(pre+cfg.pn_simple_window_title, starts=True, timeout=15)
     logger.debug('Waiting pcbnew to load the PCB')
     # Inform the elapsed time for slow loads
     pres = [pre, 'PANGO:0:']
@@ -293,7 +298,7 @@ def wait_pcbew_start_by_msg(cfg):
         match = elapsed_r.match(res)
         if not match and with_elapsed:
             log.flush_info()
-        if res.endswith(' — PCB Editor'):
+        if not cfg.ki5 and res.endswith(' — PCB Editor'):
             # KiCad finished the load process
             if res[len(pre)] == '*':
                 # This is an old format file that will be saved in the new format
@@ -302,6 +307,11 @@ def wait_pcbew_start_by_msg(cfg):
                 # wait_queue('PANGO:This file was created', starts=True, timeout=10, times=2)
                 # Problem: When KiCad 6 detects a KiCad 5 file changes the window title before loading, not after
             return  # wait_pcbnew()[0] Using the window id doesn't help
+        elif cfg.ki5 and res.startswith(pre+'Pcbnew —'):
+            if not res.endswith('  [Unsaved]'):
+                # KiCad 5 name is Pcbnew — PCB_NAME
+                return
+            # The "  [Unsaved]" is changed before the final load, ignore it
         elif res.endswith('Loading PCB'):
             # This is the dialog for the loading progress, wait
             pass
@@ -598,7 +608,7 @@ def ipc_netlist(cfg):
 
 def wait_swap(times=1):
     """ Wait an OpenGL draw (buffer swap) """
-    if not cfg.interposer_lib:
+    if not cfg.interposer_lib or not times:
         return None
     return wait_queue('GLX:Swap', starts=True, times=times)
 
@@ -625,14 +635,10 @@ def wait_ray_tracer(cfg):
     logger.info('Waiting for the final render')
     if cfg.detect_rt:
         # Try to figure out meassuring the CPU usage
-        for process in psutil.process_iter():
-            if process.pid == cfg.pcbnew_pid:
-                pcbnew_process = process
-                break
         end = time.clock_gettime(time.CLOCK_MONOTONIC) + cfg.wait_rt
         counter = 5
         while (counter > 0) and (time.clock_gettime(time.CLOCK_MONOTONIC) < end):
-            cpu_usage = pcbnew_process.cpu_percent(0.3)
+            cpu_usage = cfg.pcbnew_process.cpu_percent(0.3)
             if cpu_usage > 5:
                 if counter < 5:
                     counter = counter + 1
@@ -644,9 +650,19 @@ def wait_ray_tracer(cfg):
 
 
 def wait_3d_ready(cfg, swaps=2):
+    if cfg.interposer_lib:
+        res = wait_swap(swaps)
+        # KiCad 5 takes 0 to 2 extra swaps (is random) so here we ensure KiCad is sleeping
+        if cfg.pcbnew_process.status() == psutil.STATUS_RUNNING:
+            logger.debug('= KiCad still running after {} swaps, waiting more'.format(swaps))
+            while cfg.pcbnew_process.status() == psutil.STATUS_RUNNING:
+                new_res = wait_queue('GLX:Swap', starts=True, timeout=0.1, do_to=False)
+                if new_res is not None:
+                    res = new_res
+            logger.debug('= KiCad finally sleeping')
+            return res
+
     if not cfg.ki5:
-        if cfg.interposer_lib:
-            return wait_swap(swaps)
         # On my system this huge delay is needed only when using docker.
         # I don't know why and also don't know why the KiCad 5 methode fails.
         sleep(1*cfg.time_out_scale)
@@ -683,7 +699,7 @@ def apply_steps(steps, key, neg_key, id, cfg):
             logger.info('Step ({})'.format(k))
             xdotool(['key', k], id)
             logger.debug('Step '+key)
-            wait_3d_ready(cfg)
+            wait_3d_ready(cfg, cfg.swaps_steps)
 
 
 def check_text_replace(name):
@@ -720,15 +736,30 @@ def capture_3d_view(cfg):
     if not cfg.ki5 and cfg.kicad_version < 6000002:
         logger.error('Upgrade KiCad, this version has a bug')
         exit(MISSING_TOOL)
+    # Configure KiCad 5 vs 6 differences
+    if cfg.ki5:
+        # How can we disable animations? They are really slow
+        cfg.swaps_steps = 12
+        cfg.swaps_before_dialog = 0
+        cfg.swaps_after_loading = 6
+        cfg.swaps_after_loading_n = '6'
+        cfg.swaps_zoom = 2
+        cfg.keys_rt = ['alt+p', 'Down']
+        cfg.swaps_end = 0
+    else:
+        cfg.swaps_steps = 2
+        cfg.swaps_before_dialog = 1
+        cfg.swaps_after_loading = 2
+        cfg.swaps_after_loading_n = '8'
+        cfg.swaps_zoom = 3
+        cfg.keys_rt = ['alt+p']
+        cfg.swaps_end = 1
     # Open the 3D viewer
     open_keys = ['key', 'alt+3']
     dialog_name = '3D Viewer'
     inter = use_interposer
     open_with_retry = True
     if inter:
-        # Start with an empty queue
-        # logger.debug('Queue flushed')
-        # flush_queue()
         logger.debug('Waiting for '+dialog_name)
         # Send the keys
         xdotool(open_keys)
@@ -743,8 +774,7 @@ def capture_3d_view(cfg):
         id = open_dialog_with_retry('Open 3D Viewer', open_keys, '3D viewer dialog', dialog_name, cfg)[0]
     wait_point(cfg)
     if inter:
-        logger.debug('Waiting for swap')
-        wait_swap()
+        wait_swap(cfg.swaps_before_dialog)
         logger.debug('3D Viewer is drawing')
         wait_queue(['PANGO:Loading…', 'PANGO:Loading...'])
         logger.info('Loading 3D models')
@@ -764,12 +794,13 @@ def capture_3d_view(cfg):
             log.info_progress(msg[:80])
         logger.info('Finished loading 3D models')
 
-    res = wait_3d_ready(cfg, 2)
+    res = wait_3d_ready(cfg, cfg.swaps_after_loading)
     if inter:
-        # TODO: This isn't an error, is just to debug it
-        if res != 'GLX:Swap 8':
-            res = wait_queue()
-            if res != 'GLX:Swap 8':
+        swap_msg = 'GLX:Swap '+cfg.swaps_after_loading_n
+        if res != swap_msg:
+            res = wait_queue(timeout=0.1, do_to=False)
+            if res != swap_msg:
+                # TODO: This isn't an error, is just to debug it
                 logger.error(res)
 
     # Switch to orthographic (KiCad 6 has persistence)
@@ -807,11 +838,10 @@ def capture_3d_view(cfg):
             xdotool(['click', zoom_b], id)
             logger.debug('Zoom')
             # An extra swap is done because we used the mouse (mouse "moved")
-            wait_3d_ready(cfg, 3)
+            wait_3d_ready(cfg, cfg.swaps_zoom)
 
-    if cfg.ray_tracing and not cfg.ki5:
-        # Ray tracing is not persistent in KiCad 6!!!
-        xdotool(['key', 'alt+p', 'Return'], id)
+    if cfg.ray_tracing:
+        xdotool(['key']+cfg.keys_rt+['Return'], id)
         logger.debug('Ray tracing')
         wait_queue('PANGO:Raytracing')
 
@@ -842,6 +872,9 @@ def capture_3d_view(cfg):
         xdotool(['key', 'Return'])
         wait_for_file_created_by_process(cfg.pcbnew_pid, cfg.output_file)
 
+    if inter:
+        wait_3d_ready(cfg, swaps=0)
+
     # Close the 3D viewer
     logger.info('Closing the 3D viewer')
     wait_point(cfg)
@@ -849,7 +882,7 @@ def capture_3d_view(cfg):
 
     if inter:
         # Wait one more draw and close pcbnew
-        wait_swap()
+        wait_3d_ready(cfg, swaps=0)
         exit_pcbnew(cfg)
     else:
         wait_pcbnew()
@@ -1056,7 +1089,8 @@ def create_pcbnew_config(cfg):
             # Insert????!!!! please a cup of coffee for this guy ...
             text_file.write('ShowFootprints_Insert=%d\n' % (not cfg.no_smd))
             text_file.write('ShowFootprints_Virtual=%d\n' % (not cfg.no_virtual))
-            text_file.write('RenderEngine=%d\n' % (cfg.ray_tracing))
+            # We enable the raytracer after applying all moves
+            # text_file.write('RenderEngine=%d\n' % (cfg.ray_tracing))
             write_color(text_file, 'Bg', cfg.bg_color_1)
             write_color(text_file, 'Bg', cfg.bg_color_2, 'Top')
             write_color(text_file, 'SMask', cfg.sm_color)
@@ -1484,12 +1518,12 @@ if __name__ == '__main__':
     cfg.video_name = 'pcbnew_'+args.command+'_screencast.ogv'
     # Name of the interposer library
     interposer_lib = os.path.abspath(os.path.join(os.path.dirname(kiauto.misc.__file__), 'interposer', 'libinterposer.so'))
-    if (cfg.ki5 and not args.interposer_sniff) or not os.path.isfile(interposer_lib):
+    if not os.path.isfile(interposer_lib):
         interposer_lib = None
     else:
         os.environ['LD_PRELOAD'] = interposer_lib
         logger.debug('** Using interposer: '+interposer_lib)
-    use_interposer = interposer_lib and args.command == '3d_view' and not cfg.ki5
+    use_interposer = interposer_lib and args.command == '3d_view'
     enable_interposer = (interposer_lib and args.interposer_sniff) or use_interposer
     #
     # Do all the work
@@ -1527,6 +1561,11 @@ if __name__ == '__main__':
                 with PopenContext(cmd, stderr=flog_err, close_fds=True, bufsize=1, text=True,
                                   stdout=flog_out, start_new_session=True) as pcbnew_proc:
                     cfg.pcbnew_pid = pcbnew_proc.pid
+                    # Translate the PID into a psutil object
+                    for process in psutil.process_iter():
+                        if process.pid == cfg.pcbnew_pid:
+                            cfg.pcbnew_process = process
+                            break
                     cfg.popen_obj = pcbnew_proc
                     cfg.interposer_lib = use_interposer
                     if enable_interposer:
