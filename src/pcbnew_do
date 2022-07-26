@@ -699,7 +699,10 @@ def wait_3d_ready_i(cfg, swaps=2):
     res = wait_swap(swaps)
     # KiCad 5 takes 0 to 2 extra swaps (is random) so here we ensure KiCad is sleeping
     if cfg.pcbnew_process.status() == psutil.STATUS_RUNNING:
-        logger.debug('= KiCad still running after {} swaps, waiting more'.format(swaps))
+        if swaps:
+            logger.debug('= KiCad still running after {} swaps, waiting more'.format(swaps))
+        else:
+            logger.debug('= KiCad still running, waiting more')
         while cfg.pcbnew_process.status() == psutil.STATUS_RUNNING:
             new_res = wait_queue('GLX:Swap', starts=True, timeout=0.1, do_to=False)
             if new_res is not None:
@@ -868,6 +871,8 @@ def capture_3d_view_i(cfg):
         cfg.swaps_after_loading_n = '8'
         cfg.swaps_zoom = 3
         cfg.swaps_end = 1
+    # Wait for KiCad to be sleeping
+    wait_3d_ready_i(cfg, swaps=0)
     # Open the 3D viewer
     open_keys = ['key', 'alt+3']
     dialog_name = '3D Viewer'
@@ -876,7 +881,7 @@ def capture_3d_view_i(cfg):
     logger.debug('Waiting for '+dialog_name)
     # Send the keys
     xdotool(open_keys)
-    # Wait until the dilog name is set
+    # Wait until the dialog name is set
     res = wait_queue('GTK:Window Title:'+dialog_name, starts=True, timeout=1, do_to=False)
     if res is not None:
         # Now we'll find the window
