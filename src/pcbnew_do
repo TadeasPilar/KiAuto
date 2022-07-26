@@ -649,19 +649,25 @@ def wait_ray_tracer(cfg):
         sleep(cfg.wait_rt)
 
 
-def wait_3d_ready(cfg, swaps=2):
-    if cfg.interposer_lib:
-        res = wait_swap(swaps)
-        # KiCad 5 takes 0 to 2 extra swaps (is random) so here we ensure KiCad is sleeping
-        if cfg.pcbnew_process.status() == psutil.STATUS_RUNNING:
-            logger.debug('= KiCad still running after {} swaps, waiting more'.format(swaps))
-            while cfg.pcbnew_process.status() == psutil.STATUS_RUNNING:
-                new_res = wait_queue('GLX:Swap', starts=True, timeout=0.1, do_to=False)
-                if new_res is not None:
-                    res = new_res
-            logger.debug('= KiCad finally sleeping')
-            return res
+def wait_ray_tracer_i(cfg):
+    # Wait until we see the 100% rendered and the time is reported
+    msg = 'PANGO:Rendering: '
+    msg_l = len(msg)
+    while True:
+        # Show the progress
+        res = wait_queue(msg, starts=True)[msg_l:]
+        if cfg.verbose:
+            log.info_progress('Rendering '+res)
+        if res == '100 %':
+            if cfg.verbose:
+                log.flush_info()
+            break
+    wait_queue('PANGO:Rendering time', starts=True)
+    wait_swap()
+    return
 
+
+def wait_3d_ready_n(cfg):
     if not cfg.ki5:
         # On my system this huge delay is needed only when using docker.
         # I don't know why and also don't know why the KiCad 5 methode fails.
@@ -689,6 +695,19 @@ def wait_3d_ready(cfg, swaps=2):
     wait_for_window('3D Viewer', '3D Viewer')
 
 
+def wait_3d_ready_i(cfg, swaps=2):
+    res = wait_swap(swaps)
+    # KiCad 5 takes 0 to 2 extra swaps (is random) so here we ensure KiCad is sleeping
+    if cfg.pcbnew_process.status() == psutil.STATUS_RUNNING:
+        logger.debug('= KiCad still running after {} swaps, waiting more'.format(swaps))
+        while cfg.pcbnew_process.status() == psutil.STATUS_RUNNING:
+            new_res = wait_queue('GLX:Swap', starts=True, timeout=0.1, do_to=False)
+            if new_res is not None:
+                res = new_res
+        logger.debug('= KiCad finally sleeping')
+    return res
+
+
 def apply_steps(steps, key, neg_key, id, cfg):
     if steps:
         k = key
@@ -699,7 +718,10 @@ def apply_steps(steps, key, neg_key, id, cfg):
             logger.info('Step ({})'.format(k))
             xdotool(['key', k], id)
             logger.debug('Step '+key)
-            wait_3d_ready(cfg, cfg.swaps_steps)
+            if use_interposer:
+                wait_3d_ready_i(cfg, cfg.swaps_steps)
+            else:
+                wait_3d_ready_n(cfg)
 
 
 def check_text_replace(name):
@@ -707,15 +729,8 @@ def check_text_replace(name):
     wait_queue('PANGO:'+name)
 
 
-def open_save_image(cfg, id):
+def open_save_image_n(cfg, id):
     keys = ['key', 'alt+f', 'Return']
-    if cfg.interposer_lib:
-        xdotool(keys, id)
-        # Here we can get an optional swap, but before the menu
-        wait_queue('PANGO:Export Current View as PNG', starts=True)
-        # A final swap
-        wait_swap()
-        return
     for retry in range(10):
         xdotool(keys, id)
         if (cfg.ray_tracing or cfg.use_rt_wait) and cfg.detect_rt:
@@ -732,76 +747,40 @@ def open_save_image(cfg, id):
         exit(PCBNEW_ERROR)
 
 
+def open_save_image_i(cfg, id):
+    keys = ['key', 'alt+f', 'Return']
+    xdotool(keys, id)
+    # Here we can get an optional swap, but before the menu
+    wait_queue('PANGO:Export Current View as PNG', starts=True)
+    # A final swap
+    wait_swap()
+
+
 def capture_3d_view(cfg):
     if not cfg.ki5 and cfg.kicad_version < 6000002:
         logger.error('Upgrade KiCad, this version has a bug')
         exit(MISSING_TOOL)
     # Configure KiCad 5 vs 6 differences
     if cfg.ki5:
-        # How can we disable animations? They are really slow
-        cfg.swaps_steps = 12
-        cfg.swaps_before_dialog = 0
-        cfg.swaps_after_loading = 6
-        cfg.swaps_after_loading_n = '6'
-        cfg.swaps_zoom = 2
         cfg.keys_rt = ['alt+p', 'Down']
-        cfg.swaps_end = 0
+        cfg.key_close_3d = 'ctrl+q'
     else:
-        cfg.swaps_steps = 2
-        cfg.swaps_before_dialog = 1
-        cfg.swaps_after_loading = 2
-        cfg.swaps_after_loading_n = '8'
-        cfg.swaps_zoom = 3
         cfg.keys_rt = ['alt+p']
-        cfg.swaps_end = 1
+        cfg.key_close_3d = 'ctrl+w'
+    if use_interposer:
+        return capture_3d_view_i(cfg)
+    return capture_3d_view_n(cfg)
+
+
+def capture_3d_view_n(cfg):
+    """ 3D View capture, normal version """
     # Open the 3D viewer
     open_keys = ['key', 'alt+3']
     dialog_name = '3D Viewer'
-    inter = use_interposer
-    open_with_retry = True
-    if inter:
-        logger.debug('Waiting for '+dialog_name)
-        # Send the keys
-        xdotool(open_keys)
-        # Wait until the dilog name is set
-        res = wait_queue('GTK:Window Title:'+dialog_name, starts=True, timeout=1, do_to=False)
-        if res is not None:
-            # Now we'll find the window
-            id = wait_for_window('3D viewer dialog', dialog_name, popen_obj=cfg.popen_obj)
-            open_with_retry = False
-            # Note that when loading old format files the title is changed earlier and we don't know if the load is finished
-    if open_with_retry:
-        id = open_dialog_with_retry('Open 3D Viewer', open_keys, '3D viewer dialog', dialog_name, cfg)[0]
+    id = open_dialog_with_retry('Open 3D Viewer', open_keys, '3D viewer dialog', dialog_name, cfg)[0]
     wait_point(cfg)
-    if inter:
-        wait_swap(cfg.swaps_before_dialog)
-        logger.debug('3D Viewer is drawing')
-        wait_queue(['PANGO:Loading…', 'PANGO:Loading...'])
-        logger.info('Loading 3D models')
-        reload_time_msg = 'PANGO:Reload time'
-        loading_msg = 'PANGO:Loading '
-        loading_msg_l = len(loading_msg)
-        with_loading = False
-        padding = 80*' '
-        while True:
-            res = wait_queue([reload_time_msg, 'PANGO:Loading '], starts=True)
-            if res.startswith(reload_time_msg):
-                if with_loading:
-                    log.flush_info()
-                break
-            with_loading = True
-            msg = 'Loading '+res[loading_msg_l:]+padding
-            log.info_progress(msg[:80])
-        logger.info('Finished loading 3D models')
 
-    res = wait_3d_ready(cfg, cfg.swaps_after_loading)
-    if inter:
-        swap_msg = 'GLX:Swap '+cfg.swaps_after_loading_n
-        if res != swap_msg:
-            res = wait_queue(timeout=0.1, do_to=False)
-            if res != swap_msg:
-                # TODO: This isn't an error, is just to debug it
-                logger.error(res)
+    res = wait_3d_ready_n(cfg)
 
     # Switch to orthographic (KiCad 6 has persistence)
     if cfg.orthographic and cfg.ki5:
@@ -811,7 +790,142 @@ def capture_3d_view(cfg):
     # Apply the view axis
     if cfg.view != 'z':
         xdotool(['key', cfg.view], id)
-        wait_3d_ready(cfg)
+        wait_3d_ready_n(cfg)
+
+    # Apply the movements
+    apply_steps(cfg.move_x, 'Right', 'Left', id, cfg)
+    apply_steps(cfg.move_y, 'Up', 'Down', id, cfg)
+
+    # Apply the rotations
+    if not cfg.ki5:
+        apply_steps(cfg.rotate_x, 'alt+x', 'shift+alt+x', id, cfg)
+        apply_steps(cfg.rotate_y, 'alt+y', 'shift+alt+y', id, cfg)
+        apply_steps(cfg.rotate_z, 'alt+z', 'shift+alt+z', id, cfg)
+
+    # Apply the zoom steps
+    zoom = cfg.zoom
+    if zoom:
+        zoom_b = '4'
+        if zoom < 0:
+            zoom = -zoom
+            zoom_b = '5'
+        for _ in range(zoom):
+            # Wait some time before sending commands
+            # See discussion on #13 issue at GitHub
+            sleep(0.05)
+            logger.info('Zoom')
+            xdotool(['click', zoom_b], id)
+            logger.debug('Zoom')
+            wait_3d_ready_n(cfg)
+
+    if cfg.ray_tracing:
+        xdotool(['key']+cfg.keys_rt+['Return'], id)
+        logger.debug('Ray tracing')
+
+    if cfg.ray_tracing or cfg.use_rt_wait:
+        wait_ray_tracer(cfg)
+
+    # Save the image as PNG
+    logger.info('Saving the image')
+    open_save_image_n(cfg, id)
+
+    # Paste the name
+    logger.info('Pasting output file')
+    wait_point(cfg)
+    text_replace(cfg.output_file)
+
+    # Wait for the image to be created
+    logger.info('Wait for the image file creation')
+    wait_point(cfg)
+    # Wait before confirming the file name
+    sleep(0.1*cfg.time_out_scale)
+    xdotool(['key', 'Return'])
+    wait_for_file_created_by_process(cfg.pcbnew_pid, cfg.output_file)
+
+    # Close the 3D viewer
+    logger.info('Closing the 3D viewer')
+    wait_point(cfg)
+    xdotool(['key', cfg.key_close_3d])
+
+    wait_pcbnew()
+
+
+def capture_3d_view_i(cfg):
+    """ 3D View capture, interposer version """
+    # Configure KiCad 5 vs 6 differences
+    if cfg.ki5:
+        # How can we disable animations? They are really slow
+        cfg.swaps_steps = 12
+        cfg.swaps_before_dialog = 0
+        cfg.swaps_after_loading = 6
+        cfg.swaps_after_loading_n = '6'
+        cfg.swaps_zoom = 2
+        cfg.swaps_end = 0
+    else:
+        cfg.swaps_steps = 2
+        cfg.swaps_before_dialog = 1
+        cfg.swaps_after_loading = 2
+        cfg.swaps_after_loading_n = '8'
+        cfg.swaps_zoom = 3
+        cfg.swaps_end = 1
+    # Open the 3D viewer
+    open_keys = ['key', 'alt+3']
+    dialog_name = '3D Viewer'
+    inter = use_interposer
+    open_with_retry = True
+    logger.debug('Waiting for '+dialog_name)
+    # Send the keys
+    xdotool(open_keys)
+    # Wait until the dilog name is set
+    res = wait_queue('GTK:Window Title:'+dialog_name, starts=True, timeout=1, do_to=False)
+    if res is not None:
+        # Now we'll find the window
+        id = wait_for_window('3D viewer dialog', dialog_name, popen_obj=cfg.popen_obj)
+        open_with_retry = False
+        # Note that when loading old format files the title is changed earlier and we don't know if the load is finished
+    if open_with_retry:
+        id = open_dialog_with_retry('Open 3D Viewer', open_keys, '3D viewer dialog', dialog_name, cfg)[0]
+    wait_point(cfg)
+    wait_swap(cfg.swaps_before_dialog)
+    logger.debug('3D Viewer is drawing')
+
+    # Detect the 3D models load
+    wait_queue(['PANGO:Loading…', 'PANGO:Loading...'])
+    logger.info('Loading 3D models')
+    reload_time_msg = 'PANGO:Reload time'
+    loading_msg = 'PANGO:Loading '
+    loading_msg_l = len(loading_msg)
+    with_loading = False
+    padding = 80*' '
+    while True:
+        res = wait_queue([reload_time_msg, 'PANGO:Loading '], starts=True)
+        if res.startswith(reload_time_msg):
+            if with_loading:
+                log.flush_info()
+            break
+        with_loading = True
+        msg = 'Loading '+res[loading_msg_l:]+padding
+        log.info_progress(msg[:80])
+    logger.info('Finished loading 3D models')
+
+    # Wait until the dialog is ready
+    res = wait_3d_ready_i(cfg, cfg.swaps_after_loading)
+    swap_msg = 'GLX:Swap '+cfg.swaps_after_loading_n
+    if res != swap_msg:
+        res = wait_queue(timeout=0.1, do_to=False)
+        if res != swap_msg:
+            # TODO: This isn't an error, is just to debug it
+            logger.error(res)
+
+    # Switch to orthographic (KiCad 6 has persistence)
+    if cfg.orthographic and cfg.ki5:
+        # Can easily break, no persistence, no option, no shortcut ... KiCad's way
+        xdotool(['mousemove', '711', '44', 'click', '1', 'mousemove', 'restore'])
+
+    # Apply the view axis
+    if cfg.view != 'z':
+        xdotool(['key', cfg.view], id)
+        wait_3d_ready_i(cfg)
 
     # Apply the movements
     apply_steps(cfg.move_x, 'Right', 'Left', id, cfg)
@@ -838,54 +952,41 @@ def capture_3d_view(cfg):
             xdotool(['click', zoom_b], id)
             logger.debug('Zoom')
             # An extra swap is done because we used the mouse (mouse "moved")
-            wait_3d_ready(cfg, cfg.swaps_zoom)
+            wait_3d_ready_i(cfg, cfg.swaps_zoom)
 
     if cfg.ray_tracing:
         xdotool(['key']+cfg.keys_rt+['Return'], id)
         logger.debug('Ray tracing')
         wait_queue('PANGO:Raytracing')
-
-    if cfg.ray_tracing or cfg.use_rt_wait:
-        wait_ray_tracer(cfg)
+        wait_ray_tracer_i(cfg)
 
     # Save the image as PNG
+    # Open the Save dialog
     logger.info('Saving the image')
-    open_save_image(cfg, id)
+    open_save_image_i(cfg, id)
 
     # Paste the name
     logger.info('Pasting output file')
     wait_point(cfg)
     text_replace(cfg.output_file)
-    if inter:
-        # Look for the echo
-        check_text_replace(cfg.output_file)
+    # Look for the echo
+    check_text_replace(cfg.output_file)
 
     # Wait for the image to be created
     logger.info('Wait for the image file creation')
     wait_point(cfg)
-    if inter:
-        xdotool(['key', 'Return'])
-        wait_swap(3)
-    else:
-        # Wait before confirming the file name
-        sleep(0.1*cfg.time_out_scale)
-        xdotool(['key', 'Return'])
-        wait_for_file_created_by_process(cfg.pcbnew_pid, cfg.output_file)
-
-    if inter:
-        wait_3d_ready(cfg, swaps=0)
+    xdotool(['key', 'Return'])
+    wait_swap(3)
+    wait_3d_ready_i(cfg, swaps=0)
 
     # Close the 3D viewer
     logger.info('Closing the 3D viewer')
     wait_point(cfg)
-    xdotool(['key', 'ctrl+q' if cfg.ki5 else 'ctrl+w'])
+    xdotool(['key', cfg.key_close_3d])
 
-    if inter:
-        # Wait one more draw and close pcbnew
-        wait_3d_ready(cfg, swaps=0)
-        exit_pcbnew(cfg)
-    else:
-        wait_pcbnew()
+    # Wait one more draw and close pcbnew
+    wait_3d_ready_i(cfg, swaps=0)
+    exit_pcbnew(cfg)
 
 
 def load_layers(pcb):
