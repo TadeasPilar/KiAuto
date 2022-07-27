@@ -372,6 +372,7 @@ def dismiss_save_changes(cfg):
 
 
 def exit_pcbnew_i(cfg):
+    wait_3d_ready_i(cfg, swaps=0)
     logger.info('Exiting pcbnew')
     wait_point(cfg)
     keys_exit = ['key', 'ctrl+q']
@@ -611,12 +612,41 @@ def run_drc(cfg):
 
 def export_gencad(cfg):
     wait_point(cfg)
-    if not cfg.ki5:
-        keys = ['key', 'alt+f', 'Down', 'Down', 'Down', 'Down', 'Down', 'Down', 'Down', 'Down', 'KP_Space', 'Down', 'Return']
-    else:
+    if cfg.ki5:
         keys = ['key', 'alt+f', 'x', 'g']
-    open_dialog_with_retry("Open GenCAD export", keys, "GenCAD settings", 'Export to GenCAD settings', cfg)
-    xdotool(['type', cfg.output_file])
+    else:
+        keys = ['key', 'alt+f', 'Down', 'Down', 'Down', 'Down', 'Down', 'Down', 'Down', 'Down', 'KP_Space', 'Down', 'Return']
+    if use_interposer:
+        export_gencad_i(cfg, keys)
+    else:
+        export_gencad_n(cfg, keys)
+
+
+def open_dialog_i(name, keys):
+    # Wait for KiCad to be sleeping
+    wait_3d_ready_i(cfg, swaps=0)
+    logger.info('Opening dialog `{}`'.format(name))
+    xdotool(keys)
+    res = wait_queue('GTK:Window Title:'+name)
+    # Wait for KiCad to be sleeping
+    wait_3d_ready_i(cfg, swaps=0)
+    # The dialog is there, just make sure it has the focus
+    wait_for_window(name, name, 1)
+
+
+def paste_output_file_i(cfg):
+    # Paste the name
+    logger.info('Pasting output file')
+    wait_point(cfg)
+    text_replace(cfg.output_file)
+    # Look for the echo
+    check_text_replace(cfg.output_file)
+    # Wait for KiCad to be sleeping
+    wait_3d_ready_i(cfg, swaps=0)
+
+
+def export_gencad_select_options(cfg):
+    logger.info('Changing settings')
     xdotool(['key', 'Down'])
     if cfg.flip_bottom_padstacks:
         xdotool(['key', 'KP_Space'])
@@ -634,6 +664,24 @@ def export_gencad(cfg):
         xdotool(['key', 'KP_Space'])
     xdotool(['key', 'Return'])
     wait_for_file_created_by_process(cfg.pcbnew_pid, cfg.output_file)
+
+
+def export_gencad_i(cfg, keys):
+    # Open the "Export to GenCAD settings"
+    open_dialog_i('Export to GenCAD settings', keys)
+    xdotool(['key', 'Up', 'Up', 'Up', 'Up', 'Up', 'Up', 'Left'])
+    # Paste the name
+    paste_output_file_i(cfg)
+    # Change the settings to what the user wants
+    export_gencad_select_options(cfg)
+    # Exit
+    exit_pcbnew_i(cfg)
+
+
+def export_gencad_n(cfg, keys):
+    open_dialog_with_retry("Open GenCAD export", keys, "GenCAD settings", 'Export to GenCAD settings', cfg)
+    xdotool(['type', cfg.output_file])
+    export_gencad_select_options(cfg)
 
 
 def ipc_netlist(cfg):
@@ -747,10 +795,14 @@ def wait_3d_ready_i(cfg, swaps=2, kicad_can_exit=False):
             logger.debug('= KiCad still running after {} swaps, waiting more'.format(swaps))
         else:
             logger.debug('= KiCad still running, waiting more')
-        while cfg.pcbnew_process.status() == psutil.STATUS_RUNNING:
-            new_res = wait_queue('GLX:Swap', starts=True, timeout=0.1, do_to=False, kicad_can_exit=kicad_can_exit)
-            if new_res is not None:
-                res = new_res
+        try:
+            while cfg.pcbnew_process.status() == psutil.STATUS_RUNNING:
+                new_res = wait_queue('GLX:Swap', starts=True, timeout=0.1, do_to=False, kicad_can_exit=kicad_can_exit)
+                if new_res is not None:
+                    res = new_res
+        except psutil.NoSuchProcess:
+            logger.debug('= KiCad died')
+            return KICAD_EXIT_MSG
         logger.debug('= KiCad finally sleeping')
     return res
 
@@ -921,7 +973,6 @@ def capture_3d_view_i(cfg):
     # Open the 3D viewer
     open_keys = ['key', 'alt+3']
     dialog_name = '3D Viewer'
-    inter = use_interposer
     open_with_retry = True
     logger.debug('Waiting for '+dialog_name)
     # Send the keys
@@ -1039,8 +1090,6 @@ def capture_3d_view_i(cfg):
     wait_point(cfg)
     xdotool(['key', cfg.key_close_3d])
 
-    # Wait one more draw and close pcbnew
-    wait_3d_ready_i(cfg, swaps=0)
     exit_pcbnew_i(cfg)
 
 
@@ -1688,7 +1737,7 @@ if __name__ == '__main__':
     else:
         os.environ['LD_PRELOAD'] = interposer_lib
         logger.debug('** Using interposer: '+interposer_lib)
-    use_interposer = interposer_lib and args.command == '3d_view'
+    use_interposer = interposer_lib and (args.command == '3d_view' or args.command == 'export_gencad')
     enable_interposer = (interposer_lib and args.interposer_sniff) or use_interposer
     #
     # Do all the work
