@@ -1016,23 +1016,28 @@ def capture_3d_view_i(cfg):
     logger.debug('3D Viewer is drawing')
 
     # Detect the 3D models load
-    wait_queue(['PANGO:Loading…', 'PANGO:Loading...'])
-    logger.info('Loading 3D models')
     reload_time_msg = 'PANGO:Reload time'
-    loading_msg = 'PANGO:Loading '
-    loading_msg_l = len(loading_msg)
-    with_loading = False
-    padding = 80*' '
-    while True:
-        res = wait_queue([reload_time_msg, 'PANGO:Loading '], starts=True)
-        if res.startswith(reload_time_msg):
-            if with_loading:
-                log.flush_info()
-            break
-        with_loading = True
-        msg = 'Loading '+res[loading_msg_l:]+padding
-        log.info_progress(msg[:80])
-    logger.info('Finished loading 3D models')
+    res = wait_queue(['PANGO:Loading…', 'PANGO:Loading...', reload_time_msg], starts=True)
+    if res.startswith(reload_time_msg):
+        # KiCad 5 without any model to load:
+        cfg.swaps_after_loading = 1
+        cfg.swaps_after_loading_n = '4'
+    else:
+        logger.info('Loading 3D models')
+        loading_msg = 'PANGO:Loading '
+        loading_msg_l = len(loading_msg)
+        with_loading = False
+        padding = 80*' '
+        while True:
+            res = wait_queue([reload_time_msg, 'PANGO:Loading '], starts=True)
+            if res.startswith(reload_time_msg):
+                if with_loading:
+                    log.flush_info()
+                break
+            with_loading = True
+            msg = 'Loading '+res[loading_msg_l:]+padding
+            log.info_progress(msg[:80])
+        logger.info('Finished loading 3D models')
 
     # Wait until the dialog is ready
     res = wait_3d_ready_i(cfg, cfg.swaps_after_loading)
