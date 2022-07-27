@@ -386,6 +386,9 @@ def exit_pcbnew_i(cfg):
             return
         if res == pre+'Save Changes?':
             dismiss_save_changes(cfg)
+        elif res == 'Pcbnew —  [Unsaved]':
+            # KiCad 5 does it
+            pass
         else:
             logger.error('KiCad dialog: '+res[len(pre):])
             exit(PCBNEW_ERROR)
@@ -763,7 +766,8 @@ def apply_steps(steps, key, neg_key, id, cfg):
             xdotool(['key', k], id)
             logger.debug('Step '+key)
             if use_interposer:
-                wait_3d_ready_i(cfg, cfg.swaps_steps)
+                if cfg.wait_after_move:
+                    wait_3d_ready_i(cfg, cfg.swaps_steps)
             else:
                 wait_3d_ready_n(cfg)
 
@@ -972,8 +976,10 @@ def capture_3d_view_i(cfg):
 
     # Apply the view axis
     if cfg.view != 'z':
+        logger.info('Changing view')
         xdotool(['key', cfg.view], id)
-        wait_3d_ready_i(cfg)
+        if cfg.wait_after_move:
+            wait_3d_ready_i(cfg)
 
     # Apply the movements
     apply_steps(cfg.move_x, 'Right', 'Left', id, cfg)
@@ -1000,7 +1006,8 @@ def capture_3d_view_i(cfg):
             xdotool(['click', zoom_b], id)
             logger.debug('Zoom')
             # An extra swap is done because we used the mouse (mouse "moved")
-            wait_3d_ready_i(cfg, cfg.swaps_zoom)
+            if cfg.wait_after_move:
+                wait_3d_ready_i(cfg, cfg.swaps_zoom)
 
     if cfg.ray_tracing:
         xdotool(['key']+cfg.keys_rt+['Return'], id)
@@ -1415,7 +1422,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='KiCad PCB automation')
     subparsers = parser.add_subparsers(help='Command:', dest='command')
 
-    # short commands: irmsSvVw
+    # short commands: iIrmsSvVw
+    parser.add_argument('--disable_interposer', '-I', help='Avoid using the interposer lib', action='store_true')
     parser.add_argument('--interposer_sniff', '-i', help="Log interposer info, but don't use it", action='store_true')
     parser.add_argument('--record', '-r', help='Record the UI automation', action='store_true')
     parser.add_argument('--rec_width', help='Record width ['+str(REC_W)+']', type=int, default=REC_W)
@@ -1458,7 +1466,7 @@ if __name__ == '__main__':
     drc_parser.add_argument('kicad_pcb_file', help='KiCad PCB file')
     drc_parser.add_argument('output_dir', help='Output directory')
 
-    # short commands: bcdBoOrSTuvVwxXyYzZ
+    # short commands: bcdBoOrSTuvVwWxXyYzZ
     v3d_parser = subparsers.add_parser('3d_view', help='Capture the 3D view')
     v3d_parser.add_argument('--bg_color_1', '-b', nargs=1, help='Background color 1', default=['#66667F'])
     v3d_parser.add_argument('--bg_color_2', '-B', nargs=1, help='Background color 2', default=['#CCCCE5'])
@@ -1490,6 +1498,7 @@ if __name__ == '__main__':
     v3d_parser.add_argument('--use_rt_wait', '-u', help='Use the ray tracing end detection even on normal renders', action='store_true')
     v3d_parser.add_argument('--view', '-v', nargs=1, help='Axis view, uppercase is reversed (i.e. Z is bottom)',
                             default=['z'], choices=['x', 'y', 'z', 'X', 'Y', 'Z'],)
+    v3d_parser.add_argument('--wait_after_move', '-W', help='Wait after moving (applies to the interposer)', action='store_true')
     v3d_parser.add_argument('--wait_rt', '-w', nargs=1, help='Seconds to wait for the ray tracing render [5]', default=[5],
                             type=int)
     v3d_parser.add_argument('--zoom', '-z', nargs=1, help='Zoom steps (use negative to reduce)', default=[0], type=int)
@@ -1625,6 +1634,7 @@ if __name__ == '__main__':
         cfg.sp_color = parse_color(args.sp_color)
         cfg.orthographic = args.orthographic
         cfg.use_rt_wait = args.use_rt_wait
+        cfg.wait_after_move = args.wait_after_move
     else:
         cfg.no_tht = False
         cfg.no_smd = False
@@ -1632,6 +1642,7 @@ if __name__ == '__main__':
         cfg.ray_tracing = False
         cfg.bg_color_1 = cfg.bg_color_2 = cfg.board_color = None
         cfg.copper_color = cfg.silk_color = cfg.sm_color = cfg.sp_color = None
+        cfg.wait_after_move = False
 
     if args.command == 'run_drc' and args.errors_filter:
         load_filters(cfg, args.errors_filter[0])
@@ -1672,7 +1683,7 @@ if __name__ == '__main__':
     cfg.video_name = 'pcbnew_'+args.command+'_screencast.ogv'
     # Name of the interposer library
     interposer_lib = os.path.abspath(os.path.join(os.path.dirname(kiauto.misc.__file__), 'interposer', 'libinterposer.so'))
-    if not os.path.isfile(interposer_lib):
+    if not os.path.isfile(interposer_lib) or args.disable_interposer:
         interposer_lib = None
     else:
         os.environ['LD_PRELOAD'] = interposer_lib
