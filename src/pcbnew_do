@@ -435,6 +435,98 @@ def print_layers(cfg, id_pcbnew):
         # otherwise. We aren't configuring hotkeys for 5.1 so is better
         # to just use the menu accelerators (removed on KiCad 6)
         print_dialog_keys = ['alt+f', 'p']
+    if use_interposer:
+        # TODO: Not sure if worst the effort, is marginally faster and doesn't look to be more reliable
+        return print_layers_i(cfg, id_pcbnew, print_dialog_keys)
+    return print_layers_n(cfg, id_pcbnew, print_dialog_keys)
+
+
+def fill_zones_i(cfg):
+    logger.info('Filling zones ...')
+    # Wait for KiCad to be sleeping
+    wait_3d_ready_i(cfg, swaps=0)
+    # Now we fill the zones
+    xdotool(['key', 'b'])
+    # Inform the elapsed time for slow fills
+    pres = ['GTK:Window Title:', 'PANGO:0:']
+    elapsed_r = re.compile(r'PANGO:(\d:\d\d:\d\d)')
+    with_elapsed = False
+    logger.debug('= Wainting for KiCad sleeping')
+    while True:
+        # Wait for any window, or elapsed info
+        res = wait_queue(pres, starts=True, timeout=0.1, do_to=False)
+        if res is None:
+            # No message, is KiCad alive and running?
+            try:
+                if cfg.pcbnew_process.status() != psutil.STATUS_RUNNING:
+                    logger.debug('= KiCad is sleeping')
+                    return
+            except psutil.NoSuchProcess:
+                logger.debug('= KiCad died')
+                logger.error('KiCad is no longer running')
+                exit(KICAD_DIED)
+            continue
+        logger.debug('fill_zones_i got '+res)
+        match = elapsed_r.match(res)
+        if not match and with_elapsed:
+            log.flush_info()
+        if res.endswith('Fill All Zones'):
+            # This is the dialog for the fill in progress, wait
+            pass
+        elif match is not None:
+            log.info_progress('Elapsed time: '+match.group(1))
+            with_elapsed = True
+        else:
+            logger.error('KiCad dialog: '+res[len(pre):])
+            exit(PCBNEW_ERROR)
+
+
+def print_layers_i(cfg, id_pcbnew, print_dialog_keys):
+    # Fill zones if the user asked for it
+    if cfg.fill_zones:
+        fill_zones_i(cfg)
+    # Open the KiCad print dialog
+    open_dialog_i('Print', ['key']+print_dialog_keys)
+    # Open the gtk print dialog
+    open_dialog_i(['Print', cfg.print_dlg_name], ['key', 'shift+Tab', 'shift+Tab', 'shift+Tab', 'shift+Tab', 'Return'])
+    # Open the Select a filename dialog
+    format = 3*['Left'] if not cfg.svg else 3*['Right']
+    xdotool(['key',
+             # All pages and back to the list of printers
+             'alt+a', 'shift+Tab',
+             # Select the "print to file"
+             'Home',
+             # Now go to output options and back to the file selector
+             'alt+o']+format+['shift+Tab',
+             # Select a file
+             'Return'])
+    # This window doesn't get its name using the regular mechanism
+    wait_for_window('Select a filename', '(Select a filename|%s)' % cfg.select_a_filename, 2)
+    # Now paste the file name
+    paste_output_file_i(cfg)
+    if cfg.ki5:
+        sleep(1)
+    # Select this filename
+    xdotool(['key', 'Return'])
+    # Wait sleeping
+    wait_queue('PANGO:mm', timeout=1, do_to=False)
+    # No wait_queue('PANGO:mm', timeout=5)
+    wait_3d_ready_i(cfg, swaps=0)
+    # Print it
+    xdotool(['key', 'alt+a', 'Return'])
+    # Wait until the file is created
+    wait_for_file_created_by_process(cfg.pcbnew_pid, cfg.output_file)
+    # Wait sleeping
+    wait_3d_ready_i(cfg, swaps=0)
+    # Close KiCad Print dialog
+    xdotool(['key', 'Escape'])
+    # Wait sleeping
+    wait_3d_ready_i(cfg, swaps=0)
+    # Exit
+    exit_pcbnew_i(cfg)
+
+
+def print_layers_n(cfg, id_pcbnew, print_dialog_keys):
     # Fill zones if the user asked for it
     if cfg.fill_zones:
         logger.info('Fill zones')
@@ -627,7 +719,14 @@ def open_dialog_i(name, keys, msg_done=None):
     wait_3d_ready_i(cfg, swaps=0)
     logger.info('Opening dialog `{}`'.format(name))
     xdotool(keys)
-    res = wait_queue('PANGO:'+msg_done if msg_done is not None else 'GTK:Window Title:'+name)
+    if msg_done is not None:
+        res = wait_queue('PANGO:'+msg_done)
+    else:
+        pre_gtk = 'GTK:Window Title:'
+        if isinstance(name, str):
+            name = [name]
+        res = wait_queue([pre_gtk+f for f in name])
+        name = res[len(pre_gtk):]
     # Wait for KiCad to be sleeping
     wait_3d_ready_i(cfg, swaps=0)
     # The dialog is there, just make sure it has the focus
@@ -1766,7 +1865,7 @@ if __name__ == '__main__':
         os.environ['LD_PRELOAD'] = interposer_lib
         logger.debug('** Using interposer: '+interposer_lib)
     use_interposer = interposer_lib and (args.command == '3d_view' or args.command == 'export_gencad' or
-                                         args.command == 'ipc_netlist')
+                                         args.command == 'ipc_netlist' or args.command == 'export')
     enable_interposer = (interposer_lib and args.interposer_sniff) or use_interposer
     #
     # Do all the work
