@@ -622,12 +622,12 @@ def export_gencad(cfg):
         export_gencad_n(cfg, keys)
 
 
-def open_dialog_i(name, keys):
+def open_dialog_i(name, keys, msg_done=None):
     # Wait for KiCad to be sleeping
     wait_3d_ready_i(cfg, swaps=0)
     logger.info('Opening dialog `{}`'.format(name))
     xdotool(keys)
-    res = wait_queue('GTK:Window Title:'+name)
+    res = wait_queue('PANGO:'+msg_done if msg_done is not None else 'GTK:Window Title:'+name)
     # Wait for KiCad to be sleeping
     wait_3d_ready_i(cfg, swaps=0)
     # The dialog is there, just make sure it has the focus
@@ -669,6 +669,8 @@ def export_gencad_select_options(cfg):
 def export_gencad_i(cfg, keys):
     # Open the "Export to GenCAD settings"
     open_dialog_i('Export to GenCAD settings', keys)
+    # KiCad dialogs are unreliable, you never know which widget is selected
+    # This goes to the top left corner of the dialog
     xdotool(['key', 'Up', 'Up', 'Up', 'Up', 'Up', 'Up', 'Left'])
     # Paste the name
     paste_output_file_i(cfg)
@@ -688,14 +690,35 @@ def ipc_netlist(cfg):
     wait_point(cfg)
     if cfg.ki5:
         keys = ['key', 'alt+f', 'f', 'Down', 'Down', 'Down', 'Return']
+        pattern = 'IPC-D-356 Test Files ( *.d356)'    # WTF!!
     else:
         keys = ['key', 'shift+alt+e']
+        pattern = 'IPC-D-356 Test Files (*.d356)'
+    if use_interposer:
+        ipc_netlist_i(cfg, keys, pattern)
+    else:
+        ipc_netlist_n(cfg, keys)
+
+
+def ipc_netlist_n(cfg, keys):
     open_dialog_with_retry("Open file save for IPC netlist", keys, "Dialog to save the IPC netlist",
                            'Export D-356 Test File', cfg)
     xdotool(['key', 'ctrl+a'])
     xdotool(['type', cfg.output_file])
     xdotool(['key', 'Return'])
     wait_for_file_created_by_process(cfg.pcbnew_pid, cfg.output_file)
+
+
+def ipc_netlist_i(cfg, keys, pattern):
+    # Open the "Export D-356 Test File"
+    # Note: This is a pre-created GTK save dialog, so we wait for the save pattern
+    open_dialog_i('Export D-356 Test File', keys, msg_done=pattern)
+    # Paste the name
+    paste_output_file_i(cfg)
+    xdotool(['key', 'Return'])
+    wait_for_file_created_by_process(cfg.pcbnew_pid, cfg.output_file)
+    # Exit
+    exit_pcbnew_i(cfg)
 
 
 def wait_swap(times=1, kicad_can_exit=False):
@@ -1737,7 +1760,8 @@ if __name__ == '__main__':
     else:
         os.environ['LD_PRELOAD'] = interposer_lib
         logger.debug('** Using interposer: '+interposer_lib)
-    use_interposer = interposer_lib and (args.command == '3d_view' or args.command == 'export_gencad')
+    use_interposer = interposer_lib and (args.command == '3d_view' or args.command == 'export_gencad' or
+                                         args.command == 'ipc_netlist')
     enable_interposer = (interposer_lib and args.interposer_sniff) or use_interposer
     #
     # Do all the work
