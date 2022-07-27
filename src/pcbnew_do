@@ -386,7 +386,7 @@ def exit_pcbnew_i(cfg):
             return
         if res == pre+'Save Changes?':
             dismiss_save_changes(cfg)
-        elif res == 'Pcbnew —  [Unsaved]':
+        elif res == pre+'Pcbnew —  [Unsaved]':
             # KiCad 5 does it
             pass
         else:
