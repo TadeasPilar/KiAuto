@@ -240,7 +240,10 @@ def collect_dialog_messages():
     logger.debug('Gathering potential dialog content')
     msgs = set()
     for msg in range(12):
-        res = wait_queue()
+        res = wait_queue(timeout=0.1, do_to=False)
+        if res is None:
+            # Some dialogs has less messages
+            continue
         if res.startswith('PANGO:'):
             res = res[6:]
             if res not in IGNORED_DIALOG_MSGS:
@@ -259,9 +262,7 @@ def dismiss_file_open_error(title):
         wait_for_window(title, title, 1)
         xdotool(['key', 'Left', 'Return'])
         return
-    logger.error('KiCad dialog: '+title)
-    logger.error('Potential dialog messages: '+str(msgs))
-    exit(PCBNEW_ERROR)
+    unknown_dialog(title, msgs)
 
 
 def dismiss_error_by_msg(title):
@@ -275,7 +276,22 @@ def dismiss_error_by_msg(title):
         # KiCad 5 loading a KiCad 6 file
         logger.error('Error loading PCB file. Needs KiCad 6?')
         exit(CORRUPTED_PCB)
-    logger.error('KiCad dialog: '+title)
+    unknown_dialog(title, msgs)
+
+
+def dismiss_already_running_msg(title):
+    logger.info(title+' dialog found ...')
+    msgs = collect_dialog_messages()
+    if 'pcbnew is already running. Continue?' in msgs:
+        logger.info('Dismiss pcbnew already running')
+        wait_for_window(title, title, 1)
+        xdotool(['key', 'Return'])
+        return
+    unknown_dialog(title, msgs)
+
+
+def unknown_dialog(title, msgs):
+    logger.error('Unknown KiCad dialog: '+title)
     logger.error('Potential dialog messages: '+str(msgs))
     exit(PCBNEW_ERROR)
 
@@ -283,11 +299,7 @@ def dismiss_error_by_msg(title):
 def wait_pcbew_start_by_msg(cfg):
     logger.info('Waiting for PCB new window ...')
     pre = 'GTK:Window Title:'
-    # This is the title of the main window before loading the PCB
-    # 0.7 s on a 2nd gen i5
-    logger.debug('Waiting pcbnew to open the main window')
-    wait_queue(pre+cfg.pn_simple_window_title, starts=True, timeout=15)
-    logger.debug('Waiting pcbnew to load the PCB')
+    logger.debug('Waiting pcbnew to start and load the PCB')
     # Inform the elapsed time for slow loads
     pres = [pre, 'PANGO:0:']
     elapsed_r = re.compile(r'PANGO:(\d:\d\d:\d\d)')
@@ -297,6 +309,7 @@ def wait_pcbew_start_by_msg(cfg):
         res = wait_queue(pres, starts=True, timeout=args.wait_start)
         logger.debug('wait_pcbew_start_by_msg got '+res)
         match = elapsed_r.match(res)
+        title = res[len(pre):]
         if not match and with_elapsed:
             log.flush_info()
         if not cfg.ki5 and res.endswith(' — PCB Editor'):
@@ -313,19 +326,24 @@ def wait_pcbew_start_by_msg(cfg):
                 # KiCad 5 name is Pcbnew — PCB_NAME
                 return
             # The "  [Unsaved]" is changed before the final load, ignore it
+        elif title == cfg.pn_simple_window_title:
+            # This is the main window before loading anything
+            # Note that KiCad 5 can create dialogs BEFORE this
+            pass
         elif res.endswith('Loading PCB'):
             # This is the dialog for the loading progress, wait
             pass
         elif match is not None:
             log.info_progress('Elapsed time: '+match.group(1))
             with_elapsed = True
-        elif res.endswith(':Error'):
-            dismiss_error_by_msg('Error')
-        elif res.endswith(':File Open Error'):
-            dismiss_file_open_error('File Open Error')
+        elif title == 'Error':
+            dismiss_error_by_msg(title)
+        elif title == 'File Open Error':
+            dismiss_file_open_error(title)
+        elif title == 'Confirmation':
+            dismiss_already_running_msg(title)
         else:
-            logger.error('KiCad dialog: '+res[len(pre):])
-            exit(PCBNEW_ERROR)
+            unknown_dialog(title, collect_dialog_messages())
 
 
 def exit_pcbnew(cfg):
