@@ -1758,6 +1758,8 @@ if __name__ == '__main__':
     # Force english + UTF-8
     en_locale = get_en_locale(logger)
     os.environ['LC_ALL'] = en_locale
+    # Force english for GTK dialogs
+    os.environ['LANGUAGE'] = 'en'
     # Force Mesa software rendering (otherwise, the 3D viewer may crash)
     os.environ['LIBGL_ALWAYS_SOFTWARE'] = "1"
     if DEBUG_KICAD:
@@ -1926,17 +1928,9 @@ if __name__ == '__main__':
                 else:
                     cmd = [cfg.pcbnew, cfg.input_file]
                 logger.info('Starting pcbnew ...')
-                # Run KiCad using C locale
-                # This is the only way to make the GTK dialogs use english.
-                # Using "LC_ALL=en_US.UTF-8 pcbnew" I get KiCad in english and GTK in spanish
-                # Using "LC_ALL=C pcbnew" I get both in english
-                os.environ['LC_ALL'] = 'C'
                 # bufsize=1 is line buffered
                 with PopenContext(cmd, stderr=flog_err, close_fds=True, bufsize=1, text=True,
                                   stdout=flog_out, start_new_session=True) as pcbnew_proc:
-                    # Run all the other tools using the EN locale
-                    # I guess any *.UTF-8 locale is usable, this is just to allow xdotool to match Window names
-                    os.environ['LC_ALL'] = en_locale
                     cfg.pcbnew_pid = pcbnew_proc.pid
                     # Translate the PID into a psutil object
                     for process in psutil.process_iter():
