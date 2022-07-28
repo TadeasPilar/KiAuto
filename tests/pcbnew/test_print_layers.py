@@ -46,7 +46,7 @@ def test_print_pcb_good_dwg_1(test_dir):
 
 def test_print_pcb_good_inner(test_dir):
     ctx = context.TestContext(test_dir, 'Print_Good_Inner', 'good-project')
-    cmd = [PROG, 'export']
+    cmd = [PROG, '-r', '-vvv', 'export']
     layers = ['F.Cu', 'F.SilkS', 'GND.Cu', 'Signal1.Cu', 'Inner.3', 'Power.Cu', 'Edge.Cuts']
     ctx.run(cmd, extra=layers)
     ctx.expect_out_file(DEFAULT)
