@@ -324,6 +324,7 @@ def wait_pcbew_start_by_msg(cfg):
         elif cfg.ki5 and res.startswith(pre+'Pcbnew —'):
             if not res.endswith('  [Unsaved]'):
                 # KiCad 5 name is Pcbnew — PCB_NAME
+                wait_pcbnew()
                 return
             # The "  [Unsaved]" is changed before the final load, ignore it
         elif title == cfg.pn_simple_window_title:
