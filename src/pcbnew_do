@@ -31,6 +31,7 @@ import shutil
 import psutil
 from threading  import Thread
 from queue import Queue, Empty
+from tempfile import TemporaryDirectory
 
 # Look for the 'kiauto' module from where the script is running
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -61,6 +62,7 @@ DEBUG_KICAD_NG = False
 DEBUG_KICAD = False
 IGNORED_DIALOG_MSGS = {'The quick brown fox jumps over the lazy dog.', '0123456789'}
 KICAD_EXIT_MSG = '>>exit<<'
+INTERPOSER_OPS = 'interposer_options.txt'
 
 
 def parse_drc_ki5(lines):
@@ -508,48 +510,41 @@ def fill_zones_i(cfg):
 
 
 def print_layers_i(cfg, id_pcbnew, print_dialog_keys):
-    # Fill zones if the user asked for it
-    if cfg.fill_zones:
-        fill_zones_i(cfg)
-    # Open the KiCad print dialog
-    open_dialog_i('Print', ['key']+print_dialog_keys)
-    # Open the gtk print dialog
-    open_dialog_i(['Print', cfg.print_dlg_name], ['key', 'shift+Tab', 'shift+Tab', 'shift+Tab', 'shift+Tab', 'Return'])
-    # Open the Select a filename dialog
-    format = 3*['Left'] if not cfg.svg else 3*['Right']
-    xdotool(['key',
-             # All pages and back to the list of printers
-             'alt+a', 'shift+Tab',
-             # Select the "print to file"
-             'Home',
-             # Now go to output options and back to the file selector
-             'alt+o']+format+['shift+Tab',
-             # Select a file
-             'Return'])
-    # This window doesn't get its name using the regular mechanism
-    wait_for_window('Select a filename', '(Select a filename|%s)' % cfg.select_a_filename, 2)
-    # Now paste the file name
-    paste_output_file_i(cfg)
-    if cfg.ki5:
-        sleep(1)
-    # Select this filename
-    xdotool(['key', 'Return'])
-    # Wait sleeping
-    wait_queue('PANGO:mm', timeout=1, do_to=False)
-    # No wait_queue('PANGO:mm', timeout=5)
-    wait_3d_ready_i(cfg, swaps=0)
-    # Print it
-    xdotool(['key', 'alt+a', 'Return'])
-    # Wait until the file is created
-    wait_for_file_created_by_process(cfg.pcbnew_pid, cfg.output_file)
-    # Wait sleeping
-    wait_3d_ready_i(cfg, swaps=0)
-    # Close KiCad Print dialog
-    xdotool(['key', 'Escape'])
-    # Wait sleeping
-    wait_3d_ready_i(cfg, swaps=0)
-    # Exit
-    exit_pcbnew_i(cfg)
+    # Create a temporal dir for the output file
+    # GTK is limited to the names we can choose, so we let it create the name and move to the arbitrary one
+    with TemporaryDirectory() as tmpdir:
+        # Pass the target dir, file name and format to the interposer
+        ext = 'pdf' if not cfg.svg else 'svg'
+        fn = 'interposer'
+        with open(INTERPOSER_OPS, 'wt') as f:
+            f.write(tmpdir+'\n')
+            f.write(fn+'\n')
+            f.write(ext+'\n')
+        fname = os.path.join(tmpdir, fn+'.'+ext)
+        # Fill zones if the user asked for it
+        if cfg.fill_zones:
+            fill_zones_i(cfg)
+        # Open the KiCad print dialog
+        open_dialog_i('Print', ['key']+print_dialog_keys)
+        # Open the gtk print dialog
+        # Big magic 1: we add an accelerator to the Print button, so Alt+P is enough
+        open_dialog_i('Print', ['key', 'alt+p'])
+        # Confirm the options
+        # Big magic 2: the interposer selected the printer, output file name and format, just confirm them
+        xdotool(['key', 'Return'])
+        # Wait until the file is created
+        wait_for_file_created_by_process(cfg.pcbnew_pid, fname)
+        # Wait sleeping
+        wait_3d_ready_i(cfg, swaps=0)
+        # Close KiCad Print dialog
+        xdotool(['key', 'Escape'])
+        # Wait sleeping
+        wait_3d_ready_i(cfg, swaps=0)
+        # Move the file to the user selected name
+        shutil.move(fname, cfg.output_file)
+        os.remove(INTERPOSER_OPS)
+        # Exit
+        exit_pcbnew_i(cfg)
 
 
 def print_layers_n(cfg, id_pcbnew, print_dialog_keys):
