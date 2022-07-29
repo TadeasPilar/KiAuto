@@ -70,8 +70,13 @@ def test_print_pcb_good_dwg_dism(test_dir):
         f.write('dummy')
     cfg = Config(logging)
     # Run pcbnew in parallel to get 'Dismiss pcbnew already running' (KiCad 5) or 'Skipping already open dialog' (KiCad 6)
-    # We open the same file, otherwise KiCad 6 won't have problems
-    with ctx.start_kicad([cfg.pcbnew, ctx.board_file], cfg):
+    if ctx.kicad_version < context.KICAD_VERSION_5_99:
+        # Note: If we open the same file KiCad 5 will exit
+        cmd = [cfg.pcbnew]
+    else:
+        # We open the same file, otherwise KiCad 6 won't have problems
+        cmd = [cfg.pcbnew, ctx.board_file]
+    with ctx.start_kicad(cmd, cfg):
         cmd = [PROG, '-vvv', '-r', '--wait_start', '5', 'export', '--output_name', pdf]
         layers = ['F.Cu', 'F.SilkS', 'Dwgs.User', 'Edge.Cuts']
         ctx.run(cmd, extra=layers)

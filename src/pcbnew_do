@@ -272,8 +272,7 @@ def dismiss_already_open(title):
     logger.info(title+' dialog found ...')
     msgs = collect_dialog_messages()
     if 'PCB file "'+cfg.input_file+'" is already open.' in msgs:
-        logger.info('Skipping already open dialog ...')
-        logger.debug('Skipping already open dialog ...')
+        logger.error('File already opened by another KiCad instance, KiCad will exit')
         wait_for_window(title, title, 1)
         xdotool(['key', 'Return'])
         return
