@@ -267,6 +267,19 @@ def dismiss_file_open_error(title):
     unknown_dialog(title, msgs)
 
 
+def dismiss_already_open(title):
+    # KiCad 5 when already open file
+    logger.info(title+' dialog found ...')
+    msgs = collect_dialog_messages()
+    if 'PCB file "'+cfg.input_file+'" is already open.' in msgs:
+        logger.info('Skipping already open dialog ...')
+        logger.debug('Skipping already open dialog ...')
+        wait_for_window(title, title, 1)
+        xdotool(['key', 'Return'])
+        return
+    unknown_dialog(title, msgs)
+
+
 def dismiss_error_by_msg(title):
     logger.info(title+' dialog found ...')
     msgs = collect_dialog_messages()
@@ -348,6 +361,8 @@ def wait_pcbew_start_by_msg(cfg):
             dismiss_file_open_error(title)
         elif title == 'Confirmation':
             dismiss_already_running_msg(title)
+        elif title == 'Warning':
+            dismiss_already_open(title)
         else:
             unknown_dialog(title)
 
