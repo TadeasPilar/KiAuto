@@ -118,12 +118,16 @@ class CustomFormatter(logging.Formatter):
 
 
 def flush_info():
+    if verbose_level < 1:
+       return
     f = sys.stdout if do_separate else sys.stderr
     f.write("\n")
     f.flush()
 
 
 def info_progress(msg):
+    if verbose_level < 1:
+       return
     f = sys.stdout if do_separate else sys.stderr
     f.write('\r'+msg)
     f.flush()
