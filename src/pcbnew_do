@@ -17,21 +17,22 @@ This program runs pcbnew and can:
 The process is graphical and very delicated.
 """
 
-import sys
-import os
 import argparse
 import atexit
-import re
-import subprocess
-from time import (asctime, localtime, sleep)
-import time
 import gettext
 import json
-import shutil
+import os
+import platform
 import psutil
-from threading  import Thread
 from queue import Queue, Empty
+import re
+import shutil
+import subprocess
+import sys
 from tempfile import TemporaryDirectory
+from threading  import Thread
+from time import (asctime, localtime, sleep)
+import time
 
 # Look for the 'kiauto' module from where the script is running
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -1897,7 +1898,9 @@ if __name__ == '__main__':
     cfg.video_name = 'pcbnew_'+args.command+'_screencast.ogv'
     # Name of the interposer library
     interposer_lib = os.path.abspath(os.path.join(os.path.dirname(kiauto.misc.__file__), 'interposer', 'libinterposer.so'))
-    if not os.path.isfile(interposer_lib) or args.disable_interposer:
+    if (not os.path.isfile(interposer_lib) or  # The lib isn't there
+        args.disable_interposer or             # The user disabled it
+        platform.system() != 'Linux' or 'x86_64' not in platform.platform()):  # Not Linux 64 bits x86
         interposer_lib = None
     else:
         os.environ['LD_PRELOAD'] = interposer_lib
