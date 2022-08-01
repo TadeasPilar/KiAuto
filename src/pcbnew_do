@@ -53,7 +53,7 @@ from kiauto.misc import (REC_W, REC_H, __version__, NO_PCB, PCBNEW_CFG_PRESENT, 
                          CORRUPTED_PCB, __copyright__, __license__, TIME_OUT_MULT, get_en_locale, KICAD_CFG_PRESENT,
                          MISSING_TOOL, KICAD_DIED)
 from kiauto.ui_automation import (PopenContext, xdotool, wait_not_focused, wait_for_window, recorded_xvfb,
-                                  wait_point, text_replace, set_time_out_scale, open_dialog_with_retry)
+                                  wait_point, text_replace, set_time_out_scale, open_dialog_with_retry, ShowInfoAction)
 
 TITLE_CONFIRMATION = '^Confirmation$'
 TITLE_ERROR = '^Error$'
@@ -1634,8 +1634,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='KiCad PCB automation')
     subparsers = parser.add_subparsers(help='Command:', dest='command')
 
-    # short commands: iIrmsSvVw
+    # short commands: iIrmnsSvVw
     parser.add_argument('--disable_interposer', '-I', help='Avoid using the interposer lib', action='store_true')
+    parser.add_argument('--info', '-n', help='Show information about the installation', action=ShowInfoAction, nargs=0)
     parser.add_argument('--interposer_sniff', '-i', help="Log interposer info, but don't use it", action='store_true')
     parser.add_argument('--record', '-r', help='Record the UI automation', action='store_true')
     parser.add_argument('--rec_width', help='Record width ['+str(REC_W)+']', type=int, default=REC_W)

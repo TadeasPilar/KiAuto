@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `--separate_info` command line option to send information to stdout
   (separated from debug in stderr)
+- `--info` command line option to debug installation issues
 
 
 ## [1.6.15] - 2022-07-13

@@ -30,7 +30,7 @@ logger = log.init()
 
 from kiauto.file_util import (get_log_files)
 from kiauto.ui_automation import (PopenContext, xdotool, wait_not_focused, wait_for_window, recorded_xvfb,
-                                  wait_point, text_replace, set_time_out_scale, clipboard_retrieve)
+                                  wait_point, text_replace, set_time_out_scale, clipboard_retrieve, ShowInfoAction)
 from kiauto.misc import (REC_W, REC_H, __version__, WAIT_START, Config, __copyright__, __license__, TIME_OUT_MULT)
 
 
@@ -89,6 +89,7 @@ if __name__ == '__main__':
     parser.add_argument('--subst-models', help='Substitute STEP or IGS models with the same name in place of VRML models (KiCad 6)', action='store_true')
     parser.add_argument('--min-distance', nargs=1, help='Minimum distance between points to treat them as separate ones (default 0.01 mm)')
     # Our options
+    parser.add_argument('--info', '-n', help='Show information about the installation', action=ShowInfoAction, nargs=0)
     parser.add_argument('--record', '-r', help='Record the UI automation', action='store_true')
     parser.add_argument('--rec_width', help='Record width ['+str(REC_W)+']', type=int, default=REC_W)
     parser.add_argument('--rec_height', help='Record height ['+str(REC_H)+']', type=int, default=REC_H)

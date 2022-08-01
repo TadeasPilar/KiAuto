@@ -15,19 +15,21 @@ and efficiently copy-pasting strings in the UI.
 
 Based on splitflap/electronics/scripts/export_util.py by Scott Bezek
 """
-import re
+import argparse
+from contextlib import contextmanager
 import os
-import sys
-from subprocess import Popen, CalledProcessError, TimeoutExpired, call, check_output, STDOUT, DEVNULL, run, PIPE
-import time
+import re
 import shutil
 import signal
+from subprocess import Popen, CalledProcessError, TimeoutExpired, call, check_output, STDOUT, DEVNULL, run, PIPE
+import sys
 from tempfile import mkdtemp
-from contextlib import contextmanager
+import time
 # python3-xvfbwrapper
 from xvfbwrapper import Xvfb
 from kiauto.file_util import get_log_files
-from kiauto.misc import KICAD_VERSION_5_99, MISSING_TOOL, KICAD_DIED
+from kiauto.misc import KICAD_VERSION_5_99, MISSING_TOOL, KICAD_DIED, __version__
+import kiauto.misc
 
 from kiauto import log
 logger = log.get_logger(__name__)
@@ -476,3 +478,30 @@ def open_dialog_with_retry(msg, keys, desc, w_name, cfg, id_dest=None):
             logger.error(str(e))
             sys.exit(KICAD_DIED)
     return id
+
+
+def show_info():
+    print("This is KiAuto v"+__version__)
+    print("Installed at: "+os.path.abspath(sys.argv[0]))
+    print("Using kiauto module from: "+os.path.dirname(kiauto.misc.__file__))
+    print("Interpreted by Python: {} (v{})".format(sys.executable, sys.version.replace('\n', ' ')))
+    print("Tools:")
+    try:
+        import pcbnew
+        kicad_version = pcbnew.GetBuildVersion()
+        print("- kicad: {} (v{})".format(shutil.which('kicad'), kicad_version))
+    except ImportError:
+        print("ERROR: Failed to import pcbnew Python module."
+              " Is KiCad installed?"
+              " Do you need to add it to PYTHONPATH?")
+    print("- xdotool: "+str(shutil.which('xdotool')))
+    print("- recordmydesktop: "+str(shutil.which('recordmydesktop')))
+    print("- xsltproc: "+str(shutil.which('xsltproc')))
+    print("- xclip: "+str(shutil.which('xclip')))
+    print("- convert: "+str(shutil.which('convert')))
+
+
+class ShowInfoAction(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        show_info()
+        exit(0)

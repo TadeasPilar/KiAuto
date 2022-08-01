@@ -46,7 +46,7 @@ from kiauto.misc import (REC_W, REC_H, __version__, NO_SCHEMATIC, EESCHEMA_CFG_P
                          USER_HOTKEYS_PRESENT, __copyright__, __license__, TIME_OUT_MULT, get_en_locale)
 from kiauto.ui_automation import (PopenContext, xdotool, wait_for_window, wait_not_focused, recorded_xvfb,
                                   wait_point, text_replace, set_time_out_scale, wait_xserver, wait_window_get_ref,
-                                  wait_window_change, open_dialog_with_retry)
+                                  wait_window_change, open_dialog_with_retry, ShowInfoAction)
 
 TITLE_CONFIRMATION = '^Confirmation$'
 TITLE_REMAP_SYMBOLS = '^Remap Symbols$'
@@ -485,7 +485,8 @@ if __name__ == '__main__':
     parser.add_argument('schematic', help='KiCad schematic file')
     parser.add_argument('output_dir', help='Output directory')
 
-    # mrsSvVw
+    # mnrsSvVw
+    parser.add_argument('--info', '-n', help='Show information about the installation', action=ShowInfoAction, nargs=0)
     parser.add_argument('--record', '-r', help='Record the UI automation', action='store_true')
     parser.add_argument('--rec_width', help='Record width ['+str(REC_W)+']', type=int, default=REC_W)
     parser.add_argument('--rec_height', help='Record height ['+str(REC_H)+']', type=int, default=REC_H)
