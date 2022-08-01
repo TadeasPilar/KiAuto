@@ -475,7 +475,6 @@ def print_layers(cfg, id_pcbnew):
         # to just use the menu accelerators (removed on KiCad 6)
         print_dialog_keys = ['alt+f', 'p']
     if use_interposer:
-        # TODO: Not sure if worst the effort, is marginally faster and doesn't look to be more reliable
         return print_layers_i(cfg, id_pcbnew, print_dialog_keys)
     return print_layers_n(cfg, id_pcbnew, print_dialog_keys)
 
@@ -720,7 +719,7 @@ def run_drc_python(cfg):
         cfg.board.Save(cfg.input_file)
 
 
-def run_drc(cfg):
+def run_drc_n(cfg):
     if not cfg.ki5:
         run_drc_6_0(cfg)
     else:
@@ -736,6 +735,48 @@ def run_drc(cfg):
         wait_for_file_created_by_process(cfg.pcbnew_pid, os.path.realpath(cfg.input_file))
     # Exit
     exit_pcbnew(cfg)
+
+
+def run_drc_5_1_i(cfg):
+    open_dialog_i('DRC Control', ['key', 'alt+i', 'd'])
+    logger.info('Enable reporting all errors for tracks')
+    wait_point(cfg)
+    # Here we added a shortcut for "Report all errors for tracks (slower)"
+    xdotool(['key', 'alt+r', 'Tab', 'Tab', 'Tab', 'Tab'])
+    paste_output_file_i(cfg)
+    open_dialog_i('Disk File Report Completed', ['key', 'Return'])
+    wait_for_window('Report completed dialog', 'Disk File Report Completed')
+    wait_point(cfg)
+    xdotool(['key', 'Return'])
+    wait_for_window('DRC modal window', 'DRC Control')
+    logger.info('Closing the DRC dialog')
+    wait_point(cfg)
+    xdotool(['key', 'shift+Tab', 'Return'])
+    wait_pcbnew()
+
+
+def run_drc_i(cfg):
+    if not cfg.ki5:
+        run_drc_6_0_i(cfg)
+    else:
+        run_drc_5_1_i(cfg)
+    # Save the PCB
+    if cfg.save:
+        logger.info('Saving PCB')
+        wait_point(cfg)
+        os.rename(cfg.input_file, cfg.input_file + '-bak')
+        xdotool(['key', 'ctrl+s'])
+        logger.info('Wait for PCB file creation')
+        wait_point(cfg)
+        wait_for_file_created_by_process(cfg.pcbnew_pid, os.path.realpath(cfg.input_file))
+    # Exit
+    exit_pcbnew_i(cfg)
+
+
+def run_drc(cfg):
+    if use_interposer and cfg.ki5:
+        return run_drc_i(cfg)
+    return run_drc_n(cfg)
 
 
 def export_gencad(cfg):
@@ -1625,6 +1666,8 @@ def start_queue(cfg):
         It will collect all messages from the interposer. """
     logger.debug('Starting queue thread')
     cfg.kicad_q = Queue()
+    # Avoid crashes when KiCad 5 sends an invalid Unicode sequence
+    cfg.popen_obj.stdout.reconfigure(errors='ignore')
     cfg.kicad_t = Thread(target=enqueue_output, args=(cfg.popen_obj.stdout, cfg.kicad_q))
     cfg.kicad_t.daemon = True   # thread dies with the program
     cfg.kicad_t.start()
@@ -1906,8 +1949,7 @@ if __name__ == '__main__':
     else:
         os.environ['LD_PRELOAD'] = interposer_lib
         logger.debug('** Using interposer: '+interposer_lib)
-    use_interposer = interposer_lib and (args.command == '3d_view' or args.command == 'export_gencad' or
-                                         args.command == 'ipc_netlist' or args.command == 'export')
+    use_interposer = interposer_lib
     enable_interposer = (interposer_lib and args.interposer_sniff) or use_interposer
     #
     # Do all the work

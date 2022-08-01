@@ -223,3 +223,25 @@ GtkPrintOperationResult gtk_print_operation_run(GtkPrintOperation* op, GtkPrintO
  return res;
 }
 
+
+void gtk_label_set_text_with_mnemonic(GtkLabel *label, const gchar *str)
+{
+ static void (*next_func)(GtkLabel *label, const gchar *str)=NULL;
+
+ if (next_func==NULL)
+   { /* Initialization */
+    char *msg;
+    printf("* wrapping label set text\n");
+    next_func=dlsym(RTLD_NEXT,"gtk_label_set_text_with_mnemonic");
+    if ((msg=dlerror())!=NULL)
+       printf("** dlopen failed : %s\n", msg);
+   }
+
+ if (g_strcmp0(str, "Report all errors for tracks (slower)")==0)
+    str="_Report all errors for tracks (slower)";
+ next_func(label, str);
+
+ printf("GTK:Label Set Text 2:%s\n", str);
+ fflush(stdout);
+}
+
