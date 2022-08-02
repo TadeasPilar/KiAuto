@@ -29,7 +29,7 @@ import re
 import shutil
 import subprocess
 import sys
-from tempfile import TemporaryDirectory
+from tempfile import TemporaryDirectory, mkdtemp
 from threading  import Thread
 from time import (asctime, localtime, sleep)
 import time
@@ -530,7 +530,7 @@ def print_layers_i(cfg, id_pcbnew, print_dialog_keys):
         # Pass the target dir, file name and format to the interposer
         ext = 'pdf' if not cfg.svg else 'svg'
         fn = 'interposer'
-        with open(INTERPOSER_OPS, 'wt') as f:
+        with open(cfg.interposer_print_file, 'wt') as f:
             f.write(tmpdir+'\n')
             f.write(fn+'\n')
             f.write(ext+'\n')
@@ -556,7 +556,6 @@ def print_layers_i(cfg, id_pcbnew, print_dialog_keys):
         wait_3d_ready_i(cfg, swaps=0)
         # Move the file to the user selected name
         shutil.move(fname, cfg.output_file)
-        os.remove(INTERPOSER_OPS)
         # Exit
         exit_pcbnew_i(cfg)
 
@@ -1016,13 +1015,15 @@ def wait_3d_ready_i(cfg, swaps=2, kicad_can_exit=False):
     res = wait_swap(swaps, kicad_can_exit=kicad_can_exit)
     # KiCad 5 takes 0 to 2 extra swaps (is random) so here we ensure KiCad is sleeping
     status = cfg.pcbnew_process.status()
-    if status == psutil.STATUS_RUNNING:
+    #if status == psutil.STATUS_RUNNING:
+    if status != psutil.STATUS_SLEEPING:
         if swaps:
             logger.debug('= KiCad still running after {} swaps, waiting more'.format(swaps))
         else:
             logger.debug('= KiCad still running, waiting more')
         try:
-            while cfg.pcbnew_process.status() == psutil.STATUS_RUNNING:
+            #while cfg.pcbnew_process.status() == psutil.STATUS_RUNNING:
+            while cfg.pcbnew_process.status() != psutil.STATUS_SLEEPING:
                 new_res = wait_queue('GLX:Swap', starts=True, timeout=0.1, do_to=False, kicad_can_exit=kicad_can_exit)
                 if new_res is not None:
                     res = new_res
@@ -1689,6 +1690,11 @@ def wait_queue(strs='', starts=False, times=1, timeout=300, do_to=True, kicad_ca
         raise RuntimeError('Timed out waiting for `{}`'.format(strs))
 
 
+def remove_interposer_print_dir(cfg):
+    logger.debug('Removing temporal dir '+cfg.interposer_print_dir)
+    shutil.rmdir(cfg.interposer_print_dir)
+
+
 # https://stackoverflow.com/questions/375427/a-non-blocking-read-on-a-subprocess-pipe-in-python
 def start_queue(cfg):
     """ Create a communication queue in a separated thread.
@@ -2012,6 +2018,13 @@ if __name__ == '__main__':
                            cfg.input_file]
                 else:
                     cmd = [cfg.pcbnew, cfg.input_file]
+                if args.command == 'export' and use_interposer:
+                    # We need a file to save the print options, make it unique to avoid collisions
+                    cfg.interposer_print_dir = mkdtemp()
+                    cfg.interposer_print_file = os.path.join(cfg.interposer_print_dir, INTERPOSER_OPS)
+                    logger.debug('Using temporal file {} for interposer print options'.format(cfg.interposer_print_file))
+                    os.environ['KIAUTO_INTERPOSER_PRINT'] = cfg.interposer_print_file
+                    atexit.register(remove_interposer_print_dir, cfg)
                 logger.info('Starting pcbnew ...')
                 # bufsize=1 is line buffered
                 with PopenContext(cmd, stderr=flog_err, close_fds=True, bufsize=1, text=True,

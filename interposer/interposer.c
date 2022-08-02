@@ -11,6 +11,7 @@
 ****************************************************************************/
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <dlfcn.h> /* header required for dlsym() */
 #include <string.h>
 #include <pango/pango.h>
@@ -94,7 +95,7 @@ void gtk_window_set_modal(GtkWindow* window, gboolean modal)
  if (next_func==NULL)
    { /* Initialization */
     char *msg;
-    printf("* wrapping dialog run\n");
+    printf("* wrapping set modal\n");
     next_func=dlsym(RTLD_NEXT,"gtk_window_set_modal");
     if ((msg=dlerror())!=NULL)
        printf("** dlopen failed : %s\n", msg);
@@ -113,7 +114,7 @@ void gtk_widget_show(GtkWidget* widget)
  if (next_func==NULL)
    { /* Initialization */
     char *msg;
-    printf("* wrapping dialog run\n");
+    printf("* wrapping widget show\n");
     next_func=dlsym(RTLD_NEXT,"gtk_widget_show");
     if ((msg=dlerror())!=NULL)
        printf("** dlopen failed : %s\n", msg);
@@ -169,11 +170,19 @@ void load_print_options()
  GIOChannel *f;
  gchar *line;
  gsize length, terminator_pos;
+ char *fn;
 
- f=g_io_channel_new_file("interposer_options.txt", "r", NULL);
+ fn=getenv("KIAUTO_INTERPOSER_PRINT");
+ if (fn==NULL)
+   {
+    printf("GTK:Error:KIAUTO_INTERPOSER_PRINT not defined\n");
+    return;
+   }
+ printf("GTK:Read:Dir_Name:%s\n", dir_name);
+ f=g_io_channel_new_file(fn, "r", NULL);
  if (f==NULL)
    {
-    printf("GTK:Error:Unable to load interposer_options.txt\n");
+    printf("GTK:Error:Unable to load %s\n", fn);
     return;
    }
  g_io_channel_read_line(f, &dir_name, &length, &terminator_pos, NULL);
@@ -202,7 +211,7 @@ GtkPrintOperationResult gtk_print_operation_run(GtkPrintOperation* op, GtkPrintO
  if (next_func==NULL)
    { /* Initialization */
     char *msg;
-    printf("* wrapping dialog run\n");
+    printf("* wrapping print op run\n");
     next_func=dlsym(RTLD_NEXT,"gtk_print_operation_run");
     if ((msg=dlerror())!=NULL)
        printf("** dlopen failed : %s\n", msg);
