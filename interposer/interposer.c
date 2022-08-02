@@ -128,9 +128,10 @@ void gtk_widget_show(GtkWidget* widget)
 }
 
 
-void gtk_button_set_label(GtkButton* button, const char* label)
+void gtk_button_set_label(GtkButton* button, const char *label)
 {
- static void (*next_func)(GtkButton* button, const char* label)=NULL;
+ static void (*next_func)(GtkButton* button, const char *label)=NULL;
+ const char *ori=label;
 
  if (next_func==NULL)
    { /* Initialization */
@@ -144,8 +145,12 @@ void gtk_button_set_label(GtkButton* button, const char* label)
  if (g_strcmp0(label, "Print")==0)
     /* Why KiCad people hates shortcuts? */
     label="_Print";
+ else if (label[0]=='S' && label[1]=='a' && label[2]=='v' && label[3]=='e')
+    label="_Save";
  next_func(button, label);
  printf("GTK:Button Label:%s\n", label);
+ if (label!=ori)
+    printf("GTK:Button Label:**Changed from %s\n", ori);
  fflush(stdout);
 }
 

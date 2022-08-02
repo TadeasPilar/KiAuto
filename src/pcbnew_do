@@ -755,6 +755,32 @@ def run_drc_5_1_i(cfg):
     wait_pcbnew()
 
 
+def run_drc_6_0_i(cfg):
+    open_dialog_i('DRC Control', ['key', 'ctrl+shift+i'])
+    # Run the DRC
+    logger.info('Run DRC')
+    wait_point(cfg)
+    xdotool(['key', 'Return'])
+    # Wait for the end of the DRC
+    wait_queue('PANGO:Done.')
+    wait_3d_ready_i(cfg, swaps=0)
+    # Save the DRC
+    # We added a short-cut for Save...
+    open_dialog_i('Save Report to File', ['key', 'alt+s'], show=True)
+    # Paste the name
+    paste_output_file_i(cfg)
+    # Wait for report created
+    logger.info('Wait for DRC file creation')
+    wait_point(cfg)
+    xdotool(['key', 'Return'])
+    wait_for_file_created_by_process(cfg.pcbnew_pid, cfg.output_file)
+    # Close the dialog
+    logger.info('Closing the DRC dialog')
+    wait_point(cfg)
+    xdotool(['key', 'Escape'])
+    wait_pcbnew()
+
+
 def run_drc_i(cfg):
     if not cfg.ki5:
         run_drc_6_0_i(cfg)
@@ -774,7 +800,7 @@ def run_drc_i(cfg):
 
 
 def run_drc(cfg):
-    if use_interposer and cfg.ki5:
+    if use_interposer:
         return run_drc_i(cfg)
     return run_drc_n(cfg)
 
@@ -791,7 +817,7 @@ def export_gencad(cfg):
         export_gencad_n(cfg, keys)
 
 
-def open_dialog_i(name, keys, msg_done=None):
+def open_dialog_i(name, keys, msg_done=None, show=False):
     # Wait for KiCad to be sleeping
     wait_3d_ready_i(cfg, swaps=0)
     logger.info('Opening dialog `{}`'.format(name))
@@ -799,7 +825,7 @@ def open_dialog_i(name, keys, msg_done=None):
     if msg_done is not None:
         res = wait_queue('PANGO:'+msg_done)
     else:
-        pre_gtk = 'GTK:Window Title:'
+        pre_gtk = 'GTK:Window Title:' if not show else 'GTK:Window Show:'
         if isinstance(name, str):
             name = [name]
         res = wait_queue([pre_gtk+f for f in name])
@@ -989,7 +1015,8 @@ def wait_3d_ready_n(cfg):
 def wait_3d_ready_i(cfg, swaps=2, kicad_can_exit=False):
     res = wait_swap(swaps, kicad_can_exit=kicad_can_exit)
     # KiCad 5 takes 0 to 2 extra swaps (is random) so here we ensure KiCad is sleeping
-    if cfg.pcbnew_process.status() == psutil.STATUS_RUNNING:
+    status = cfg.pcbnew_process.status()
+    if status == psutil.STATUS_RUNNING:
         if swaps:
             logger.debug('= KiCad still running after {} swaps, waiting more'.format(swaps))
         else:
@@ -1003,6 +1030,8 @@ def wait_3d_ready_i(cfg, swaps=2, kicad_can_exit=False):
             logger.debug('= KiCad died')
             return KICAD_EXIT_MSG
         logger.debug('= KiCad finally sleeping')
+    else:
+        logger.debug('= KiCad already sleeping ({})'.format(status))
     return res
 
 
@@ -1713,9 +1742,10 @@ if __name__ == '__main__':
     export_parser.add_argument('output_dir', help='Output directory')
     export_parser.add_argument('layers', nargs='+', help='Which layers to include')
 
-    # short commands: ios
+    # short commands: fFios
     drc_parser = subparsers.add_parser('run_drc', help='Run Design Rules Checker on a PCB')
     drc_parser.add_argument('--errors_filter', '-f', nargs=1, help='File with filters to exclude errors')
+    drc_parser.add_argument('--force_gui', '-F', help='Force the use of the GUI (KiCad 6)', action='store_true')
     drc_parser.add_argument('--ignore_unconnected', '-i', help='Ignore unconnected paths', action='store_true')
     drc_parser.add_argument('--output_name', '-o', nargs=1, help='Name of the output file', default=['drc_result.rpt'])
     drc_parser.add_argument('--save', '-s', help='Save after DRC (updating filled zones)', action='store_true')
@@ -1955,7 +1985,7 @@ if __name__ == '__main__':
     # Do all the work
     #
     error_level = 0
-    if args.command == 'run_drc' and not cfg.ki5:
+    if args.command == 'run_drc' and not cfg.ki5 and not args.force_gui:
         # First command to migrate to Python!
         run_drc_python(cfg)
         error_level = process_drc_out(cfg)
