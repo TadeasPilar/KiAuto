@@ -816,7 +816,7 @@ def export_gencad(cfg):
         export_gencad_n(cfg, keys)
 
 
-def open_dialog_i(name, keys, msg_done=None, show=False):
+def open_dialog_i(name, keys, msg_done=None, show=False, no_wait=False):
     # Wait for KiCad to be sleeping
     wait_3d_ready_i(cfg, swaps=0)
     logger.info('Opening dialog `{}`'.format(name))
@@ -829,10 +829,12 @@ def open_dialog_i(name, keys, msg_done=None, show=False):
             name = [name]
         res = wait_queue([pre_gtk+f for f in name])
         name = res[len(pre_gtk):]
+    if no_wait:
+        return None
     # Wait for KiCad to be sleeping
     wait_3d_ready_i(cfg, swaps=0)
     # The dialog is there, just make sure it has the focus
-    wait_for_window(name, name, 1)
+    return wait_for_window(name, name, 1)[0]
 
 
 def paste_output_file_i(cfg):
@@ -1048,7 +1050,7 @@ def apply_steps(steps, key, neg_key, id, cfg):
             logger.debug('Step '+key)
             if use_interposer:
                 if cfg.wait_after_move:
-                    wait_3d_ready_i(cfg, cfg.swaps_steps)
+                    wait_3d_ready_i(cfg, 1)
             else:
                 wait_3d_ready_n(cfg)
 
@@ -1181,78 +1183,39 @@ def capture_3d_view_n(cfg):
 
 def capture_3d_view_i(cfg):
     """ 3D View capture, interposer version """
-    # Configure KiCad 5 vs 6 differences
-    if cfg.ki5:
-        # How can we disable animations? They are really slow
-        cfg.swaps_steps = 12
-        cfg.swaps_before_dialog = 0
-        cfg.swaps_after_loading = 6
-        cfg.swaps_after_loading_n = '6'
-        cfg.swaps_zoom = 2
-        cfg.swaps_end = 0
-    else:
-        cfg.swaps_steps = 2
-        cfg.swaps_before_dialog = 1
-        cfg.swaps_after_loading = 2
-        cfg.swaps_after_loading_n = '8'
-        cfg.swaps_zoom = 3
-        cfg.swaps_end = 1
-    # Wait for KiCad to be sleeping
-    wait_3d_ready_i(cfg, swaps=0)
-    # Open the 3D viewer
-    open_keys = ['key', 'alt+3']
-    dialog_name = '3D Viewer'
-    open_with_retry = True
-    logger.debug('Waiting for '+dialog_name)
-    # Send the keys
-    xdotool(open_keys)
-    # Wait until the dialog name is set
-    #res = wait_queue('GTK:Window Title:'+dialog_name, starts=True, timeout=1, do_to=False)
-    res = wait_queue('GTK:Window Title:'+dialog_name, starts=True)
-    if res is not None:
-        # Now we'll find the window
-        id = wait_for_window('3D viewer dialog', dialog_name, popen_obj=cfg.popen_obj)
-        open_with_retry = False
-        # Note that when loading old format files the title is changed earlier and we don't know if the load is finished
-    if open_with_retry:
-        logger.error('Using fallback to open 3D Viewer')
-        id = open_dialog_with_retry('Open 3D Viewer', open_keys, '3D viewer dialog', dialog_name, cfg)[0]
-    wait_point(cfg)
-    wait_swap(cfg.swaps_before_dialog)
+    id = open_dialog_i('3D Viewer', ['key', 'alt+3'], no_wait=True, show=True)
     logger.debug('3D Viewer is drawing')
 
-    # Detect the 3D models load
+    # Detect the 3D models load (On Ki5 we can miss the "loading..." message
+    logger.info('Loading 3D models')
+    loading_msg = 'PANGO:Loading'
+    loading_msg_l = len(loading_msg)
     reload_time_msg = 'PANGO:Reload time'
-    res = wait_queue(['PANGO:Loading…', 'PANGO:Loading...', reload_time_msg], starts=True)
-    if res.startswith(reload_time_msg):
-        # KiCad 5 without any model to load:
-        cfg.swaps_after_loading = 1
-        cfg.swaps_after_loading_n = '4'
-    else:
-        logger.info('Loading 3D models')
-        loading_msg = 'PANGO:Loading '
-        loading_msg_l = len(loading_msg)
-        with_loading = False
-        padding = 80*' '
-        while True:
-            res = wait_queue([reload_time_msg, 'PANGO:Loading '], starts=True)
-            if res.startswith(reload_time_msg):
-                if with_loading:
-                    log.flush_info()
-                break
+    with_loading = False
+    padding = 80*' '
+    if not cfg.ki5:
+        # KiCad 6 does a first bogus render without loading the models
+        wait_queue(reload_time_msg, starts=True)
+        # Then comes the real action
+    while True:
+        res = wait_queue([reload_time_msg, loading_msg], starts=True)
+        if res.startswith(reload_time_msg):
+            if with_loading:
+                log.flush_info()
+            break
+        res = res[loading_msg_l:]
+        if res[0] == ' ':
+            # The name of a 3D model, otherwise is "..."
             with_loading = True
-            msg = 'Loading '+res[loading_msg_l:]+padding
+            msg = 'Loading'+res+padding
             log.info_progress(msg[:80])
-        logger.info('Finished loading 3D models')
-
+    logger.info('Finished loading 3D models')
     # Wait until the dialog is ready
-    res = wait_3d_ready_i(cfg, cfg.swaps_after_loading)
-    swap_msg = 'GLX:Swap '+cfg.swaps_after_loading_n
-    if res != swap_msg:
-        res = wait_queue(timeout=0.1, do_to=False)
-        if res != swap_msg:
-            # TODO: This isn't an error, is just to debug it
-            logger.error(res)
+    wait_3d_ready_i(cfg, swaps=0)
+    id = wait_for_window('3D Viewer', '3D Viewer', 1)[0]
+    if cfg.ki5:
+        # KiCad 5 can't handle all commands at once
+        cfg.wait_after_move = True
 
     # Switch to orthographic (KiCad 6 has persistence)
     if cfg.orthographic and cfg.ki5:
@@ -1264,7 +1227,7 @@ def capture_3d_view_i(cfg):
         logger.info('Changing view')
         xdotool(['key', cfg.view], id)
         if cfg.wait_after_move:
-            wait_3d_ready_i(cfg)
+            wait_3d_ready_i(cfg, 1)
 
     # Apply the movements
     apply_steps(cfg.move_x, 'Right', 'Left', id, cfg)
@@ -1292,7 +1255,7 @@ def capture_3d_view_i(cfg):
             logger.debug('Zoom')
             # An extra swap is done because we used the mouse (mouse "moved")
             if cfg.wait_after_move:
-                wait_3d_ready_i(cfg, cfg.swaps_zoom)
+                wait_3d_ready_i(cfg, 1)
 
     if cfg.ray_tracing:
         xdotool(['key']+cfg.keys_rt+['Return'], id)
@@ -1790,7 +1753,7 @@ if __name__ == '__main__':
     v3d_parser.add_argument('--use_rt_wait', '-u', help='Use the ray tracing end detection even on normal renders', action='store_true')
     v3d_parser.add_argument('--view', '-v', nargs=1, help='Axis view, uppercase is reversed (i.e. Z is bottom)',
                             default=['z'], choices=['x', 'y', 'z', 'X', 'Y', 'Z'],)
-    v3d_parser.add_argument('--wait_after_move', '-W', help='Wait after moving (applies to the interposer)', action='store_true')
+    v3d_parser.add_argument('--wait_after_move', '-W', help='Wait after moving (KiCad 6 and interposer option)', action='store_true')
     v3d_parser.add_argument('--wait_rt', '-w', nargs=1, help='Seconds to wait for the ray tracing render [5]', default=[5],
                             type=int)
     v3d_parser.add_argument('--zoom', '-z', nargs=1, help='Zoom steps (use negative to reduce)', default=[0], type=int)
