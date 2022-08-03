@@ -806,7 +806,7 @@ def run_drc(cfg):
 
 def export_gencad(cfg):
     wait_point(cfg)
-    if cfg.ki5:
+    if cfg.ki5 or use_interposer:
         keys = ['key', 'alt+f', 'x', 'g']
     else:
         keys = ['key', 'alt+f', 'Down', 'Down', 'Down', 'Down', 'Down', 'Down', 'Down', 'Down', 'KP_Space', 'Down', 'Return']
@@ -874,11 +874,28 @@ def export_gencad_i(cfg, keys):
     open_dialog_i('Export to GenCAD settings', keys)
     # KiCad dialogs are unreliable, you never know which widget is selected
     # This goes to the top left corner of the dialog
-    xdotool(['key', 'Up', 'Up', 'Up', 'Up', 'Up', 'Up', 'Left'])
+    # Note: lamentably this widget doesn't have a label
+    xdotool(['key', 'alt+f', 'Up'])
     # Paste the name
     paste_output_file_i(cfg)
     # Change the settings to what the user wants
-    export_gencad_select_options(cfg)
+    # To make it easier we add accelerators
+    logger.info('Changing settings')
+    keys = ['key']
+    if not cfg.flip_bottom_padstacks:
+        # We used Alt+F to go to the file name, so here the logic is inverted
+        keys.append('alt+f')
+    if cfg.unique_pin_names:
+        keys.append('alt+g')
+    if cfg.no_reuse_shapes:
+        keys.append('alt+n')
+    if cfg.aux_origin:
+        keys.append('alt+u')
+    if cfg.save_origin:
+        keys.append('alt+s')
+    keys.append('Return')
+    xdotool(keys)
+    wait_for_file_created_by_process(cfg.pcbnew_pid, cfg.output_file)
     # Exit
     exit_pcbnew_i(cfg)
 

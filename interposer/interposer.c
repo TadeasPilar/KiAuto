@@ -251,8 +251,27 @@ void gtk_label_set_text_with_mnemonic(GtkLabel *label, const gchar *str)
        printf("** dlopen failed : %s\n", msg);
    }
 
+ /* Create some accelerators to make the navigation easier */
+  /* DRC Control dialog */
  if (g_strcmp0(str, "Report all errors for tracks (slower)")==0)
     str="_Report all errors for tracks (slower)";
+  /* GenCad export dialog */
+ else if (g_strcmp0(str, "Flip bottom footprint padstacks")==0)
+    str="_Flip bottom footprint padstacks";
+ else if (g_strcmp0(str, "Generate unique pin names")==0)
+    str="_Generate unique pin names";
+ else if (g_strcmp0(str, "Generate a new shape for each footprint instance (do not reuse shapes)")==0)
+    str="Generate a _new shape for each footprint instance (do not reuse shapes)";
+ else if (g_strcmp0(str, "Use drill/place file origin as origin")==0 ||
+          g_strcmp0(str, "Use auxiliary axis as origin")==0)  /* KiCad 5 version */
+    str="_Use drill/place file origin as origin";
+ else if (g_strcmp0(str, "Save the origin coordinates in the file")==0)
+    str="_Save the origin coordinates in the file";
+ else if (g_strcmp0(str, "Export")==0)
+    str="E_xport";
+ else if (g_strcmp0(str, "GenCAD...")==0)
+    str="_GenCAD...";
+
  next_func(label, str);
 
  printf("GTK:Label Set Text 2:%s\n", str);
