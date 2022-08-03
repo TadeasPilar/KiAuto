@@ -22,15 +22,12 @@ import atexit
 import gettext
 import json
 import os
-import platform
 import psutil
-from queue import Queue, Empty
 import re
 import shutil
 import subprocess
 import sys
-from tempfile import TemporaryDirectory, mkdtemp
-from threading  import Thread
+from tempfile import TemporaryDirectory
 from time import (asctime, localtime, sleep)
 import time
 
@@ -51,7 +48,8 @@ from kiauto.file_util import set_time_out_scale as set_time_out_scale_f
 from kiauto.misc import (REC_W, REC_H, __version__, NO_PCB, PCBNEW_CFG_PRESENT, WAIT_START, WRONG_LAYER_NAME,
                          WRONG_PCB_NAME, PCBNEW_ERROR, WRONG_ARGUMENTS, Config, USER_HOTKEYS_PRESENT,
                          CORRUPTED_PCB, __copyright__, __license__, TIME_OUT_MULT, get_en_locale, KICAD_CFG_PRESENT,
-                         MISSING_TOOL, KICAD_DIED)
+                         MISSING_TOOL, KICAD_DIED, check_interposer, dump_interposer_dialog,
+                         start_queue, KICAD_EXIT_MSG, create_interposer_print_options_file, wait_queue)
 from kiauto.ui_automation import (PopenContext, xdotool, wait_not_focused, wait_for_window, recorded_xvfb,
                                   wait_point, text_replace, set_time_out_scale, open_dialog_with_retry, ShowInfoAction)
 
@@ -62,8 +60,6 @@ TITLE_WARNING = '^Warning$'
 DEBUG_KICAD_NG = False
 DEBUG_KICAD = False
 IGNORED_DIALOG_MSGS = {'The quick brown fox jumps over the lazy dog.', '0123456789'}
-KICAD_EXIT_MSG = '>>exit<<'
-INTERPOSER_OPS = 'interposer_options.txt'
 
 
 def parse_drc_ki5(lines):
@@ -243,7 +239,7 @@ def collect_dialog_messages():
     logger.debug('Gathering potential dialog content')
     msgs = set()
     for msg in range(12):
-        res = wait_queue(timeout=0.1, do_to=False)
+        res = wait_queue(cfg, timeout=0.1, do_to=False)
         if res is None:
             # Some dialogs has less messages
             continue
@@ -324,7 +320,7 @@ def wait_pcbew_start_by_msg(cfg):
     with_elapsed = False
     while True:
         # Wait for any window
-        res = wait_queue(pres, starts=True, timeout=args.wait_start)
+        res = wait_queue(cfg, pres, starts=True, timeout=args.wait_start)
         logger.debug('wait_pcbew_start_by_msg got '+res)
         match = elapsed_r.match(res)
         title = res[pre_l:]
@@ -336,7 +332,7 @@ def wait_pcbew_start_by_msg(cfg):
                 # This is an old format file that will be saved in the new format
                 logger.warning('Old file format detected, please convert it to KiCad 6 if experimenting problems')
                 # The following message doesn't help
-                # wait_queue('PANGO:This file was created', starts=True, timeout=10, times=2)
+                # wait_queue(cfg, 'PANGO:This file was created', starts=True, timeout=10, times=2)
                 # Problem: When KiCad 6 detects a KiCad 5 file changes the window title before loading, not after
             return  # wait_pcbnew()[0] Using the window id doesn't help
         elif cfg.ki5 and res.startswith(pre+'Pcbnew —'):
@@ -374,7 +370,7 @@ def exit_pcbnew(cfg):
     logger.info('Exiting pcbnew')
     wait_point(cfg)
     xdotool(['key', 'ctrl+q'])
-    wait_queue('None')
+    wait_queue(cfg, 'None')
     try:
         wait_not_focused(id[0], 5)
     except RuntimeError:  # pragma: no cover
@@ -420,7 +416,7 @@ def exit_pcbnew_i(cfg):
     pre_l = len(pre)
     while True:
         # Wait for any window
-        res = wait_queue(pre, starts=True, timeout=5, kicad_can_exit=True)
+        res = wait_queue(cfg, pre, starts=True, timeout=5, kicad_can_exit=True)
         logger.debug('exit_pcbnew_i got '+res)
         if res == KICAD_EXIT_MSG:
             return
@@ -474,7 +470,7 @@ def print_layers(cfg, id_pcbnew):
         # otherwise. We aren't configuring hotkeys for 5.1 so is better
         # to just use the menu accelerators (removed on KiCad 6)
         print_dialog_keys = ['alt+f', 'p']
-    if use_interposer:
+    if cfg.use_interposer:
         return print_layers_i(cfg, id_pcbnew, print_dialog_keys)
     return print_layers_n(cfg, id_pcbnew, print_dialog_keys)
 
@@ -493,7 +489,7 @@ def fill_zones_i(cfg):
     logger.debug('= Wainting for KiCad sleeping')
     while True:
         # Wait for any window, or elapsed info
-        res = wait_queue(pres, starts=True, timeout=0.1, do_to=False)
+        res = wait_queue(cfg, pres, starts=True, timeout=0.1, do_to=False)
         if res is None:
             # No message, is KiCad alive and running?
             try:
@@ -761,7 +757,7 @@ def run_drc_6_0_i(cfg):
     wait_point(cfg)
     xdotool(['key', 'Return'])
     # Wait for the end of the DRC
-    wait_queue('PANGO:Done.')
+    wait_queue(cfg, 'PANGO:Done.')
     wait_3d_ready_i(cfg, swaps=0)
     # Save the DRC
     # We added a short-cut for Save...
@@ -799,18 +795,19 @@ def run_drc_i(cfg):
 
 
 def run_drc(cfg):
-    if use_interposer:
+    if cfg.use_interposer:
         return run_drc_i(cfg)
     return run_drc_n(cfg)
 
 
 def export_gencad(cfg):
     wait_point(cfg)
-    if cfg.ki5 or use_interposer:
+    if cfg.ki5 or cfg.use_interposer:
+        # With the interposer we add the missing accelerators to KiCad 6
         keys = ['key', 'alt+f', 'x', 'g']
     else:
         keys = ['key', 'alt+f', 'Down', 'Down', 'Down', 'Down', 'Down', 'Down', 'Down', 'Down', 'KP_Space', 'Down', 'Return']
-    if use_interposer:
+    if cfg.use_interposer:
         export_gencad_i(cfg, keys)
     else:
         export_gencad_n(cfg, keys)
@@ -822,12 +819,12 @@ def open_dialog_i(name, keys, msg_done=None, show=False, no_wait=False):
     logger.info('Opening dialog `{}`'.format(name))
     xdotool(keys)
     if msg_done is not None:
-        res = wait_queue('PANGO:'+msg_done)
+        res = wait_queue(cfg, 'PANGO:'+msg_done)
     else:
         pre_gtk = 'GTK:Window Title:' if not show else 'GTK:Window Show:'
         if isinstance(name, str):
             name = [name]
-        res = wait_queue([pre_gtk+f for f in name])
+        res = wait_queue(cfg, [pre_gtk+f for f in name])
         name = res[len(pre_gtk):]
     if no_wait:
         return None
@@ -914,7 +911,7 @@ def ipc_netlist(cfg):
     else:
         keys = ['key', 'shift+alt+e']
         pattern = 'IPC-D-356 Test Files (*.d356)'
-    if use_interposer:
+    if cfg.use_interposer:
         ipc_netlist_i(cfg, keys, pattern)
     else:
         ipc_netlist_n(cfg, keys)
@@ -943,26 +940,26 @@ def ipc_netlist_i(cfg, keys, pattern):
 
 def wait_swap(times=1, kicad_can_exit=False):
     """ Wait an OpenGL draw (buffer swap) """
-    if not cfg.interposer_lib or not times:
+    if not cfg.use_interposer or not times:
         return None
-    return wait_queue('GLX:Swap', starts=True, times=times, kicad_can_exit=kicad_can_exit)
+    return wait_queue(cfg, 'GLX:Swap', starts=True, times=times, kicad_can_exit=kicad_can_exit)
 
 
 def wait_ray_tracer(cfg):
-    if cfg.interposer_lib:
+    if cfg.use_interposer:
         # Wait until we see the 100% rendered and the time is reported
         msg = 'PANGO:Rendering: '
         msg_l = len(msg)
         while True:
             # Show the progress
-            res = wait_queue(msg, starts=True)[msg_l:]
+            res = wait_queue(cfg, msg, starts=True)[msg_l:]
             if cfg.verbose:
                 log.info_progress('Rendering '+res)
             if res == '100 %':
                 if cfg.verbose:
                     log.flush_info()
                 break
-        wait_queue('PANGO:Rendering time', starts=True)
+        wait_queue(cfg, 'PANGO:Rendering time', starts=True)
         wait_swap()
         return
     # I can't find a mechanism to determine if the render finished.
@@ -990,14 +987,14 @@ def wait_ray_tracer_i(cfg):
     msg_l = len(msg)
     while True:
         # Show the progress
-        res = wait_queue(msg, starts=True)[msg_l:]
+        res = wait_queue(cfg, msg, starts=True)[msg_l:]
         if cfg.verbose:
             log.info_progress('Rendering '+res)
         if res == '100 %':
             if cfg.verbose:
                 log.flush_info()
             break
-    wait_queue('PANGO:Rendering time', starts=True)
+    wait_queue(cfg, 'PANGO:Rendering time', starts=True)
     wait_swap()
     return
 
@@ -1043,7 +1040,7 @@ def wait_3d_ready_i(cfg, swaps=2, kicad_can_exit=False):
         try:
             #while cfg.pcbnew_process.status() == psutil.STATUS_RUNNING:
             while cfg.pcbnew_process.status() != psutil.STATUS_SLEEPING:
-                new_res = wait_queue('GLX:Swap', starts=True, timeout=0.1, do_to=False, kicad_can_exit=kicad_can_exit)
+                new_res = wait_queue(cfg, 'GLX:Swap', starts=True, timeout=0.1, do_to=False, kicad_can_exit=kicad_can_exit)
                 if new_res is not None:
                     res = new_res
         except psutil.NoSuchProcess:
@@ -1065,7 +1062,7 @@ def apply_steps(steps, key, neg_key, id, cfg):
             logger.info('Step ({})'.format(k))
             xdotool(['key', k], id)
             logger.debug('Step '+key)
-            if use_interposer:
+            if cfg.use_interposer:
                 if cfg.wait_after_move:
                     wait_3d_ready_i(cfg, 1)
             else:
@@ -1074,7 +1071,7 @@ def apply_steps(steps, key, neg_key, id, cfg):
 
 def check_text_replace(name):
     """ Wait until we get the file name """
-    wait_queue('PANGO:'+name)
+    wait_queue(cfg, 'PANGO:'+name)
 
 
 def open_save_image_n(cfg, id):
@@ -1099,7 +1096,7 @@ def open_save_image_i(cfg, id):
     keys = ['key', 'alt+f', 'Return']
     xdotool(keys, id)
     # Here we can get an optional swap, but before the menu
-    wait_queue('PANGO:Export Current View as PNG', starts=True)
+    wait_queue(cfg, 'PANGO:Export Current View as PNG', starts=True)
     # A final swap
     wait_swap()
 
@@ -1115,7 +1112,7 @@ def capture_3d_view(cfg):
     else:
         cfg.keys_rt = ['alt+p']
         cfg.key_close_3d = 'ctrl+w'
-    if use_interposer:
+    if cfg.use_interposer:
         return capture_3d_view_i(cfg)
     return capture_3d_view_n(cfg)
 
@@ -1212,10 +1209,10 @@ def capture_3d_view_i(cfg):
     padding = 80*' '
     if not cfg.ki5:
         # KiCad 6 does a first bogus render without loading the models
-        wait_queue(reload_time_msg, starts=True)
+        wait_queue(cfg, reload_time_msg, starts=True)
         # Then comes the real action
     while True:
-        res = wait_queue([reload_time_msg, loading_msg], starts=True)
+        res = wait_queue(cfg, [reload_time_msg, loading_msg], starts=True)
         if res.startswith(reload_time_msg):
             if with_loading:
                 log.flush_info()
@@ -1277,7 +1274,7 @@ def capture_3d_view_i(cfg):
     if cfg.ray_tracing:
         xdotool(['key']+cfg.keys_rt+['Return'], id)
         logger.debug('Ray tracing')
-        wait_queue('PANGO:Raytracing')
+        wait_queue(cfg, 'PANGO:Raytracing')
         wait_ray_tracer_i(cfg)
 
     # Save the image as PNG
@@ -1575,119 +1572,6 @@ def parse_color(color):
     return parse_one_color(color[0])
 
 
-def enqueue_output(out, queue):
-    """ Read 1 line from the interposer and add it to the queue.
-        Notes:
-        * The queue is thread safe.
-        * When we get an empty string we finish, this is the case for KiCad finished """
-    tm_start = time.time()
-    for line in iter(out.readline, ''):
-        queue.put((time.time()-tm_start, line))
-        # logger.error((time.time()-tm_start, line))
-    out.close()
-
-
-# def flush_queue():
-#     """ Thread safe queue flush """
-#     with cfg.kicad_q.mutex:
-#         cfg.kicad_q.queue.clear()
-
-
-last_msg_time = 0
-interposer_dialog = []
-
-
-def dump_interposer_dialog(f):
-    logger.debug('Storing interposer dialog ({})'.format(f.name))
-    if enable_interposer and not use_interposer:
-        try:
-            global last_msg_time
-            while True:
-                tm, line = cfg.kicad_q.get(timeout=.1)
-                tm *= 1000
-                diff = 0
-                if last_msg_time:
-                    diff = tm-last_msg_time
-                last_msg_time = tm
-                interposer_dialog.append('>>Interposer<<:{} (@{} D {})'.format(line[:-1], round(tm, 3), round(diff, 3)))
-        except Empty:
-            pass
-    for l in interposer_dialog:
-        f.write(l+'\n')
-    f.close()
-
-
-def wait_queue(strs='', starts=False, times=1, timeout=300, do_to=True, kicad_can_exit=False):
-    """ Wait for a string in the queue """
-    if not cfg.interposer_lib:
-        return None
-    if isinstance(strs, str):
-        strs = [strs]
-    end_time = time.time()+timeout*cfg.time_out_scale
-    msg = 'Waiting for `{}` starts={} times={}'.format(strs, starts, times)
-    interposer_dialog.append('KiAuto:'+msg)
-    if cfg.verbose > 1:
-        logger.debug(msg)
-    global last_msg_time
-    while time.time() < end_time:
-        try:
-            tm, line = cfg.kicad_q.get(timeout=.1)
-            if cfg.verbose > 1:
-                tm *= 1000
-                diff = 0
-                if last_msg_time:
-                    diff = tm-last_msg_time
-                last_msg_time = tm
-                logger.debug('>>Interposer<<:{} (@{} D {})'.format(line[:-1], round(tm, 3), round(diff, 3)))
-            interposer_dialog.append(line[:-1])
-        except Empty:
-            line = ''
-        if line == '' and cfg.popen_obj.poll() is not None:
-            if kicad_can_exit:
-                return KICAD_EXIT_MSG
-            logger.error('KiCad unexpectedly died (error level {})'.format(cfg.popen_obj.poll()))
-            exit(KICAD_DIED)
-        old_times = times
-        for s in strs:
-            if s == '':
-                # Waiting for anything ... but not for nothing
-                if line != '':
-                    return line[:-1]
-                continue
-            if starts:
-                if line.startswith(s):
-                    times -= 1
-                    break
-            elif line[:-1] == s:
-                times -= 1
-                break
-        if times == 0:
-            interposer_dialog.append('KiAuto:match')
-            return line[:-1]
-        if old_times != times:
-            interposer_dialog.append('KiAuto:times '+str(times))
-    if do_to:
-        raise RuntimeError('Timed out waiting for `{}`'.format(strs))
-
-
-def remove_interposer_print_dir(cfg):
-    logger.debug('Removing temporal dir '+cfg.interposer_print_dir)
-    shutil.rmdir(cfg.interposer_print_dir)
-
-
-# https://stackoverflow.com/questions/375427/a-non-blocking-read-on-a-subprocess-pipe-in-python
-def start_queue(cfg):
-    """ Create a communication queue in a separated thread.
-        It will collect all messages from the interposer. """
-    logger.debug('Starting queue thread')
-    cfg.kicad_q = Queue()
-    # Avoid crashes when KiCad 5 sends an invalid Unicode sequence
-    cfg.popen_obj.stdout.reconfigure(errors='ignore')
-    cfg.kicad_t = Thread(target=enqueue_output, args=(cfg.popen_obj.stdout, cfg.kicad_q))
-    cfg.kicad_t.daemon = True   # thread dies with the program
-    cfg.kicad_t.start()
-
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='KiCad PCB automation')
     subparsers = parser.add_subparsers(help='Command:', dest='command')
@@ -1956,17 +1840,8 @@ if __name__ == '__main__':
     cfg.output_file = output_file
     # Name for the video
     cfg.video_name = 'pcbnew_'+args.command+'_screencast.ogv'
-    # Name of the interposer library
-    interposer_lib = os.path.abspath(os.path.join(os.path.dirname(kiauto.misc.__file__), 'interposer', 'libinterposer.so'))
-    if (not os.path.isfile(interposer_lib) or  # The lib isn't there
-        args.disable_interposer or             # The user disabled it
-        platform.system() != 'Linux' or 'x86_64' not in platform.platform()):  # Not Linux 64 bits x86
-        interposer_lib = None
-    else:
-        os.environ['LD_PRELOAD'] = interposer_lib
-        logger.debug('** Using interposer: '+interposer_lib)
-    use_interposer = interposer_lib
-    enable_interposer = (interposer_lib and args.interposer_sniff) or use_interposer
+    # Interposer settings
+    check_interposer(args, logger, cfg)
     #
     # Do all the work
     #
@@ -1976,12 +1851,12 @@ if __name__ == '__main__':
         run_drc_python(cfg)
         error_level = process_drc_out(cfg)
         do_retry = False
-        use_interposer = enable_interposer = False
+        cfg.use_interposer = cfg.enable_interposer = False
     else:
-        flog_out, flog_err, flog_int = get_log_files(output_dir, 'pcbnew', also_interposer=enable_interposer)
-        if enable_interposer:
+        flog_out, flog_err, cfg.flog_int = get_log_files(output_dir, 'pcbnew', also_interposer=cfg.enable_interposer)
+        if cfg.enable_interposer:
             flog_out = subprocess.PIPE
-            atexit.register(dump_interposer_dialog, flog_int)
+            atexit.register(dump_interposer_dialog, cfg)
         for retry in range(3):
             do_retry = False
             with recorded_xvfb(cfg, retry):
@@ -1998,13 +1873,9 @@ if __name__ == '__main__':
                            cfg.input_file]
                 else:
                     cmd = [cfg.pcbnew, cfg.input_file]
-                if args.command == 'export' and use_interposer:
+                if args.command == 'export' and cfg.use_interposer:
                     # We need a file to save the print options, make it unique to avoid collisions
-                    cfg.interposer_print_dir = mkdtemp()
-                    cfg.interposer_print_file = os.path.join(cfg.interposer_print_dir, INTERPOSER_OPS)
-                    logger.debug('Using temporal file {} for interposer print options'.format(cfg.interposer_print_file))
-                    os.environ['KIAUTO_INTERPOSER_PRINT'] = cfg.interposer_print_file
-                    atexit.register(remove_interposer_print_dir, cfg)
+                    create_interposer_print_options_file(cfg)
                 logger.info('Starting pcbnew ...')
                 # bufsize=1 is line buffered
                 with PopenContext(cmd, stderr=flog_err, close_fds=True, bufsize=1, text=True,
@@ -2016,10 +1887,8 @@ if __name__ == '__main__':
                             cfg.pcbnew_process = process
                             break
                     cfg.popen_obj = pcbnew_proc
-                    cfg.interposer_lib = use_interposer
-                    if enable_interposer:
-                        start_queue(cfg)
-                    id_pcbnew = wait_pcbew_start_by_msg(cfg) if use_interposer else wait_pcbew_start(cfg)
+                    start_queue(cfg)
+                    id_pcbnew = wait_pcbew_start_by_msg(cfg) if cfg.use_interposer else wait_pcbew_start(cfg)
                     if pcbnew_proc.poll() is not None:
                         do_retry = True
                     else:
@@ -2052,9 +1921,9 @@ if __name__ == '__main__':
     atexit.unregister(restore_project)
     restore_project(cfg)
     # We dump the dialog only on abnormal situations
-    if use_interposer:
-        logger.debug('Removing interposer dialog ({})'.format(flog_int.name))
+    if cfg.use_interposer:
+        logger.debug('Removing interposer dialog ({})'.format(cfg.flog_int.name))
         atexit.unregister(dump_interposer_dialog)
-        flog_int.close()
-        os.remove(flog_int.name)
+        cfg.flog_int.close()
+        os.remove(cfg.flog_int.name)
     exit(error_level)
