@@ -332,6 +332,44 @@ def dismiss_already_open(cfg, title):
     unknown_dialog(cfg, title, msgs)
 
 
+def dismiss_save_changes(cfg, title):
+    msgs = collect_dialog_messages(cfg, title)
+    if ("Save changes to '"+os.path.basename(cfg.input_file)+"' before closing?" in msgs or   # KiCad 6
+       "If you don't save, all your changes will be permanently lost." in msgs):  # KiCad 5
+        dismiss_dialog(cfg, title, ['Left', 'Left', 'Return'])
+        return
+    cfg.logger.error('Save dialog without correct messages')
+    exit(PCBNEW_ERROR if cfg.is_pcbnew else EESCHEMA_ERROR)
+
+
+def exit_kicad_i(cfg):
+    wait_kicad_ready_i(cfg, swaps=0)
+    cfg.logger.info('Exiting KiCad')
+    wait_point(cfg)
+    keys_exit = ['key', 'ctrl+q']
+    xdotool(keys_exit)
+    pre = 'GTK:Window Title:'
+    pre_l = len(pre)
+    while True:
+        # Wait for any window
+        res = wait_queue(cfg, pre, starts=True, timeout=5, kicad_can_exit=True)
+        cfg.logger.debug('exit_kicad_i got '+res)
+        if res == KICAD_EXIT_MSG:
+            return
+        title = res[pre_l:]
+        if title == 'Save Changes?' or title == '':  # KiCad 5 without title!!!!
+            dismiss_save_changes(cfg, title)
+        elif title == 'Pcbnew —  [Unsaved]':
+            # KiCad 5 does it
+            pass
+        else:
+            unknown_dialog(cfg, title)
+        # Wait until KiCad is sleeping again
+        wait_kicad_ready_i(cfg, swaps=0, kicad_can_exit=True)
+        # Retry the exit
+        xdotool(keys_exit)
+
+
 def wait_start_by_msg(cfg):
     cfg.logger.info('Waiting for PCB new window ...')
     pre = 'GTK:Window Title:'

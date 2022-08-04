@@ -48,10 +48,10 @@ from kiauto.misc import (REC_W, REC_H, __version__, NO_PCB, PCBNEW_CFG_PRESENT, 
                          WRONG_PCB_NAME, PCBNEW_ERROR, WRONG_ARGUMENTS, Config, USER_HOTKEYS_PRESENT,
                          CORRUPTED_PCB, __copyright__, __license__, TIME_OUT_MULT, get_en_locale, KICAD_CFG_PRESENT,
                          MISSING_TOOL, KICAD_DIED)
-from kiauto.interposer import (check_interposer, dump_interposer_dialog, start_queue, KICAD_EXIT_MSG,
-                               create_interposer_print_options_file, wait_queue, wait_start_by_msg, collect_dialog_messages,
-                               unknown_dialog, wait_swap, set_kicad_process, open_dialog_i, wait_kicad_ready_i,
-                               paste_output_file_i)
+from kiauto.interposer import (check_interposer, dump_interposer_dialog, start_queue,
+                               create_interposer_print_options_file, wait_queue, wait_start_by_msg,
+                               wait_swap, set_kicad_process, open_dialog_i, wait_kicad_ready_i,
+                               paste_output_file_i, exit_kicad_i)
 from kiauto.ui_automation import (PopenContext, xdotool, wait_not_focused, wait_for_window, recorded_xvfb,
                                   wait_point, text_replace, set_time_out_scale, open_dialog_with_retry, ShowInfoAction)
 
@@ -264,48 +264,6 @@ def exit_pcbnew(cfg):
     wait_point(cfg)
 
 
-def dismiss_save_changes(cfg, title):
-    msgs = collect_dialog_messages(cfg, title)
-    if ("Save changes to '"+os.path.basename(cfg.input_file)+"' before closing?" in msgs or   # KiCad 6
-       "If you don't save, all your changes will be permanently lost." in msgs):  # KiCad 5
-        msg = 'Skipping save changed file ...'
-        logger.info(msg)
-        logger.debug(msg)
-        wait_for_window(title, title, 1)
-        xdotool(['key', 'Left', 'Left', 'Return'])
-        return
-    logger.error('Save dialog without correct messages')
-    exit(PCBNEW_ERROR)
-
-
-def exit_pcbnew_i(cfg):
-    wait_kicad_ready_i(cfg, swaps=0)
-    logger.info('Exiting pcbnew')
-    wait_point(cfg)
-    keys_exit = ['key', 'ctrl+q']
-    xdotool(keys_exit)
-    pre = 'GTK:Window Title:'
-    pre_l = len(pre)
-    while True:
-        # Wait for any window
-        res = wait_queue(cfg, pre, starts=True, timeout=5, kicad_can_exit=True)
-        logger.debug('exit_pcbnew_i got '+res)
-        if res == KICAD_EXIT_MSG:
-            return
-        title = res[pre_l:]
-        if title == 'Save Changes?' or title == '':  # KiCad 5 without title!!!!
-            dismiss_save_changes(cfg, title)
-        elif title == 'Pcbnew —  [Unsaved]':
-            # KiCad 5 does it
-            pass
-        else:
-            unknown_dialog(cfg, title)
-        # Wait until KiCad is sleeping again
-        wait_kicad_ready_i(cfg, swaps=0, kicad_can_exit=True)
-        # Retry the exit
-        xdotool(keys_exit)
-
-
 def open_print_dialog(cfg, print_dialog_keys, id_pcbnew):
     # Open the KiCad Print dialog
     logger.info('Open File->Print')
@@ -425,7 +383,7 @@ def print_layers_i(cfg, id_pcbnew, print_dialog_keys):
         # Move the file to the user selected name
         shutil.move(fname, cfg.output_file)
         # Exit
-        exit_pcbnew_i(cfg)
+        exit_kicad_i(cfg)
 
 
 def print_layers_n(cfg, id_pcbnew, print_dialog_keys):
@@ -663,7 +621,7 @@ def run_drc_i(cfg):
         wait_point(cfg)
         wait_for_file_created_by_process(cfg.pcbnew_pid, os.path.realpath(cfg.input_file))
     # Exit
-    exit_pcbnew_i(cfg)
+    exit_kicad_i(cfg)
 
 
 def run_drc(cfg):
@@ -734,7 +692,7 @@ def export_gencad_i(cfg, keys):
     xdotool(keys)
     wait_for_file_created_by_process(cfg.pcbnew_pid, cfg.output_file)
     # Exit
-    exit_pcbnew_i(cfg)
+    exit_kicad_i(cfg)
 
 
 def export_gencad_n(cfg, keys):
@@ -775,7 +733,7 @@ def ipc_netlist_i(cfg, keys, pattern):
     xdotool(['key', 'Return'])
     wait_for_file_created_by_process(cfg.pcbnew_pid, cfg.output_file)
     # Exit
-    exit_pcbnew_i(cfg)
+    exit_kicad_i(cfg)
 
 
 def wait_ray_tracer(cfg):
@@ -1100,7 +1058,7 @@ def capture_3d_view_i(cfg):
     wait_point(cfg)
     xdotool(['key', cfg.key_close_3d])
 
-    exit_pcbnew_i(cfg)
+    exit_kicad_i(cfg)
 
 
 def load_layers(pcb):
