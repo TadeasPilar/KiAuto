@@ -39,11 +39,14 @@ logger = None
 
 from kiauto.file_util import (load_filters, wait_for_file_created_by_process, apply_filters, list_errors, list_warnings,
                               check_kicad_config_dir, restore_config, backup_config, check_lib_table, create_user_hotkeys,
-                              check_input_file, memorize_project, restore_project, get_log_files, create_kicad_config)
-from kiauto.file_util import set_time_out_scale as set_time_out_scale_f
+                              check_input_file, memorize_project, restore_project, get_log_files, create_kicad_config,
+                              set_time_out_scale as set_time_out_scale_f)
 from kiauto.misc import (REC_W, REC_H, __version__, NO_SCHEMATIC, EESCHEMA_CFG_PRESENT, KICAD_CFG_PRESENT,
                          WAIT_START, WRONG_SCH_NAME, EESCHEMA_ERROR, Config, KICAD_VERSION_5_99,
                          USER_HOTKEYS_PRESENT, __copyright__, __license__, TIME_OUT_MULT, get_en_locale)
+from kiauto.interposer import (check_interposer, dump_interposer_dialog, start_queue, wait_start_by_msg,
+                               create_interposer_print_options_file, set_kicad_process, open_dialog_i,
+                               paste_output_file_i, exit_kicad_i)
 from kiauto.ui_automation import (PopenContext, xdotool, wait_for_window, wait_not_focused, recorded_xvfb,
                                   wait_point, text_replace, set_time_out_scale, wait_xserver, wait_window_get_ref,
                                   wait_window_change, open_dialog_with_retry, ShowInfoAction)
@@ -198,11 +201,38 @@ def exit_eeschema(cfg):
 
 
 def eeschema_plot_schematic(cfg):
-    # KiCad 5.1 vs 5.99 differences
-    if cfg.kicad_version >= KICAD_VERSION_5_99:
-        open_keys = ['key', 'ctrl+shift+p']
-    else:
+    if cfg.ki5:
         open_keys = ['key', 'alt+f', 'l']
+    else:
+        open_keys = ['key', 'ctrl+shift+p']
+    if cfg.use_interposer:
+        eeschema_plot_schematic_i(cfg, open_keys)
+    else:
+        eeschema_plot_schematic_n(cfg, open_keys)
+
+
+def eeschema_plot_schematic_i(cfg, open_keys):
+    # Open the "Export to GenCAD settings"
+    open_dialog_i(cfg, 'Plot Schematic Options', open_keys)
+    # Make sure we are in the "Output directory:" box
+    xdotool(['key', 'alt+o'])
+    # Paste the output_dir
+    paste_output_file_i(cfg, use_dir=True)
+    # Press the corresponding Plot button
+    xdotool(['key', 'alt+a' if cfg.all_pages else 'alt+c'])
+    # Wait for the file
+    logger.info('Wait for plot file creation')
+    wait_point(cfg)
+    wait_for_file_created_by_process(cfg.eeschema_pid, cfg.output_file)
+    # Close the dialog
+    logger.info('Closing window')
+    wait_point(cfg)
+    xdotool(['key', 'Escape'])
+    # Exit
+    exit_kicad_i(cfg)
+
+
+def eeschema_plot_schematic_n(cfg, open_keys):
     # Open the dialog
     open_dialog_with_retry('Open File->pLot', open_keys, 'Plot dialog', 'Plot Schematic Options', cfg)
     # With a WM we usually get the "Browse" button selected.
@@ -461,6 +491,8 @@ def create_eeschema_config(cfg):
             logger.debug(json.dumps(eeconf))
         else:
             text_file.write('RescueNeverShow=1\n')
+            text_file.write('ShowIllegalSymbolLibDialog=0\n')
+            text_file.write('ShowSheetFileNameCaseSensitivityDlg=0\n')
             text_file.write('PlotFormat=%d\n' % index)
             text_file.write('PlotModeColor=%d\n' % (not cfg.monochrome))
             text_file.write('PlotFrameRef=%d\n' % (not cfg.no_frame))
@@ -478,6 +510,13 @@ def set_output_file(cfg, ext):
     cfg.output_file = output_file
 
 
+def wait_eeschema_start_by_msg(cfg):
+    wait_start_by_msg(cfg)
+    # Make sure eeschema has the focus, I saw problems with WM pop-ups getting the focus
+    wait_eeschema(cfg, 10)
+    return False
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='KiCad schematic automation')
     subparsers = parser.add_subparsers(help='Command:', dest='command')
@@ -485,8 +524,10 @@ if __name__ == '__main__':
     parser.add_argument('schematic', help='KiCad schematic file')
     parser.add_argument('output_dir', help='Output directory')
 
-    # mnrsSvVw
+    # iImnrsSvVw
+    parser.add_argument('--disable_interposer', '-I', help='Avoid using the interposer lib', action='store_true')
     parser.add_argument('--info', '-n', help='Show information about the installation', action=ShowInfoAction, nargs=0)
+    parser.add_argument('--interposer_sniff', '-i', help="Log interposer info, but don't use it", action='store_true')
     parser.add_argument('--record', '-r', help='Record the UI automation', action='store_true')
     parser.add_argument('--rec_width', help='Record width ['+str(REC_W)+']', type=int, default=REC_W)
     parser.add_argument('--rec_height', help='Record height ['+str(REC_H)+']', type=int, default=REC_H)
@@ -525,6 +566,8 @@ if __name__ == '__main__':
     cfg = Config(logger, args.schematic, args)
     set_time_out_scale(cfg.time_out_scale)
     set_time_out_scale_f(cfg.time_out_scale)
+    cfg.is_pcbnew = False
+    cfg.verbose = args.verbose
     cfg.video_name = args.command+'_eeschema_screencast.ogv'
     cfg.all_pages = getattr(args, 'all_pages', False)
     cfg.monochrome = getattr(args, 'monochrome', False)
@@ -565,24 +608,34 @@ if __name__ == '__main__':
         create_user_hotkeys(cfg)
     # Make sure the user has sym-lib-table
     check_lib_table(cfg.user_sym_lib_table, cfg.sys_sym_lib_table)
+    # Interposer settings
+    check_interposer(args, logger, cfg)
     #
     # Do all the work
     #
     cfg.output_file_no_ext = os.path.join(output_dir, os.path.splitext(os.path.basename(cfg.input_file))[0])
     error_level = 0
-    flog_out, flog_err, _ = get_log_files(output_dir, 'eeschema')
+    flog_out, flog_err, cfg.flog_int = get_log_files(output_dir, 'eeschema', also_interposer=cfg.enable_interposer)
+    if cfg.enable_interposer:
+        flog_out = subprocess.PIPE
+        atexit.register(dump_interposer_dialog, cfg)
     for retry in range(3):
         do_retry = False
         problem = False
         with recorded_xvfb(cfg, retry):
+            if args.command == 'export' and cfg.use_interposer:
+                # We need a file to save the print options, make it unique to avoid collisions
+                create_interposer_print_options_file(cfg)
             logger.debug('Starting '+cfg.eeschema)
             with PopenContext([cfg.eeschema, cfg.input_file], close_fds=True, start_new_session=True,
-                              stderr=flog_err, stdout=flog_out) as eeschema_proc:
+                              bufsize=1, text=True, stderr=flog_err, stdout=flog_out) as eeschema_proc:
                 cfg.eeschema_pid = eeschema_proc.pid
+                set_kicad_process(cfg, eeschema_proc.pid)
                 cfg.popen_obj = eeschema_proc
                 logger.debug('EEschema PID: '+str(eeschema_proc.pid))
+                start_queue(cfg)
                 # Wait for Eeschema
-                can_retry = wait_eeschema_start(cfg)
+                can_retry = wait_eeschema_start_by_msg(cfg) if cfg.use_interposer else wait_eeschema_start(cfg)
                 if eeschema_proc.poll() is not None:
                     logger.debug('Checking if the X server still there')
                     wait_xserver(cfg.output_dir, 0)
@@ -648,4 +701,10 @@ if __name__ == '__main__':
     restore_project(cfg)
     atexit.unregister(restore_config)
     restore_config(cfg)
+    # We dump the dialog only on abnormal situations
+    if cfg.use_interposer:
+        logger.debug('Removing interposer dialog ({})'.format(cfg.flog_int.name))
+        atexit.unregister(dump_interposer_dialog)
+        cfg.flog_int.close()
+        os.remove(cfg.flog_int.name)
     exit(error_level)
