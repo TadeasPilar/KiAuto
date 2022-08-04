@@ -43,13 +43,14 @@ logger = None
 import kiauto.misc
 from kiauto.file_util import (load_filters, wait_for_file_created_by_process, apply_filters, list_errors, list_warnings,
                               check_kicad_config_dir, restore_config, backup_config, check_lib_table, create_user_hotkeys,
-                              check_input_file, memorize_project, restore_project, get_log_files, create_kicad_config)
-from kiauto.file_util import set_time_out_scale as set_time_out_scale_f
+                              check_input_file, memorize_project, restore_project, get_log_files, create_kicad_config,
+                              set_time_out_scale as set_time_out_scale_f)
 from kiauto.misc import (REC_W, REC_H, __version__, NO_PCB, PCBNEW_CFG_PRESENT, WAIT_START, WRONG_LAYER_NAME,
                          WRONG_PCB_NAME, PCBNEW_ERROR, WRONG_ARGUMENTS, Config, USER_HOTKEYS_PRESENT,
                          CORRUPTED_PCB, __copyright__, __license__, TIME_OUT_MULT, get_en_locale, KICAD_CFG_PRESENT,
-                         MISSING_TOOL, KICAD_DIED, check_interposer, dump_interposer_dialog,
-                         start_queue, KICAD_EXIT_MSG, create_interposer_print_options_file, wait_queue)
+                         MISSING_TOOL, KICAD_DIED)
+from kiauto.interposer import (check_interposer, dump_interposer_dialog, start_queue, KICAD_EXIT_MSG,
+                               create_interposer_print_options_file, wait_queue)
 from kiauto.ui_automation import (PopenContext, xdotool, wait_not_focused, wait_for_window, recorded_xvfb,
                                   wait_point, text_replace, set_time_out_scale, open_dialog_with_retry, ShowInfoAction)
 
@@ -326,17 +327,14 @@ def wait_pcbew_start_by_msg(cfg):
         title = res[pre_l:]
         if not match and with_elapsed:
             log.flush_info()
-        if not cfg.ki5 and res.endswith(' — PCB Editor'):
+        if not cfg.ki5 and title.endswith(' — PCB Editor'):
             # KiCad finished the load process
-            if res[pre_l] == '*':
+            if title[0] == '*':
                 # This is an old format file that will be saved in the new format
                 logger.warning('Old file format detected, please convert it to KiCad 6 if experimenting problems')
-                # The following message doesn't help
-                # wait_queue(cfg, 'PANGO:This file was created', starts=True, timeout=10, times=2)
-                # Problem: When KiCad 6 detects a KiCad 5 file changes the window title before loading, not after
-            return  # wait_pcbnew()[0] Using the window id doesn't help
-        elif cfg.ki5 and res.startswith(pre+'Pcbnew —'):
-            if not res.endswith('  [Unsaved]'):
+            return
+        elif cfg.ki5 and title.startswith('Pcbnew —'):
+            if not title.endswith('  [Unsaved]'):
                 # KiCad 5 name is Pcbnew — PCB_NAME
                 wait_pcbnew()
                 return
@@ -345,7 +343,7 @@ def wait_pcbew_start_by_msg(cfg):
             # This is the main window before loading anything
             # Note that KiCad 5 can create dialogs BEFORE this
             pass
-        elif res.endswith('Loading PCB'):
+        elif title.endswith('Loading PCB'):
             # This is the dialog for the loading progress, wait
             pass
         elif match is not None:
