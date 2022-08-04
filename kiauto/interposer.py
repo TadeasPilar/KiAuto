@@ -6,6 +6,7 @@
 import atexit
 import os
 import platform
+import psutil
 from queue import Queue, Empty
 import re
 import shutil
@@ -15,7 +16,7 @@ from threading import Thread
 import time
 from kiauto.misc import KICAD_DIED, CORRUPTED_PCB, PCBNEW_ERROR, EESCHEMA_ERROR
 from kiauto import log
-from kiauto.ui_automation import xdotool, wait_for_window
+from kiauto.ui_automation import xdotool, wait_for_window, wait_point, text_replace
 
 KICAD_EXIT_MSG = '>>exit<<'
 INTERPOSER_OPS = 'interposer_options.txt'
@@ -159,6 +160,86 @@ def wait_queue(cfg, strs='', starts=False, times=1, timeout=300, do_to=True, kic
             interposer_dialog.append('KiAuto:times '+str(times))
     if do_to:
         raise RuntimeError('Timed out waiting for `{}`'.format(strs))
+
+
+def wait_swap(cfg, times=1, kicad_can_exit=False):
+    """ Wait an OpenGL draw (buffer swap) """
+    if not cfg.use_interposer or not times:
+        return None
+    return wait_queue(cfg, 'GLX:Swap', starts=True, times=times, kicad_can_exit=kicad_can_exit)
+
+
+def set_kicad_process(cfg, pid):
+    """ Translates the PID into a psutil object, stores it in cfg """
+    for process in psutil.process_iter():
+        if process.pid == pid:
+            cfg.kicad_process = process
+            break
+    else:
+        cfg.logger.error('Unable to map KiCad PID to a process')
+        exit(1)
+
+
+def wait_kicad_ready_i(cfg, swaps=2, kicad_can_exit=False):
+    res = wait_swap(cfg, swaps, kicad_can_exit=kicad_can_exit)
+    # KiCad 5 takes 0 to 2 extra swaps (is random) so here we ensure KiCad is sleeping
+    status = cfg.kicad_process.status()
+    if status != psutil.STATUS_SLEEPING:
+        if swaps:
+            cfg.logger.debug('= KiCad still running after {} swaps, waiting more'.format(swaps))
+        else:
+            cfg.logger.debug('= KiCad still running, waiting more')
+        try:
+            while cfg.kicad_process.status() != psutil.STATUS_SLEEPING:
+                new_res = wait_queue(cfg, 'GLX:Swap', starts=True, timeout=0.1, do_to=False, kicad_can_exit=kicad_can_exit)
+                if new_res is not None:
+                    res = new_res
+        except psutil.NoSuchProcess:
+            cfg.logger.debug('= KiCad died')
+            return KICAD_EXIT_MSG
+        cfg.logger.debug('= KiCad finally sleeping')
+    else:
+        cfg.logger.debug('= KiCad already sleeping ({})'.format(status))
+    return res
+
+
+def open_dialog_i(cfg, name, keys, msg_done=None, show=False, no_wait=False):
+    # Wait for KiCad to be sleeping
+    wait_kicad_ready_i(cfg, swaps=0)
+    cfg.logger.info('Opening dialog `{}`'.format(name))
+    xdotool(keys)
+    if msg_done is not None:
+        res = wait_queue(cfg, 'PANGO:'+msg_done)
+    else:
+        pre_gtk = 'GTK:Window Title:' if not show else 'GTK:Window Show:'
+        if isinstance(name, str):
+            name = [name]
+        res = wait_queue(cfg, [pre_gtk+f for f in name])
+        name = res[len(pre_gtk):]
+    if no_wait:
+        return None
+    # Wait for KiCad to be sleeping
+    wait_kicad_ready_i(cfg, swaps=0)
+    # The dialog is there, just make sure it has the focus
+    return wait_for_window(name, name, 1)[0]
+
+
+def check_text_replace(cfg, name):
+    """ Wait until we get the file name """
+    wait_queue(cfg, 'PANGO:'+name)
+
+
+def paste_output_file_i(cfg, use_dir=False):
+    """ Paste the output file/dir and check the echo from KiCad, then wait for sleep """
+    # Paste the name
+    cfg.logger.info('Pasting output file')
+    wait_point(cfg)
+    name = cfg.output_dir if use_dir else cfg.output_file
+    text_replace(name)
+    # Look for the echo
+    check_text_replace(cfg, name)
+    # Wait for KiCad to be sleeping
+    wait_kicad_ready_i(cfg, swaps=0)
 
 
 def collect_dialog_messages(cfg, title):

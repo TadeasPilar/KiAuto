@@ -50,7 +50,8 @@ from kiauto.misc import (REC_W, REC_H, __version__, NO_PCB, PCBNEW_CFG_PRESENT, 
                          MISSING_TOOL, KICAD_DIED)
 from kiauto.interposer import (check_interposer, dump_interposer_dialog, start_queue, KICAD_EXIT_MSG,
                                create_interposer_print_options_file, wait_queue, wait_start_by_msg, collect_dialog_messages,
-                               unknown_dialog)
+                               unknown_dialog, wait_swap, set_kicad_process, open_dialog_i, wait_kicad_ready_i,
+                               paste_output_file_i)
 from kiauto.ui_automation import (PopenContext, xdotool, wait_not_focused, wait_for_window, recorded_xvfb,
                                   wait_point, text_replace, set_time_out_scale, open_dialog_with_retry, ShowInfoAction)
 
@@ -278,7 +279,7 @@ def dismiss_save_changes(cfg, title):
 
 
 def exit_pcbnew_i(cfg):
-    wait_3d_ready_i(cfg, swaps=0)
+    wait_kicad_ready_i(cfg, swaps=0)
     logger.info('Exiting pcbnew')
     wait_point(cfg)
     keys_exit = ['key', 'ctrl+q']
@@ -300,7 +301,7 @@ def exit_pcbnew_i(cfg):
         else:
             unknown_dialog(cfg, title)
         # Wait until KiCad is sleeping again
-        wait_3d_ready_i(cfg, swaps=0, kicad_can_exit=True)
+        wait_kicad_ready_i(cfg, swaps=0, kicad_can_exit=True)
         # Retry the exit
         xdotool(keys_exit)
 
@@ -349,7 +350,7 @@ def print_layers(cfg, id_pcbnew):
 def fill_zones_i(cfg):
     logger.info('Filling zones ...')
     # Wait for KiCad to be sleeping
-    wait_3d_ready_i(cfg, swaps=0)
+    wait_kicad_ready_i(cfg, swaps=0)
     # Now we fill the zones
     xdotool(['key', 'b'])
     # Inform the elapsed time for slow fills
@@ -364,7 +365,7 @@ def fill_zones_i(cfg):
         if res is None:
             # No message, is KiCad alive and running?
             try:
-                if cfg.pcbnew_process.status() != psutil.STATUS_RUNNING:
+                if cfg.kicad_process.status() != psutil.STATUS_RUNNING:
                     logger.debug('= KiCad is sleeping')
                     return
             except psutil.NoSuchProcess:
@@ -406,21 +407,21 @@ def print_layers_i(cfg, id_pcbnew, print_dialog_keys):
         if cfg.fill_zones:
             fill_zones_i(cfg)
         # Open the KiCad print dialog
-        open_dialog_i('Print', ['key']+print_dialog_keys)
+        open_dialog_i(cfg, 'Print', ['key']+print_dialog_keys)
         # Open the gtk print dialog
         # Big magic 1: we add an accelerator to the Print button, so Alt+P is enough
-        open_dialog_i('Print', ['key', 'alt+p'])
+        open_dialog_i(cfg, 'Print', ['key', 'alt+p'])
         # Confirm the options
         # Big magic 2: the interposer selected the printer, output file name and format, just confirm them
         xdotool(['key', 'Return'])
         # Wait until the file is created
         wait_for_file_created_by_process(cfg.pcbnew_pid, fname)
         # Wait sleeping
-        wait_3d_ready_i(cfg, swaps=0)
+        wait_kicad_ready_i(cfg, swaps=0)
         # Close KiCad Print dialog
         xdotool(['key', 'Escape'])
         # Wait sleeping
-        wait_3d_ready_i(cfg, swaps=0)
+        wait_kicad_ready_i(cfg, swaps=0)
         # Move the file to the user selected name
         shutil.move(fname, cfg.output_file)
         # Exit
@@ -604,13 +605,13 @@ def run_drc_n(cfg):
 
 
 def run_drc_5_1_i(cfg):
-    open_dialog_i('DRC Control', ['key', 'alt+i', 'd'])
+    open_dialog_i(cfg, 'DRC Control', ['key', 'alt+i', 'd'])
     logger.info('Enable reporting all errors for tracks')
     wait_point(cfg)
     # Here we added a shortcut for "Report all errors for tracks (slower)"
     xdotool(['key', 'alt+r', 'Tab', 'Tab', 'Tab', 'Tab'])
     paste_output_file_i(cfg)
-    open_dialog_i('Disk File Report Completed', ['key', 'Return'])
+    open_dialog_i(cfg, 'Disk File Report Completed', ['key', 'Return'])
     wait_for_window('Report completed dialog', 'Disk File Report Completed')
     wait_point(cfg)
     xdotool(['key', 'Return'])
@@ -622,17 +623,17 @@ def run_drc_5_1_i(cfg):
 
 
 def run_drc_6_0_i(cfg):
-    open_dialog_i('DRC Control', ['key', 'ctrl+shift+i'])
+    open_dialog_i(cfg, 'DRC Control', ['key', 'ctrl+shift+i'])
     # Run the DRC
     logger.info('Run DRC')
     wait_point(cfg)
     xdotool(['key', 'Return'])
     # Wait for the end of the DRC
     wait_queue(cfg, 'PANGO:Done.')
-    wait_3d_ready_i(cfg, swaps=0)
+    wait_kicad_ready_i(cfg, swaps=0)
     # Save the DRC
     # We added a short-cut for Save...
-    open_dialog_i('Save Report to File', ['key', 'alt+s'], show=True)
+    open_dialog_i(cfg, 'Save Report to File', ['key', 'alt+s'], show=True)
     # Paste the name
     paste_output_file_i(cfg)
     # Wait for report created
@@ -684,38 +685,6 @@ def export_gencad(cfg):
         export_gencad_n(cfg, keys)
 
 
-def open_dialog_i(name, keys, msg_done=None, show=False, no_wait=False):
-    # Wait for KiCad to be sleeping
-    wait_3d_ready_i(cfg, swaps=0)
-    logger.info('Opening dialog `{}`'.format(name))
-    xdotool(keys)
-    if msg_done is not None:
-        res = wait_queue(cfg, 'PANGO:'+msg_done)
-    else:
-        pre_gtk = 'GTK:Window Title:' if not show else 'GTK:Window Show:'
-        if isinstance(name, str):
-            name = [name]
-        res = wait_queue(cfg, [pre_gtk+f for f in name])
-        name = res[len(pre_gtk):]
-    if no_wait:
-        return None
-    # Wait for KiCad to be sleeping
-    wait_3d_ready_i(cfg, swaps=0)
-    # The dialog is there, just make sure it has the focus
-    return wait_for_window(name, name, 1)[0]
-
-
-def paste_output_file_i(cfg):
-    # Paste the name
-    logger.info('Pasting output file')
-    wait_point(cfg)
-    text_replace(cfg.output_file)
-    # Look for the echo
-    check_text_replace(cfg.output_file)
-    # Wait for KiCad to be sleeping
-    wait_3d_ready_i(cfg, swaps=0)
-
-
 def export_gencad_select_options(cfg):
     logger.info('Changing settings')
     xdotool(['key', 'Down'])
@@ -739,7 +708,7 @@ def export_gencad_select_options(cfg):
 
 def export_gencad_i(cfg, keys):
     # Open the "Export to GenCAD settings"
-    open_dialog_i('Export to GenCAD settings', keys)
+    open_dialog_i(cfg, 'Export to GenCAD settings', keys)
     # KiCad dialogs are unreliable, you never know which widget is selected
     # This goes to the top left corner of the dialog
     # Note: lamentably this widget doesn't have a label
@@ -800,20 +769,13 @@ def ipc_netlist_n(cfg, keys):
 def ipc_netlist_i(cfg, keys, pattern):
     # Open the "Export D-356 Test File"
     # Note: This is a pre-created GTK save dialog, so we wait for the save pattern
-    open_dialog_i('Export D-356 Test File', keys, msg_done=pattern)
+    open_dialog_i(cfg, 'Export D-356 Test File', keys, msg_done=pattern)
     # Paste the name
     paste_output_file_i(cfg)
     xdotool(['key', 'Return'])
     wait_for_file_created_by_process(cfg.pcbnew_pid, cfg.output_file)
     # Exit
     exit_pcbnew_i(cfg)
-
-
-def wait_swap(times=1, kicad_can_exit=False):
-    """ Wait an OpenGL draw (buffer swap) """
-    if not cfg.use_interposer or not times:
-        return None
-    return wait_queue(cfg, 'GLX:Swap', starts=True, times=times, kicad_can_exit=kicad_can_exit)
 
 
 def wait_ray_tracer(cfg):
@@ -831,7 +793,7 @@ def wait_ray_tracer(cfg):
                     log.flush_info()
                 break
         wait_queue(cfg, 'PANGO:Rendering time', starts=True)
-        wait_swap()
+        wait_swap(cfg)
         return
     # I can't find a mechanism to determine if the render finished.
     # I think this is a bug in KiCad, you can save unfinished images!!!!
@@ -841,7 +803,7 @@ def wait_ray_tracer(cfg):
         end = time.clock_gettime(time.CLOCK_MONOTONIC) + cfg.wait_rt
         counter = 5
         while (counter > 0) and (time.clock_gettime(time.CLOCK_MONOTONIC) < end):
-            cpu_usage = cfg.pcbnew_process.cpu_percent(0.3)
+            cpu_usage = cfg.kicad_process.cpu_percent(0.3)
             if cpu_usage > 5:
                 if counter < 5:
                     counter = counter + 1
@@ -866,7 +828,7 @@ def wait_ray_tracer_i(cfg):
                 log.flush_info()
             break
     wait_queue(cfg, 'PANGO:Rendering time', starts=True)
-    wait_swap()
+    wait_swap(cfg)
     return
 
 
@@ -898,29 +860,6 @@ def wait_3d_ready_n(cfg):
     wait_for_window('3D Viewer', '3D Viewer')
 
 
-def wait_3d_ready_i(cfg, swaps=2, kicad_can_exit=False):
-    res = wait_swap(swaps, kicad_can_exit=kicad_can_exit)
-    # KiCad 5 takes 0 to 2 extra swaps (is random) so here we ensure KiCad is sleeping
-    status = cfg.pcbnew_process.status()
-    if status != psutil.STATUS_SLEEPING:
-        if swaps:
-            logger.debug('= KiCad still running after {} swaps, waiting more'.format(swaps))
-        else:
-            logger.debug('= KiCad still running, waiting more')
-        try:
-            while cfg.pcbnew_process.status() != psutil.STATUS_SLEEPING:
-                new_res = wait_queue(cfg, 'GLX:Swap', starts=True, timeout=0.1, do_to=False, kicad_can_exit=kicad_can_exit)
-                if new_res is not None:
-                    res = new_res
-        except psutil.NoSuchProcess:
-            logger.debug('= KiCad died')
-            return KICAD_EXIT_MSG
-        logger.debug('= KiCad finally sleeping')
-    else:
-        logger.debug('= KiCad already sleeping ({})'.format(status))
-    return res
-
-
 def apply_steps(steps, key, neg_key, id, cfg):
     if steps:
         k = key
@@ -933,14 +872,9 @@ def apply_steps(steps, key, neg_key, id, cfg):
             logger.debug('Step '+key)
             if cfg.use_interposer:
                 if cfg.wait_after_move:
-                    wait_3d_ready_i(cfg, 1)
+                    wait_kicad_ready_i(cfg, 1)
             else:
                 wait_3d_ready_n(cfg)
-
-
-def check_text_replace(name):
-    """ Wait until we get the file name """
-    wait_queue(cfg, 'PANGO:'+name)
 
 
 def open_save_image_n(cfg, id):
@@ -967,7 +901,7 @@ def open_save_image_i(cfg, id):
     # Here we can get an optional swap, but before the menu
     wait_queue(cfg, 'PANGO:Export Current View as PNG', starts=True)
     # A final swap
-    wait_swap()
+    wait_swap(cfg)
 
 
 def capture_3d_view(cfg):
@@ -1066,7 +1000,7 @@ def capture_3d_view_n(cfg):
 
 def capture_3d_view_i(cfg):
     """ 3D View capture, interposer version """
-    id = open_dialog_i('3D Viewer', ['key', 'alt+3'], no_wait=True, show=True)
+    id = open_dialog_i(cfg, '3D Viewer', ['key', 'alt+3'], no_wait=True, show=True)
     logger.debug('3D Viewer is drawing')
 
     # Detect the 3D models load (On Ki5 we can miss the "loading..." message
@@ -1094,7 +1028,7 @@ def capture_3d_view_i(cfg):
             log.info_progress(msg[:80])
     logger.info('Finished loading 3D models')
     # Wait until the dialog is ready
-    wait_3d_ready_i(cfg, swaps=0)
+    wait_kicad_ready_i(cfg, swaps=0)
     id = wait_for_window('3D Viewer', '3D Viewer', 1)[0]
     if cfg.ki5:
         # KiCad 5 can't handle all commands at once
@@ -1110,7 +1044,7 @@ def capture_3d_view_i(cfg):
         logger.info('Changing view')
         xdotool(['key', cfg.view], id)
         if cfg.wait_after_move:
-            wait_3d_ready_i(cfg, 1)
+            wait_kicad_ready_i(cfg, 1)
 
     # Apply the movements
     apply_steps(cfg.move_x, 'Right', 'Left', id, cfg)
@@ -1138,7 +1072,7 @@ def capture_3d_view_i(cfg):
             logger.debug('Zoom')
             # An extra swap is done because we used the mouse (mouse "moved")
             if cfg.wait_after_move:
-                wait_3d_ready_i(cfg, 1)
+                wait_kicad_ready_i(cfg, 1)
 
     if cfg.ray_tracing:
         xdotool(['key']+cfg.keys_rt+['Return'], id)
@@ -1152,18 +1086,14 @@ def capture_3d_view_i(cfg):
     open_save_image_i(cfg, id)
 
     # Paste the name
-    logger.info('Pasting output file')
-    wait_point(cfg)
-    text_replace(cfg.output_file)
-    # Look for the echo
-    check_text_replace(cfg.output_file)
+    paste_output_file_i(cfg)
 
     # Wait for the image to be created
     logger.info('Wait for the image file creation')
     wait_point(cfg)
     xdotool(['key', 'Return'])
-    wait_swap(3)
-    wait_3d_ready_i(cfg, swaps=0)
+    wait_swap(cfg, 3)
+    wait_kicad_ready_i(cfg, swaps=0)
 
     # Close the 3D viewer
     logger.info('Closing the 3D viewer')
@@ -1439,6 +1369,12 @@ def parse_color(color):
         c2 = parse_one_color(res[1])
         return c1+c2
     return parse_one_color(color[0])
+
+
+def wait_pcbnew_start_by_msg(cfg):
+    wait_start_by_msg(cfg)
+    # Make sure pcbnew has the focus, I saw problems with WM pop-ups getting the focus
+    return wait_pcbnew(1)
 
 
 if __name__ == '__main__':
@@ -1754,14 +1690,10 @@ if __name__ == '__main__':
                 with PopenContext(cmd, stderr=flog_err, close_fds=True, bufsize=1, text=True,
                                   stdout=flog_out, start_new_session=True) as pcbnew_proc:
                     cfg.pcbnew_pid = pcbnew_proc.pid
-                    # Translate the PID into a psutil object
-                    for process in psutil.process_iter():
-                        if process.pid == cfg.pcbnew_pid:
-                            cfg.pcbnew_process = process
-                            break
+                    set_kicad_process(cfg, pcbnew_proc.pid)
                     cfg.popen_obj = pcbnew_proc
                     start_queue(cfg)
-                    id_pcbnew = wait_start_by_msg(cfg) if cfg.use_interposer else wait_pcbew_start(cfg)
+                    id_pcbnew = wait_pcbnew_start_by_msg(cfg) if cfg.use_interposer else wait_pcbew_start(cfg)
                     if pcbnew_proc.poll() is not None:
                         do_retry = True
                     else:
