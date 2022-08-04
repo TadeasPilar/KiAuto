@@ -63,7 +63,7 @@ def dump_interposer_dialog(cfg):
 
 def remove_interposer_print_dir(cfg):
     cfg.logger.debug('Removing temporal dir '+cfg.interposer_print_dir)
-    shutil.rmdir(cfg.interposer_print_dir)
+    shutil.rmtree(cfg.interposer_print_dir, ignore_errors=True)
 
 
 def create_interposer_print_options_file(cfg):
