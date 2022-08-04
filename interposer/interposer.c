@@ -148,6 +148,10 @@ void gtk_button_set_label(GtkButton* button, const char *label)
     label="_Print";
  else if (label[0]=='S' && label[1]=='a' && label[2]=='v' && label[3]=='e')
     label="_Save";
+ else if (g_strcmp0(label, "Plot Current Page")==0)
+    label="Plot _Current Page";
+ else if (g_strcmp0(label, "Plot All Pages")==0)
+    label="Plot _All Pages";
  next_func(button, label);
  printf("GTK:Button Label:%s\n", label);
  if (label!=ori)
@@ -267,10 +271,14 @@ void gtk_label_set_text_with_mnemonic(GtkLabel *label, const gchar *str)
     str="_Use drill/place file origin as origin";
  else if (g_strcmp0(str, "Save the origin coordinates in the file")==0)
     str="_Save the origin coordinates in the file";
+  /* File menu */
  else if (g_strcmp0(str, "Export")==0)
     str="E_xport";
  else if (g_strcmp0(str, "GenCAD...")==0)
     str="_GenCAD...";
+  /* EEschema Plot Schematic Options */
+ else if (g_strcmp0(str, "Output directory:")==0)
+    str="_Output directory:";
 
  next_func(label, str);
 
