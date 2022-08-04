@@ -392,14 +392,40 @@ def eeschema_run_erc_schematic(cfg):
 
 def eeschema_netlist_commands(cfg):
     # KiCad 5.1 vs 5.99 differences
-    if cfg.kicad_version >= KICAD_VERSION_5_99:
-        open_keys = ['key', 'ctrl+shift+n']
-        generate_keys = ['Return']
-        dialog_name = 'Export Netlist'
-    else:
+    if cfg.ki5:
         open_keys = ['key', 'alt+t', 'n']
         generate_keys = ['Tab', 'Tab', 'Return']
         dialog_name = 'Netlist'
+    else:
+        open_keys = ['key', 'ctrl+shift+n']
+        generate_keys = ['Return']
+        dialog_name = 'Export Netlist'
+    if cfg.use_interposer:
+        eeschema_netlist_commands_i(cfg, open_keys, dialog_name)
+    else:
+        eeschema_netlist_commands_n(cfg, open_keys, generate_keys, dialog_name)
+
+
+def eeschema_netlist_commands_i(cfg, open_keys, dialog_name):
+    # Open the "Export Netlist" dialog
+    open_dialog_i(cfg, dialog_name, open_keys)
+    # Start to generate the netlist (select file name)
+    open_dialog_i(cfg, 'Save Netlist File', ['key', 'alt+e'], show=True)
+    # Paste the output file
+    paste_output_file_i(cfg)
+    # Confirm the name and generate the netlist
+    logger.info('Generate Netlist')
+    wait_point(cfg)
+    xdotool(['key', 'Return'])
+    # Wait until created
+    logger.info('Wait for Netlist file creation')
+    wait_point(cfg)
+    wait_for_file_created_by_process(cfg.eeschema_pid, cfg.output_file)
+    # Exit
+    exit_kicad_i(cfg)
+
+
+def eeschema_netlist_commands_n(cfg, open_keys, generate_keys, dialog_name):
     # Open the dialog
     open_dialog_with_retry('Open Tools->Generate Netlist File', open_keys, 'Netlist dialog', dialog_name, cfg)
     # Start to generate the netlist (select file name)
@@ -610,6 +636,8 @@ if __name__ == '__main__':
     check_lib_table(cfg.user_sym_lib_table, cfg.sys_sym_lib_table)
     # Interposer settings
     check_interposer(args, logger, cfg)
+    if args.command != 'export' and args.command != 'netlist':
+        cfg.use_interposer = cfg.enable_interposer = False
     #
     # Do all the work
     #

@@ -22,7 +22,7 @@ from utils import context
 PROG = 'eeschema_do'
 
 
-def test_netlist(test_dir):
+def test_netlist_1(test_dir):
     """ 1) Test netlist creation.
         2) Output file already exists. """
     prj = 'good-project'
@@ -30,7 +30,7 @@ def test_netlist(test_dir):
     ctx = context.TestContextSCH(test_dir, 'Netlist', prj)
     # Force removing the .net
     ctx.create_dummy_out_file(net)
-    cmd = [PROG, 'netlist']
+    cmd = [PROG, '-vvv', 'netlist']
     ctx.run(cmd)
     ctx.expect_out_file(net)
     ctx.search_in_file(net, [r'\(node \(ref "?R1"?\) \(pin "?1"?\)( \(pinfunction "1"\))?( \(pintype "passive"\))?\)',

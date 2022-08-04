@@ -152,6 +152,8 @@ void gtk_button_set_label(GtkButton* button, const char *label)
     label="Plot _Current Page";
  else if (g_strcmp0(label, "Plot All Pages")==0)
     label="Plot _All Pages";
+ else if (g_strcmp0(label, "Generate Netlist")==0 || g_strcmp0(label, "Export Netlist")==0)
+    label="_Export Netlist";
  next_func(button, label);
  printf("GTK:Button Label:%s\n", label);
  if (label!=ori)

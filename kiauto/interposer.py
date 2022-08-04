@@ -204,6 +204,7 @@ def wait_kicad_ready_i(cfg, swaps=2, kicad_can_exit=False):
 
 
 def open_dialog_i(cfg, name, keys, msg_done=None, show=False, no_wait=False):
+    wait_point(cfg)
     # Wait for KiCad to be sleeping
     wait_kicad_ready_i(cfg, swaps=0)
     cfg.logger.info('Opening dialog `{}`'.format(name))
