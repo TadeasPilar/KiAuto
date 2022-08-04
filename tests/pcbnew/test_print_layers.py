@@ -85,10 +85,10 @@ def test_print_pcb_good_dwg_dism(test_dir):
     ctx.compare_image(pdf)
     if ctx.kicad_version < context.KICAD_VERSION_5_99:
         # Only KiCad 5 reports it as a problem
-        assert ctx.search_err(r"Dismiss pcbnew already running") is not None
+        assert ctx.search_err(r"is already running") is not None
     else:
         # On KiCad 6 this is a problem only when we use the same file twice
-        assert ctx.search_err(r"Skipping already open dialog") is not None
+        assert ctx.search_err(r"This file is already opened") is not None
     ctx.clean_up()
 
 

@@ -222,8 +222,9 @@ def dismiss_file_open_error(cfg, title):
     """ KiCad 6: File is already opened """
     msgs = collect_dialog_messages(cfg, title)
     kind = 'PCB' if cfg.is_pcbnew else 'Schematic'
-    if 'Open Anyway' in msgs and kind+" '"+os.path.basename(cfg.input_file)+"' is already open." in msgs:
-        cfg.logger.warning('This file is already opened')
+    fname = os.path.basename(cfg.input_file)
+    if 'Open Anyway' in msgs and kind+" '"+fname+"' is already open." in msgs:
+        cfg.logger.warning('This file is already opened ({})'.format(fname))
         dismiss_dialog(cfg, title, ['Left', 'Return'])
         return
     unknown_dialog(cfg, title, msgs)
