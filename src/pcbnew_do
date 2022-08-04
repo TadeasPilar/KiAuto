@@ -40,7 +40,6 @@ from kiauto import log
 log.set_domain(os.path.splitext(os.path.basename(__file__))[0])
 logger = None
 
-import kiauto.misc
 from kiauto.file_util import (load_filters, wait_for_file_created_by_process, apply_filters, list_errors, list_warnings,
                               check_kicad_config_dir, restore_config, backup_config, check_lib_table, create_user_hotkeys,
                               check_input_file, memorize_project, restore_project, get_log_files, create_kicad_config,
@@ -50,7 +49,8 @@ from kiauto.misc import (REC_W, REC_H, __version__, NO_PCB, PCBNEW_CFG_PRESENT, 
                          CORRUPTED_PCB, __copyright__, __license__, TIME_OUT_MULT, get_en_locale, KICAD_CFG_PRESENT,
                          MISSING_TOOL, KICAD_DIED)
 from kiauto.interposer import (check_interposer, dump_interposer_dialog, start_queue, KICAD_EXIT_MSG,
-                               create_interposer_print_options_file, wait_queue)
+                               create_interposer_print_options_file, wait_queue, wait_start_by_msg, collect_dialog_messages,
+                               unknown_dialog)
 from kiauto.ui_automation import (PopenContext, xdotool, wait_not_focused, wait_for_window, recorded_xvfb,
                                   wait_point, text_replace, set_time_out_scale, open_dialog_with_retry, ShowInfoAction)
 
@@ -60,7 +60,6 @@ TITLE_WARNING = '^Warning$'
 # This is very Debian specific, you need to install `gdb` and the kicad-nightly-dbg package
 DEBUG_KICAD_NG = False
 DEBUG_KICAD = False
-IGNORED_DIALOG_MSGS = {'The quick brown fox jumps over the lazy dog.', '0123456789'}
 
 
 def parse_drc_ki5(lines):
@@ -120,7 +119,7 @@ def parse_drc_ki6(lines):
     # We are only interested in the first two lines of each violation.
     #
     # Unconnected traces are presented similarly:
-    # 
+    #
     # [unconnected_items]: Missing connection between items
     #     Local override; Severity: error
     #     @(99.4000 mm, 112.8900 mm): Pad 1 [Net-(J201-PadB5)] of R201 on B.Cu
@@ -139,14 +138,14 @@ def parse_drc_ki6(lines):
             violations.append(violation)
             context = []
             while(offset+len(context) < len(lines)):
-                l = lines[offset+2+len(context)]
-                if not l.startswith("    "):
-                    break;
-                context.append(l.rstrip())  # Strip out ending \n
+                ln = lines[offset+2+len(context)]
+                if not ln.startswith("    "):
+                    break
+                context.append(ln.rstrip())  # Strip out ending \n
             violation['context'] = "\n".join(context)
     # Classify the violations
     unconnected = [v for v in violations if v['type'] == "unconnected_items"]
-    drc_errors = [v for v in violations if v['severity'] == "error" and not v in unconnected]
+    drc_errors = [v for v in violations if v['severity'] == "error" and v not in unconnected]
     drc_warns = [v for v in violations if v['severity'] == "warning" or v['type'] == "unconnected_items"]
     # Add the errors and warnings
     cfg.errs = ['({}) {}; Severity: error\n{}'.format(e['type'], e['message'], e['context']) for e in drc_errors]
@@ -204,7 +203,7 @@ def wait_pcbew_start(cfg):
     failed_focuse = False
     other = None
     try:
-        id = wait_pcbnew(args.wait_start, [TITLE_CONFIRMATION, TITLE_WARNING, TITLE_ERROR])
+        id = wait_pcbnew(cfg.wait_start, [TITLE_CONFIRMATION, TITLE_WARNING, TITLE_ERROR])
     except RuntimeError:  # pragma: no cover
         logger.debug('Time-out waiting for pcbnew, will retry')
         failed_focuse = True
@@ -236,131 +235,6 @@ def wait_pcbew_start(cfg):
     return id[0]
 
 
-def collect_dialog_messages():
-    logger.debug('Gathering potential dialog content')
-    msgs = set()
-    for msg in range(12):
-        res = wait_queue(cfg, timeout=0.1, do_to=False)
-        if res is None:
-            # Some dialogs has less messages
-            continue
-        if res.startswith('PANGO:'):
-            res = res[6:]
-            if res not in IGNORED_DIALOG_MSGS:
-                msgs.add(res)
-    logger.debug('Messages: '+str(msgs))
-    return msgs
-
-
-def dismiss_file_open_error(title):
-    # Look for the next messages to confirm this is the already open case
-    logger.info(title+' dialog found ...')
-    msgs = collect_dialog_messages()
-    if 'Open Anyway' in msgs and "PCB '"+os.path.basename(cfg.input_file)+"' is already open." in msgs:
-        logger.info('Skipping already open dialog ...')
-        logger.debug('Skipping already open dialog ...')
-        wait_for_window(title, title, 1)
-        xdotool(['key', 'Left', 'Return'])
-        return
-    unknown_dialog(title, msgs)
-
-
-def dismiss_already_open(title):
-    # KiCad 5 when already open file
-    logger.info(title+' dialog found ...')
-    msgs = collect_dialog_messages()
-    if 'PCB file "'+cfg.input_file+'" is already open.' in msgs:
-        logger.error('File already opened by another KiCad instance, KiCad will exit')
-        wait_for_window(title, title, 1)
-        xdotool(['key', 'Return'])
-        return
-    unknown_dialog(title, msgs)
-
-
-def dismiss_error_by_msg(title):
-    logger.info(title+' dialog found ...')
-    msgs = collect_dialog_messages()
-    if "Error loading PCB '"+cfg.input_file+"'." in msgs:
-        # KiCad 6 loading error
-        logger.error('Error loading PCB file. Corrupted?')
-        exit(CORRUPTED_PCB)
-    if 'KiCad was unable to open this file, as it was created with' in msgs:
-        # KiCad 5 loading a KiCad 6 file
-        logger.error('Error loading PCB file. Needs KiCad 6?')
-        exit(CORRUPTED_PCB)
-    unknown_dialog(title, msgs)
-
-
-def dismiss_already_running_msg(title):
-    logger.info(title+' dialog found ...')
-    msgs = collect_dialog_messages()
-    if 'pcbnew is already running. Continue?' in msgs:
-        logger.info('Dismiss pcbnew already running')
-        wait_for_window(title, title, 1)
-        xdotool(['key', 'Return'])
-        return
-    unknown_dialog(title, msgs)
-
-
-def unknown_dialog(title, msgs=None):
-    if msgs is None:
-        msgs = collect_dialog_messages()
-    logger.error('Unknown KiCad dialog: '+title)
-    logger.error('Potential dialog messages: '+str(msgs))
-    exit(PCBNEW_ERROR)
-
-
-def wait_pcbew_start_by_msg(cfg):
-    logger.info('Waiting for PCB new window ...')
-    pre = 'GTK:Window Title:'
-    pre_l = len(pre)
-    logger.debug('Waiting pcbnew to start and load the PCB')
-    # Inform the elapsed time for slow loads
-    pres = [pre, 'PANGO:0:']
-    elapsed_r = re.compile(r'PANGO:(\d:\d\d:\d\d)')
-    with_elapsed = False
-    while True:
-        # Wait for any window
-        res = wait_queue(cfg, pres, starts=True, timeout=args.wait_start)
-        logger.debug('wait_pcbew_start_by_msg got '+res)
-        match = elapsed_r.match(res)
-        title = res[pre_l:]
-        if not match and with_elapsed:
-            log.flush_info()
-        if not cfg.ki5 and title.endswith(' — PCB Editor'):
-            # KiCad finished the load process
-            if title[0] == '*':
-                # This is an old format file that will be saved in the new format
-                logger.warning('Old file format detected, please convert it to KiCad 6 if experimenting problems')
-            return
-        elif cfg.ki5 and title.startswith('Pcbnew —'):
-            if not title.endswith('  [Unsaved]'):
-                # KiCad 5 name is Pcbnew — PCB_NAME
-                wait_pcbnew()
-                return
-            # The "  [Unsaved]" is changed before the final load, ignore it
-        elif title == cfg.pn_simple_window_title:
-            # This is the main window before loading anything
-            # Note that KiCad 5 can create dialogs BEFORE this
-            pass
-        elif title.endswith('Loading PCB'):
-            # This is the dialog for the loading progress, wait
-            pass
-        elif match is not None:
-            log.info_progress('Elapsed time: '+match.group(1))
-            with_elapsed = True
-        elif title == 'Error':
-            dismiss_error_by_msg(title)
-        elif title == 'File Open Error':
-            dismiss_file_open_error(title)
-        elif title == 'Confirmation':
-            dismiss_already_running_msg(title)
-        elif title == 'Warning':
-            dismiss_already_open(title)
-        else:
-            unknown_dialog(title)
-
-
 def exit_pcbnew(cfg):
     # Wait until the dialog is closed, useful when more than one file are created
     id = wait_pcbnew(10)
@@ -390,10 +264,9 @@ def exit_pcbnew(cfg):
 
 
 def dismiss_save_changes(cfg, title):
-    logger.info('Save changes dialog found ...')
-    msgs = collect_dialog_messages()
+    msgs = collect_dialog_messages(cfg, title)
     if ("Save changes to '"+os.path.basename(cfg.input_file)+"' before closing?" in msgs or   # KiCad 6
-        "If you don't save, all your changes will be permanently lost." in msgs):  # KiCad 5
+       "If you don't save, all your changes will be permanently lost." in msgs):  # KiCad 5
         msg = 'Skipping save changed file ...'
         logger.info(msg)
         logger.debug(msg)
@@ -425,7 +298,7 @@ def exit_pcbnew_i(cfg):
             # KiCad 5 does it
             pass
         else:
-            unknown_dialog(title)
+            unknown_dialog(cfg, title)
         # Wait until KiCad is sleeping again
         wait_3d_ready_i(cfg, swaps=0, kicad_can_exit=True)
         # Retry the exit
@@ -1029,14 +902,12 @@ def wait_3d_ready_i(cfg, swaps=2, kicad_can_exit=False):
     res = wait_swap(swaps, kicad_can_exit=kicad_can_exit)
     # KiCad 5 takes 0 to 2 extra swaps (is random) so here we ensure KiCad is sleeping
     status = cfg.pcbnew_process.status()
-    #if status == psutil.STATUS_RUNNING:
     if status != psutil.STATUS_SLEEPING:
         if swaps:
             logger.debug('= KiCad still running after {} swaps, waiting more'.format(swaps))
         else:
             logger.debug('= KiCad still running, waiting more')
         try:
-            #while cfg.pcbnew_process.status() == psutil.STATUS_RUNNING:
             while cfg.pcbnew_process.status() != psutil.STATUS_SLEEPING:
                 new_res = wait_queue(cfg, 'GLX:Swap', starts=True, timeout=0.1, do_to=False, kicad_can_exit=kicad_can_exit)
                 if new_res is not None:
@@ -1123,7 +994,7 @@ def capture_3d_view_n(cfg):
     id = open_dialog_with_retry('Open 3D Viewer', open_keys, '3D viewer dialog', dialog_name, cfg)[0]
     wait_point(cfg)
 
-    res = wait_3d_ready_n(cfg)
+    wait_3d_ready_n(cfg)
 
     # Switch to orthographic (KiCad 6 has persistence)
     if cfg.orthographic and cfg.ki5:
@@ -1649,10 +1520,12 @@ if __name__ == '__main__':
     v3d_parser.add_argument('--sm_color', nargs=1, help='Solder mask color (KiCad 6 supports color1,color2 for top/bottom)',
                             default=['#143324D4'])
     v3d_parser.add_argument('--sp_color', nargs=1, help='Solder paste color', default=['#808080'])
-    v3d_parser.add_argument('--use_rt_wait', '-u', help='Use the ray tracing end detection even on normal renders', action='store_true')
+    v3d_parser.add_argument('--use_rt_wait', '-u', help='Use the ray tracing end detection even on normal renders',
+                            action='store_true')
     v3d_parser.add_argument('--view', '-v', nargs=1, help='Axis view, uppercase is reversed (i.e. Z is bottom)',
                             default=['z'], choices=['x', 'y', 'z', 'X', 'Y', 'Z'],)
-    v3d_parser.add_argument('--wait_after_move', '-W', help='Wait after moving (KiCad 6 and interposer option)', action='store_true')
+    v3d_parser.add_argument('--wait_after_move', '-W', help='Wait after moving (KiCad 6 and interposer option)',
+                            action='store_true')
     v3d_parser.add_argument('--wait_rt', '-w', nargs=1, help='Seconds to wait for the ray tracing render [5]', default=[5],
                             type=int)
     v3d_parser.add_argument('--zoom', '-z', nargs=1, help='Zoom steps (use negative to reduce)', default=[0], type=int)
@@ -1691,6 +1564,8 @@ if __name__ == '__main__':
         exit(WRONG_ARGUMENTS)
 
     cfg = Config(logger, args.kicad_pcb_file, args)
+    cfg.is_pcbnew = True
+    cfg.wait_start = args.wait_start
     cfg.verbose = args.verbose
     set_time_out_scale(cfg.time_out_scale)
     set_time_out_scale_f(cfg.time_out_scale)
@@ -1866,9 +1741,9 @@ if __name__ == '__main__':
                            '-ex', 'bt full', '-ex', 'thread apply all bt full', '--args', '/usr/lib/kicad-nightly/bin/pcbnew',
                            cfg.input_file]
                 elif DEBUG_KICAD:
-                    cmd = ['gdb', '-batch', '-n', '-ex', 'set pagination off', '-ex', 'run', '-ex', 'bt', '-ex', 'set new-console on',
-                           '-ex', 'bt full', '-ex', 'thread apply all bt full', '--args', '/usr/bin/pcbnew',
-                           cfg.input_file]
+                    cmd = ['gdb', '-batch', '-n', '-ex', 'set pagination off', '-ex', 'run', '-ex', 'bt', '-ex',
+                           'set new-console on', '-ex', 'bt full', '-ex', 'thread apply all bt full', '--args',
+                           '/usr/bin/pcbnew', cfg.input_file]
                 else:
                     cmd = [cfg.pcbnew, cfg.input_file]
                 if args.command == 'export' and cfg.use_interposer:
@@ -1886,7 +1761,7 @@ if __name__ == '__main__':
                             break
                     cfg.popen_obj = pcbnew_proc
                     start_queue(cfg)
-                    id_pcbnew = wait_pcbew_start_by_msg(cfg) if cfg.use_interposer else wait_pcbew_start(cfg)
+                    id_pcbnew = wait_start_by_msg(cfg) if cfg.use_interposer else wait_pcbew_start(cfg)
                     if pcbnew_proc.poll() is not None:
                         do_retry = True
                     else:
