@@ -230,17 +230,22 @@ def check_text_replace(cfg, name):
     wait_queue(cfg, 'PANGO:'+name)
 
 
-def paste_output_file_i(cfg, use_dir=False):
-    """ Paste the output file/dir and check the echo from KiCad, then wait for sleep """
+def paste_text_i(cfg, msg, text):
+    """ Paste some text and check the echo from KiCad, then wait for sleep """
     # Paste the name
-    cfg.logger.info('Pasting output file')
+    cfg.logger.info(msg)
     wait_point(cfg)
-    name = cfg.output_dir if use_dir else cfg.output_file
-    text_replace(name)
+    text_replace(text)
     # Look for the echo
-    check_text_replace(cfg, name)
+    check_text_replace(cfg, text)
     # Wait for KiCad to be sleeping
     wait_kicad_ready_i(cfg, swaps=0)
+
+
+def paste_output_file_i(cfg, use_dir=False):
+    """ Paste the output file/dir and check the echo from KiCad, then wait for sleep """
+    name = cfg.output_dir if use_dir else cfg.output_file
+    paste_text_i(cfg, 'Pasting output file', name)
 
 
 def collect_dialog_messages(cfg, title):

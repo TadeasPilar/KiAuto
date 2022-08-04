@@ -46,7 +46,7 @@ from kiauto.misc import (REC_W, REC_H, __version__, NO_SCHEMATIC, EESCHEMA_CFG_P
                          USER_HOTKEYS_PRESENT, __copyright__, __license__, TIME_OUT_MULT, get_en_locale)
 from kiauto.interposer import (check_interposer, dump_interposer_dialog, start_queue, wait_start_by_msg,
                                create_interposer_print_options_file, set_kicad_process, open_dialog_i,
-                               paste_output_file_i, exit_kicad_i)
+                               paste_output_file_i, exit_kicad_i, paste_text_i)
 from kiauto.ui_automation import (PopenContext, xdotool, wait_for_window, wait_not_focused, recorded_xvfb,
                                   wait_point, text_replace, set_time_out_scale, wait_xserver, wait_window_get_ref,
                                   wait_window_change, open_dialog_with_retry, ShowInfoAction)
@@ -391,7 +391,7 @@ def eeschema_run_erc_schematic(cfg):
 
 
 def eeschema_netlist_commands(cfg):
-    # KiCad 5.1 vs 5.99 differences
+    # KiCad 5.1 vs 6 differences
     if cfg.ki5:
         open_keys = ['key', 'alt+t', 'n']
         generate_keys = ['Tab', 'Tab', 'Return']
@@ -465,13 +465,43 @@ def eeschema_netlist_commands_n(cfg, open_keys, generate_keys, dialog_name):
 
 
 def eeschema_bom_xml_commands(cfg):
-    # KiCad 5.1 vs 5.99 differences
-    if cfg.kicad_version >= KICAD_VERSION_5_99:
-        open_keys = ['key', 'ctrl+shift+b']
-        exit_keys = ['Escape']
-    else:
+    # KiCad 5.1 vs 6 differences
+    if cfg.ki5:
         open_keys = ['key', 'alt+t', 'm']
         exit_keys = ['Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Return']
+    else:
+        open_keys = ['key', 'ctrl+shift+b']
+        exit_keys = ['Escape']
+    if cfg.use_interposer:
+        eeschema_bom_xml_commands_i(cfg, open_keys)
+    else:
+        eeschema_bom_xml_commands_n(cfg, open_keys, exit_keys)
+
+
+def eeschema_bom_xml_commands_i(cfg, open_keys):
+    # Open the dialog
+    open_dialog_i(cfg, 'Bill of Material', open_keys)
+    # Select the command input and paste the command
+    xdotool(['key', 'alt+o'])
+    paste_text_i(cfg, 'Paste xslt command',
+                 'xsltproc -o "'+cfg.output_file+'" "/usr/share/kicad/plugins/bom2grouped_csv.xsl" "%I"')
+    # Generate the netlist
+    logger.info('Generating netlist')
+    wait_point(cfg)
+    xdotool(['key', 'alt+g'])
+    # Wait until the file is created
+    logger.info('Wait for BoM file creation')
+    wait_point(cfg)
+    wait_for_file_created_by_process(cfg.eeschema_pid, cfg.output_file)
+    # Close the dialog
+    logger.info('Closing dialog')
+    wait_point(cfg)
+    xdotool(['key', 'alt+c'])
+    # Exit
+    exit_kicad_i(cfg)
+
+
+def eeschema_bom_xml_commands_n(cfg, open_keys, exit_keys):
     # Open the dialog
     open_dialog_with_retry('Open Tools->Generate Bill of Materials', open_keys, 'Bill of Material dialog',
                            'Bill of Material', cfg)
@@ -636,7 +666,7 @@ if __name__ == '__main__':
     check_lib_table(cfg.user_sym_lib_table, cfg.sys_sym_lib_table)
     # Interposer settings
     check_interposer(args, logger, cfg)
-    if args.command != 'export' and args.command != 'netlist':
+    if args.command != 'export' and args.command != 'netlist' and args.command != 'bom_xml':
         cfg.use_interposer = cfg.enable_interposer = False
     #
     # Do all the work

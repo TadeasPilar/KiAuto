@@ -154,6 +154,10 @@ void gtk_button_set_label(GtkButton* button, const char *label)
     label="Plot _All Pages";
  else if (g_strcmp0(label, "Generate Netlist")==0 || g_strcmp0(label, "Export Netlist")==0)
     label="_Export Netlist";
+ else if (g_strcmp0(label, "Close")==0)
+    label="_Close";
+ else if (g_strcmp0(label, "Generate")==0)
+    label="_Generate";
  next_func(button, label);
  printf("GTK:Button Label:%s\n", label);
  if (label!=ori)
@@ -281,6 +285,10 @@ void gtk_label_set_text_with_mnemonic(GtkLabel *label, const gchar *str)
   /* EEschema Plot Schematic Options */
  else if (g_strcmp0(str, "Output directory:")==0)
     str="_Output directory:";
+  /* EEschema Bill of Material */
+ else if (g_strcmp0(str, "Command line running the generator:")==0)
+    str="C_ommand line running the generator:";
+
 
  next_func(label, str);
 
