@@ -12,6 +12,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <dlfcn.h> /* header required for dlsym() */
 #include <string.h>
 #include <pango/pango.h>
@@ -377,7 +378,7 @@ FILE *fopen64(const char *filename, const char *mode)
  res=next_func(filename, mode);
 
  if (mode[0]=='w' && mode[1]=='t')
-    printf("IO:fopen:%s\n", filename);
+    printf("IO:open:%s\n", filename);
  fflush(stdout);
  return res;
 }
@@ -387,6 +388,9 @@ int fclose(FILE *stream)
 {
  static int(*next_func)(FILE *)=NULL;
  int res;
+ char path[1024];
+ char result[1024];
+ int fd;
 
  if (next_func==NULL)
    { /* Initialization */
@@ -397,8 +401,64 @@ int fclose(FILE *stream)
        printf("** dlopen failed : %s\n", msg);
    }
 
+ fd=fileno(stream);
+ /* Read out the link to our file descriptor. */
+ sprintf(path, "/proc/self/fd/%d", fd);
+ memset(result, 0, 1024);
+ readlink(path, result, 1023);
+
  res=next_func(stream);
- printf("IO:fclose:\n");
+ printf("IO:close:%s\n",result);
+ fflush(stdout);
+ return res;
+}
+
+
+int open64(const char *pathname, int flags, mode_t mode)
+{
+ static int (*next_func)(const char *, int , mode_t)=NULL;
+ int res;
+
+ if (next_func==NULL)
+   { /* Initialization */
+    char *msg;
+    printf("* wrapping open\n");
+    next_func=dlsym(RTLD_NEXT,"open64");
+    if ((msg=dlerror())!=NULL)
+       printf("** dlopen failed : %s\n", msg);
+   }
+
+ res=next_func(pathname, flags, mode);
+
+ printf("IO:open:%s\n", pathname);
+ fflush(stdout);
+ return res;
+}
+
+
+int close(int fd)
+{
+ static int(*next_func)(int)=NULL;
+ int res;
+ char path[1024];
+ char result[1024];
+
+ if (next_func==NULL)
+   { /* Initialization */
+    char *msg;
+    /* printf("* wrapping fclose\n"); */
+    next_func=dlsym(RTLD_NEXT,"close");
+    if ((msg=dlerror())!=NULL)
+       printf("** dlopen failed : %s\n", msg);
+   }
+
+ /* Read out the link to our file descriptor. */
+ sprintf(path, "/proc/self/fd/%d", fd);
+ memset(result, 0, 1024);
+ readlink(path, result, 1023);
+
+ res=next_func(fd);
+ printf("IO:close:%s\n",result);
  fflush(stdout);
  return res;
 }

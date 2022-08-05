@@ -268,6 +268,24 @@ def setup_interposer_filename(cfg, fn=None):
         os.remove(BOGUS_FILENAME)
 
 
+def send_keys(cfg, msg, keys):
+    cfg.logger.info(msg)
+    wait_point(cfg)
+    if isinstance(keys, str):
+        keys = ['key', keys]
+    xdotool(keys)
+
+
+def wait_create_i(cfg, name, fn=None):
+    cfg.logger.info('Wait for '+name+' file creation')
+    wait_point(cfg)
+    if fn is None:
+        fn = cfg.output_file
+    wait_queue(cfg, 'IO:open:'+fn)
+    wait_queue(cfg, 'IO:close:'+fn, starts=True)
+    wait_kicad_ready_i(cfg, swaps=0)
+
+
 def collect_dialog_messages(cfg, title):
     cfg.logger.info(title+' dialog found ...')
     cfg.logger.debug('Gathering potential dialog content')

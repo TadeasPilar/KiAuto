@@ -196,6 +196,7 @@ gen_ref:
 	mv $(HOME)/.config/kicadnightly/6.0/colors.ok $(HOME)/.config/kicadnightly/6.0/colors
 
 single_test:
+	-@rm .coverage
 	rm -rf pp
 	-$(PYTEST) --log-cli-level debug -k "$(SINGLE_TEST)" --test_dir pp
 	@echo "********************" Output

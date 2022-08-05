@@ -51,7 +51,7 @@ from kiauto.misc import (REC_W, REC_H, __version__, NO_PCB, PCBNEW_CFG_PRESENT, 
 from kiauto.interposer import (check_interposer, dump_interposer_dialog, start_queue,
                                create_interposer_print_options_file, wait_queue, wait_start_by_msg,
                                wait_swap, set_kicad_process, open_dialog_i, wait_kicad_ready_i,
-                               paste_output_file_i, exit_kicad_i)
+                               paste_output_file_i, exit_kicad_i, send_keys, wait_create_i)
 from kiauto.ui_automation import (PopenContext, xdotool, wait_not_focused, wait_for_window, recorded_xvfb,
                                   wait_point, text_replace, set_time_out_scale, open_dialog_with_retry, ShowInfoAction)
 
@@ -368,16 +368,14 @@ def print_layers_i(cfg, id_pcbnew, print_dialog_keys):
         open_dialog_i(cfg, 'Print', ['key']+print_dialog_keys)
         # Open the gtk print dialog
         # Big magic 1: we add an accelerator to the Print button, so Alt+P is enough
-        open_dialog_i(cfg, 'Print', ['key', 'alt+p'])
+        open_dialog_i(cfg, 'Print', 'alt+p')
         # Confirm the options
         # Big magic 2: the interposer selected the printer, output file name and format, just confirm them
-        xdotool(['key', 'Return'])
+        send_keys(cfg, 'Print', 'Return')
         # Wait until the file is created
-        wait_for_file_created_by_process(cfg.pcbnew_pid, fname)
-        # Wait sleeping
-        wait_kicad_ready_i(cfg, swaps=0)
+        wait_create_i(cfg, 'print', fname)
         # Close KiCad Print dialog
-        xdotool(['key', 'Escape'])
+        send_keys(cfg, 'Close Print dialog', 'Escape')
         # Wait sleeping
         wait_kicad_ready_i(cfg, swaps=0)
         # Move the file to the user selected name

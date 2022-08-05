@@ -246,7 +246,6 @@ void gtk_label_set_text(GtkLabel *label, const gchar *str)
  fflush(stdout);
 }
 
-
 int open(const char *pathname, int flags, mode_t mode)
 {
  static int (*next_func)(const char *, int , mode_t)=NULL;

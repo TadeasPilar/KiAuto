@@ -47,7 +47,7 @@ from kiauto.misc import (REC_W, REC_H, __version__, NO_SCHEMATIC, EESCHEMA_CFG_P
 from kiauto.interposer import (check_interposer, dump_interposer_dialog, start_queue, wait_start_by_msg,
                                create_interposer_print_options_file, set_kicad_process, open_dialog_i,
                                paste_output_file_i, exit_kicad_i, paste_text_i, wait_kicad_ready_i, wait_queue,
-                               paste_bogus_filename, setup_interposer_filename)
+                               paste_bogus_filename, setup_interposer_filename, send_keys, wait_create_i)
 from kiauto.ui_automation import (PopenContext, xdotool, wait_for_window, wait_not_focused, recorded_xvfb,
                                   wait_point, text_replace, set_time_out_scale, wait_xserver, wait_window_get_ref,
                                   wait_window_change, open_dialog_with_retry, ShowInfoAction)
@@ -208,22 +208,6 @@ def wait_create(cfg, name):
     cfg.logger.info('Wait for '+name+' file creation')
     wait_point(cfg)
     wait_for_file_created_by_process(cfg.eeschema_pid, cfg.output_file)
-
-
-def wait_create_i(cfg, name):
-    cfg.logger.info('Wait for '+name+' file creation')
-    wait_point(cfg)
-    wait_queue(cfg, 'IO:fopen:'+cfg.output_file)
-    wait_queue(cfg, 'IO:fclose:')
-    wait_kicad_ready_i(cfg, swaps=0)
-
-
-def send_keys(cfg, msg, keys):
-    cfg.logger.info(msg)
-    wait_point(cfg)
-    if isinstance(keys, str):
-        keys = ['key', keys]
-    xdotool(keys)
 
 
 def eeschema_plot_schematic(cfg):
