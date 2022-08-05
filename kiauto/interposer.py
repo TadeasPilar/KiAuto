@@ -208,6 +208,8 @@ def open_dialog_i(cfg, name, keys, msg_done=None, show=False, no_wait=False):
     # Wait for KiCad to be sleeping
     wait_kicad_ready_i(cfg, swaps=0)
     cfg.logger.info('Opening dialog `{}`'.format(name))
+    if isinstance(keys, str):
+        keys = ['key', keys]
     xdotool(keys)
     if msg_done is not None:
         res = wait_queue(cfg, 'PANGO:'+msg_done)

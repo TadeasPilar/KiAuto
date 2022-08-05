@@ -212,6 +212,8 @@ def wait_create(cfg, name):
 def send_keys(cfg, msg, keys):
     cfg.logger.info(msg)
     wait_point(cfg)
+    if isinstance(keys, str):
+        keys = ['key', keys]
     xdotool(keys)
 
 
@@ -317,7 +319,7 @@ def eeschema_parse_erc(cfg):
     return int(errors), int(warnings)
 
 
-def eeschema_run_erc_schematic_5_1(cfg):
+def eeschema_run_erc_schematic_5_1_n(cfg):
     # Open the ERC dialog
     logger.info('Open Tools->Electrical Rules Checker')
     wait_point(cfg)
@@ -347,7 +349,24 @@ def eeschema_run_erc_schematic_5_1(cfg):
     xdotool(['key', 'shift+Tab', 'Return'])
 
 
-def eeschema_run_erc_schematic_6_0(cfg):
+def eeschema_run_erc_schematic_5_1_i(cfg):
+    # Open the ERC dialog
+    open_dialog_i(cfg, 'Electrical Rules Checker', ['key', 'alt+i', 'c'], show=True)
+    # Enable the "Create ERC file report"
+    send_keys(cfg, 'Enbable report creation', 'alt+c')
+    # Wait for the save dialog
+    open_dialog_i(cfg, 'ERC File', 'Return', show=True)
+    # Paste the name
+    paste_output_file_i(cfg)
+    # Run the ERC
+    send_keys(cfg, 'Run ERC', 'Return')
+    # Wait for report created
+    wait_create(cfg, 'ERC')
+    # Close the ERC dialog
+    send_keys(cfg, 'Exit ERC', 'alt+l')
+
+
+def eeschema_run_erc_schematic_6_0_n(cfg):
     # Open the ERC dialog
     keys = ['key', 'Escape', 'ctrl+shift+i']
     id = open_dialog_with_retry('Open Tools->Electrical Rules Checker', keys, 'Electrical Rules Checker dialog',
@@ -383,11 +402,35 @@ def eeschema_run_erc_schematic_6_0(cfg):
     xdotool(['key', 'Escape'])
 
 
+def eeschema_run_erc_schematic_6_0_i(cfg):
+    # Open the ERC dialog
+    open_dialog_i(cfg, 'Electrical Rules Checker', 'ctrl+shift+i', show=True)
+    # Run the ERC
+    send_keys(cfg, 'Run ERC', 'Return')
+    # Wait for completion. The Close button is refreshed at the end
+    wait_queue(cfg, 'GTK:Button Label:C_lose')
+    # Save the report
+    open_dialog_i(cfg, 'Save Report to File', 'alt+s', show=True)
+    # Paste the output file
+    paste_output_file_i(cfg)
+    send_keys(cfg, 'Create the report', 'Return')
+    # Wait until created
+    wait_create(cfg, 'ERC')
+    # Close the ERC dialog
+    send_keys(cfg, 'Exit ERC', 'Escape')
+
+
 def eeschema_run_erc_schematic(cfg):
     if cfg.ki5:
-        eeschema_run_erc_schematic_5_1(cfg)
+        if cfg.use_interposer:
+            eeschema_run_erc_schematic_5_1_i(cfg)
+        else:
+            eeschema_run_erc_schematic_5_1_n(cfg)
     else:
-        eeschema_run_erc_schematic_6_0(cfg)
+        if cfg.use_interposer:
+            eeschema_run_erc_schematic_6_0_i(cfg)
+        else:
+            eeschema_run_erc_schematic_6_0_n(cfg)
     exit_eeschema(cfg)
 
 
@@ -486,6 +529,7 @@ def eeschema_bom_xml_commands(cfg):
 
 def eeschema_bom_xml_commands_i(cfg, open_keys):
     # Open the dialog
+    # TODO: When we open this dialog we start to get some random messages from the interposer, why?!
     open_dialog_i(cfg, 'Bill of Material', open_keys)
     # Select the command input and paste the command
     xdotool(['key', 'alt+o'])
@@ -645,8 +689,6 @@ if __name__ == '__main__':
     check_lib_table(cfg.user_sym_lib_table, cfg.sys_sym_lib_table)
     # Interposer settings
     check_interposer(args, logger, cfg)
-    if args.command != 'export' and args.command != 'netlist' and args.command != 'bom_xml':
-        cfg.use_interposer = cfg.enable_interposer = False
     #
     # Do all the work
     #

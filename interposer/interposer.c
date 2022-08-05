@@ -291,6 +291,9 @@ void gtk_label_set_text_with_mnemonic(GtkLabel *label, const gchar *str)
     str="C_ommand line running the generator:";
  else if (g_strcmp0(str, "Command line:")==0)
     str="C_ommand line:";
+  /* EEschema Electrical Rules Checker */
+ else if (g_strcmp0(str, "Create ERC file report")==0)
+    str="_Create ERC file report";
 
  next_func(label, str);
 
