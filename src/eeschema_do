@@ -45,7 +45,7 @@ from kiauto.misc import (REC_W, REC_H, __version__, NO_SCHEMATIC, EESCHEMA_CFG_P
                          WAIT_START, WRONG_SCH_NAME, EESCHEMA_ERROR, Config, KICAD_VERSION_5_99,
                          USER_HOTKEYS_PRESENT, __copyright__, __license__, TIME_OUT_MULT, get_en_locale)
 from kiauto.interposer import (check_interposer, dump_interposer_dialog, start_queue, wait_start_by_msg,
-                               create_interposer_print_options_file, set_kicad_process, open_dialog_i,
+                               set_kicad_process, open_dialog_i,
                                paste_output_file_i, exit_kicad_i, paste_text_i, wait_kicad_ready_i, wait_queue,
                                paste_bogus_filename, setup_interposer_filename, send_keys, wait_create_i)
 from kiauto.ui_automation import (PopenContext, xdotool, wait_for_window, wait_not_focused, recorded_xvfb,
