@@ -21,6 +21,7 @@ from kiauto.ui_automation import xdotool, wait_for_window, wait_point, text_repl
 KICAD_EXIT_MSG = '>>exit<<'
 INTERPOSER_OPS = 'interposer_options.txt'
 IGNORED_DIALOG_MSGS = {'The quick brown fox jumps over the lazy dog.', '0123456789'}
+BOGUS_FILENAME = '#'
 
 
 def check_interposer(args, logger, cfg):
@@ -250,6 +251,23 @@ def paste_output_file_i(cfg, use_dir=False):
     paste_text_i(cfg, 'Pasting output file', name)
 
 
+def paste_bogus_filename(cfg):
+    # We paste a bogus name that will be replaced
+    paste_text_i(cfg, 'Paste bogus short name', BOGUS_FILENAME)
+
+
+def setup_interposer_filename(cfg, fn=None):
+    """ Defines the file name used by the interposer to fake the file choosers """
+    if not cfg.use_interposer:
+        return
+    if fn is None:
+        fn = cfg.output_file
+    os.environ['KIAUTO_INTERPOSER_FILENAME'] = fn
+    if os.path.isfile(BOGUS_FILENAME):
+        cfg.logger.warning('Removing bogus file `{}`'.format(BOGUS_FILENAME))
+        os.remove(BOGUS_FILENAME)
+
+
 def collect_dialog_messages(cfg, title):
     cfg.logger.info(title+' dialog found ...')
     cfg.logger.debug('Gathering potential dialog content')
@@ -443,6 +461,7 @@ def wait_start_by_msg(cfg):
             if not title.endswith(unsaved):
                 # KiCad 5 name is "Pcbnew — PCB_NAME" or "Eeschema — SCH_NAME [HIERARCHY] — SCH_FILE_NAME"
                 # wait_pcbnew()
+                wait_queue(cfg, 'GTK:Window Show:'+title, starts=True, timeout=cfg.wait_start)
                 return
             # The "  [Unsaved]" is changed before the final load, ignore it
         elif title == '' or title == cfg.pn_simple_window_title or title == 'Eeschema':

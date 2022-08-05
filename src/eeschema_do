@@ -46,7 +46,8 @@ from kiauto.misc import (REC_W, REC_H, __version__, NO_SCHEMATIC, EESCHEMA_CFG_P
                          USER_HOTKEYS_PRESENT, __copyright__, __license__, TIME_OUT_MULT, get_en_locale)
 from kiauto.interposer import (check_interposer, dump_interposer_dialog, start_queue, wait_start_by_msg,
                                create_interposer_print_options_file, set_kicad_process, open_dialog_i,
-                               paste_output_file_i, exit_kicad_i, paste_text_i, wait_kicad_ready_i, wait_queue)
+                               paste_output_file_i, exit_kicad_i, paste_text_i, wait_kicad_ready_i, wait_queue,
+                               paste_bogus_filename, setup_interposer_filename)
 from kiauto.ui_automation import (PopenContext, xdotool, wait_for_window, wait_not_focused, recorded_xvfb,
                                   wait_point, text_replace, set_time_out_scale, wait_xserver, wait_window_get_ref,
                                   wait_window_change, open_dialog_with_retry, ShowInfoAction)
@@ -234,8 +235,6 @@ def eeschema_plot_schematic(cfg):
         eeschema_plot_schematic_i(cfg, open_keys)
     else:
         eeschema_plot_schematic_n(cfg, open_keys)
-    # Wait for the file
-    wait_create(cfg, 'plot')
     # Close the dialog
     send_keys(cfg, 'Closing window', ['key', 'Escape'])
     # Exit
@@ -251,6 +250,11 @@ def eeschema_plot_schematic_i(cfg, open_keys):
     paste_output_file_i(cfg, use_dir=True)
     # Press the corresponding Plot button
     xdotool(['key', 'alt+a' if cfg.all_pages else 'alt+c'])
+    # Wait for the file
+    wait_queue(cfg, ["PANGO:Plotted to '"+cfg.output_file+"'.", 'PANGO:"'+cfg.output_file], starts=True)
+    wait_kicad_ready_i(cfg, swaps=0)
+    # The above is more specific that just:
+    # wait_create(cfg, 'plot')
 
 
 def eeschema_plot_schematic_n(cfg, open_keys):
@@ -278,6 +282,8 @@ def eeschema_plot_schematic_n(cfg, open_keys):
     logger.info('Plot')
     wait_point(cfg)
     xdotool(['key', 'Return'])
+    # Wait for the file
+    wait_create(cfg, 'plot')
 
 
 def eeschema_parse_erc(cfg):
@@ -365,8 +371,7 @@ def eeschema_run_erc_schematic_5_1_i(cfg):
     # Wait for the save dialog
     open_dialog_i(cfg, 'ERC File', 'Return', show=True)
     # Paste the name
-    # We paste a bogus name that will be replaced
-    paste_text_i(cfg, 'Paste bogus short name', '#')
+    paste_bogus_filename(cfg)
     # Run the ERC
     send_keys(cfg, 'Run ERC', 'Return')
     # Wait for report created
@@ -421,8 +426,7 @@ def eeschema_run_erc_schematic_6_0_i(cfg):
     # Save the report
     open_dialog_i(cfg, 'Save Report to File', 'alt+s', show=True)
     # Paste the output file
-    # We paste a bogus name that will be replaced
-    paste_text_i(cfg, 'Paste bogus short name', '#')
+    paste_bogus_filename(cfg)
     send_keys(cfg, 'Create the report', 'Return')
     # Wait until created
     wait_create_i(cfg, 'ERC')
@@ -458,10 +462,6 @@ def eeschema_netlist_commands(cfg):
         eeschema_netlist_commands_i(cfg, open_keys, dialog_name)
     else:
         eeschema_netlist_commands_n(cfg, open_keys, generate_keys, dialog_name)
-    # Confirm the name and generate the netlist
-    send_keys(cfg, 'Generate Netlist', ['key', 'Return'])
-    # Wait until created
-    wait_create(cfg, 'Netlist')
     # Exit
     exit_eeschema(cfg)
 
@@ -472,7 +472,11 @@ def eeschema_netlist_commands_i(cfg, open_keys, dialog_name):
     # Start to generate the netlist (select file name)
     open_dialog_i(cfg, 'Save Netlist File', ['key', 'alt+e'], show=True)
     # Paste the output file
-    paste_output_file_i(cfg)
+    paste_bogus_filename(cfg)
+    # Confirm the name and generate the netlist
+    send_keys(cfg, 'Generate Netlist', ['key', 'Return'])
+    # Wait until created
+    wait_create_i(cfg, 'Netlist')
 
 
 def eeschema_netlist_commands_n(cfg, open_keys, generate_keys, dialog_name):
@@ -502,6 +506,10 @@ def eeschema_netlist_commands_n(cfg, open_keys, generate_keys, dialog_name):
     logger.info('Pasting output file')
     wait_point(cfg)
     text_replace(cfg.output_file)
+    # Confirm the name and generate the netlist
+    send_keys(cfg, 'Generate Netlist', ['key', 'Return'])
+    # Wait until created
+    wait_create(cfg, 'Netlist')
 
 
 def wait_bom(cfg):
@@ -712,21 +720,32 @@ if __name__ == '__main__':
     for retry in range(3):
         do_retry = False
         problem = False
+        # Setup the output file name
+        if args.command == 'export':
+            # Export
+            ext = cfg.export_format
+            if ext == 'hpgl':
+                ext = 'plt'
+            set_output_file(cfg, ext)
+        elif args.command == 'netlist':
+            # Netlist
+            set_output_file(cfg, 'net')
+        elif args.command == 'bom_xml':
+            # BoM XML
+            set_output_file(cfg, 'csv')
+        elif args.command == 'run_erc':
+            # Run ERC
+            if args.output_name is None:
+                set_output_file(cfg, 'erc')
+            else:
+                cfg.output_file = os.path.abspath(args.output_name[0])
+                if os.path.exists(cfg.output_file):
+                    logger.debug('Removing old file')
+                    os.remove(cfg.output_file)
+            logger.debug('Report file: '+cfg.output_file)
+        # When using the interposer inform the output file name using the environment
+        setup_interposer_filename(cfg)
         with recorded_xvfb(cfg, retry):
-            # Pass the output file name using the environment
-            if args.command == 'run_erc' and cfg.use_interposer:
-                if args.output_name is None:
-                    set_output_file(cfg, 'erc')
-                else:
-                    cfg.output_file = os.path.abspath(args.output_name[0])
-                    if os.path.exists(cfg.output_file):
-                        logger.debug('Removing old file')
-                        os.remove(cfg.output_file)
-                logger.debug('Report file: '+cfg.output_file)
-                os.environ['KIAUTO_INTERPOSER_FILENAME'] = cfg.output_file
-                if os.path.isfile('#'):
-                    logger.warning('Removing bogus file `#`')
-                    os.remove(default_name)
             # Run Eeschema
             logger.debug('Starting '+cfg.eeschema)
             with PopenContext([cfg.eeschema, cfg.input_file], close_fds=True, start_new_session=True,
@@ -750,18 +769,12 @@ if __name__ == '__main__':
                 else:
                     if args.command == 'export':
                         # Export
-                        ext = cfg.export_format
-                        if ext == 'hpgl':
-                            ext = 'plt'
-                        set_output_file(cfg, ext)
                         eeschema_plot_schematic(cfg)
                     elif args.command == 'netlist':
                         # Netlist
-                        set_output_file(cfg, 'net')
                         eeschema_netlist_commands(cfg)
                     elif args.command == 'bom_xml':
                         # BoM XML
-                        set_output_file(cfg, 'csv')
                         eeschema_bom_xml_commands(cfg)
                     elif args.command == 'run_erc':
                         # Run ERC
