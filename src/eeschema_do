@@ -209,6 +209,14 @@ def wait_create(cfg, name):
     wait_for_file_created_by_process(cfg.eeschema_pid, cfg.output_file)
 
 
+def wait_create_i(cfg, name):
+    cfg.logger.info('Wait for '+name+' file creation')
+    wait_point(cfg)
+    wait_queue(cfg, 'IO:fopen:'+cfg.output_file)
+    wait_queue(cfg, 'IO:fclose:')
+    wait_kicad_ready_i(cfg, swaps=0)
+
+
 def send_keys(cfg, msg, keys):
     cfg.logger.info(msg)
     wait_point(cfg)
@@ -357,11 +365,12 @@ def eeschema_run_erc_schematic_5_1_i(cfg):
     # Wait for the save dialog
     open_dialog_i(cfg, 'ERC File', 'Return', show=True)
     # Paste the name
-    paste_output_file_i(cfg)
+    # We paste a bogus name that will be replaced
+    paste_text_i(cfg, 'Paste bogus short name', '#')
     # Run the ERC
     send_keys(cfg, 'Run ERC', 'Return')
     # Wait for report created
-    wait_create(cfg, 'ERC')
+    wait_create_i(cfg, 'ERC')
     # Close the ERC dialog
     send_keys(cfg, 'Exit ERC', 'alt+l')
 
@@ -412,10 +421,11 @@ def eeschema_run_erc_schematic_6_0_i(cfg):
     # Save the report
     open_dialog_i(cfg, 'Save Report to File', 'alt+s', show=True)
     # Paste the output file
-    paste_output_file_i(cfg)
+    # We paste a bogus name that will be replaced
+    paste_text_i(cfg, 'Paste bogus short name', '#')
     send_keys(cfg, 'Create the report', 'Return')
     # Wait until created
-    wait_create(cfg, 'ERC')
+    wait_create_i(cfg, 'ERC')
     # Close the ERC dialog
     send_keys(cfg, 'Exit ERC', 'Escape')
 
@@ -692,7 +702,8 @@ if __name__ == '__main__':
     #
     # Do all the work
     #
-    cfg.output_file_no_ext = os.path.join(output_dir, os.path.splitext(os.path.basename(cfg.input_file))[0])
+    input_file_no_ext = os.path.splitext(os.path.basename(cfg.input_file))[0]
+    cfg.output_file_no_ext = os.path.join(output_dir, input_file_no_ext)
     error_level = 0
     flog_out, flog_err, cfg.flog_int = get_log_files(output_dir, 'eeschema', also_interposer=cfg.enable_interposer)
     if cfg.enable_interposer:
@@ -702,12 +713,26 @@ if __name__ == '__main__':
         do_retry = False
         problem = False
         with recorded_xvfb(cfg, retry):
-            if args.command == 'export' and cfg.use_interposer:
-                # We need a file to save the print options, make it unique to avoid collisions
-                create_interposer_print_options_file(cfg)
+            # Pass the output file name using the environment
+            if args.command == 'run_erc' and cfg.use_interposer:
+                if args.output_name is None:
+                    set_output_file(cfg, 'erc')
+                else:
+                    cfg.output_file = os.path.abspath(args.output_name[0])
+                    if os.path.exists(cfg.output_file):
+                        logger.debug('Removing old file')
+                        os.remove(cfg.output_file)
+                logger.debug('Report file: '+cfg.output_file)
+                os.environ['KIAUTO_INTERPOSER_FILENAME'] = cfg.output_file
+                if os.path.isfile('#'):
+                    logger.warning('Removing bogus file `#`')
+                    os.remove(default_name)
+            # Run Eeschema
             logger.debug('Starting '+cfg.eeschema)
             with PopenContext([cfg.eeschema, cfg.input_file], close_fds=True, start_new_session=True,
                               bufsize=1, text=True, stderr=flog_err, stdout=flog_out) as eeschema_proc:
+                # Avoid patching our childs
+                os.environ['LD_PRELOAD'] = ''
                 cfg.eeschema_pid = eeschema_proc.pid
                 set_kicad_process(cfg, eeschema_proc.pid)
                 cfg.popen_obj = eeschema_proc
@@ -740,14 +765,6 @@ if __name__ == '__main__':
                         eeschema_bom_xml_commands(cfg)
                     elif args.command == 'run_erc':
                         # Run ERC
-                        if args.output_name is None:
-                            set_output_file(cfg, 'erc')
-                        else:
-                            cfg.output_file = os.path.abspath(args.output_name[0])
-                            if os.path.exists(cfg.output_file):
-                                logger.debug('Removing old file')
-                                os.remove(cfg.output_file)
-                        logger.debug('Report file: '+cfg.output_file)
                         eeschema_run_erc_schematic(cfg)
                         errors, warnings = eeschema_parse_erc(cfg)
                         skip_err, skip_wrn = apply_filters(cfg, 'ERC error/s', 'ERC warning/s')

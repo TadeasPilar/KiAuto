@@ -301,3 +301,105 @@ void gtk_label_set_text_with_mnemonic(GtkLabel *label, const gchar *str)
  fflush(stdout);
 }
 
+
+gchar *gtk_file_chooser_get_filename(GtkFileChooser *chooser)
+{
+ static gchar *(*next_func)(GtkFileChooser *)=NULL;
+ static char *fn;
+ gchar *res;
+
+ if (next_func==NULL)
+   { /* Initialization */
+    char *msg;
+    printf("* wrapping file chooser get filename\n");
+    next_func=dlsym(RTLD_NEXT,"gtk_file_chooser_get_filename");
+    if ((msg=dlerror())!=NULL)
+       printf("** dlopen failed : %s\n", msg);
+    fn=getenv("KIAUTO_INTERPOSER_FILENAME");
+    if (fn==NULL)
+       printf("****** NOT DEFINED\n");
+   }
+
+ res=next_func(chooser);
+
+ if (fn!=NULL)
+   {
+    printf("GTK:Filename:%s\n", fn);
+    printf("GTK:Filename:**Changed from %s\n",res);
+    res=g_strdup(fn);
+   }
+ else
+   {
+    printf("GTK:Filename:%s\n", res);
+   }
+ fflush(stdout);
+ return res;
+}
+
+
+FILE *fopen(const char *filename, const char *mode)
+{
+ static FILE *(*next_func)(const char *, const char *)=NULL;
+ FILE *res;
+
+ if (next_func==NULL)
+   { /* Initialization */
+    char *msg;
+    /* printf("* wrapping fopen\n"); */
+    next_func=dlsym(RTLD_NEXT,"fopen");
+    if ((msg=dlerror())!=NULL)
+       printf("** dlopen failed : %s\n", msg);
+   }
+
+ res=next_func(filename, mode);
+
+ if (mode[0]=='w' && mode[1]=='t')
+    printf("IO:fopen:%s\n", filename);
+ fflush(stdout);
+ return res;
+}
+
+
+FILE *fopen64(const char *filename, const char *mode)
+{
+ static FILE *(*next_func)(const char *, const char *)=NULL;
+ FILE *res;
+
+ if (next_func==NULL)
+   { /* Initialization */
+    char *msg;
+    /* printf("* wrapping fopen\n"); */
+    next_func=dlsym(RTLD_NEXT,"fopen64");
+    if ((msg=dlerror())!=NULL)
+       printf("** dlopen failed : %s\n", msg);
+   }
+
+ res=next_func(filename, mode);
+
+ if (mode[0]=='w' && mode[1]=='t')
+    printf("IO:fopen:%s\n", filename);
+ fflush(stdout);
+ return res;
+}
+
+
+int fclose(FILE *stream)
+{
+ static int(*next_func)(FILE *)=NULL;
+ int res;
+
+ if (next_func==NULL)
+   { /* Initialization */
+    char *msg;
+    /* printf("* wrapping fclose\n"); */
+    next_func=dlsym(RTLD_NEXT,"fclose");
+    if ((msg=dlerror())!=NULL)
+       printf("** dlopen failed : %s\n", msg);
+   }
+
+ res=next_func(stream);
+ printf("IO:fclose:\n");
+ fflush(stdout);
+ return res;
+}
+

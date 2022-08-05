@@ -245,3 +245,50 @@ void gtk_label_set_text(GtkLabel *label, const gchar *str)
  printf("GTK:Label Set Text:%s\n", str);
  fflush(stdout);
 }
+
+
+int open(const char *pathname, int flags, mode_t mode)
+{
+ static int (*next_func)(const char *, int , mode_t)=NULL;
+ int res;
+
+ if (next_func==NULL)
+   { /* Initialization */
+    char *msg;
+    printf("* wrapping open\n");
+    next_func=dlsym(RTLD_NEXT,"open");
+    if ((msg=dlerror())!=NULL)
+       printf("** dlopen failed : %s\n", msg);
+   }
+
+ res=next_func(pathname, flags, mode);
+
+ printf("IO:open:%s\n", pathname);
+ fflush(stdout);
+ return res;
+}
+
+
+int creat(const char *pathname, mode_t mode)
+{
+ static int (*next_func)(const char *, int)=NULL;
+ int res;
+
+ if (next_func==NULL)
+   { /* Initialization */
+    char *msg;
+    printf("* wrapping creat\n");
+    next_func=dlsym(RTLD_NEXT,"creat");
+    if ((msg=dlerror())!=NULL)
+       printf("** dlopen failed : %s\n", msg);
+   }
+
+ res=next_func(pathname, mode);
+
+ printf("IO:creat:%s\n", pathname);
+ fflush(stdout);
+ return res;
+}
+
+
+
