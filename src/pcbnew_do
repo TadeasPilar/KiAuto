@@ -1647,6 +1647,8 @@ if __name__ == '__main__':
                 # bufsize=1 is line buffered
                 with PopenContext(cmd, stderr=flog_err, close_fds=True, bufsize=1, text=True,
                                   stdout=flog_out, start_new_session=True) as pcbnew_proc:
+                    # Avoid patching our childs
+                    os.environ['LD_PRELOAD'] = ''
                     cfg.pcbnew_pid = pcbnew_proc.pid
                     set_kicad_process(cfg, pcbnew_proc.pid)
                     cfg.popen_obj = pcbnew_proc

@@ -126,7 +126,7 @@ def test_drc_no_save(test_dir):
     ctx = context.TestContext(test_dir, 'DRC_No_Save', 'zone-refill')
     shutil.copy2(ctx.board_file+'.ok', ctx.board_file)
     size = os.path.getsize(ctx.board_file)
-    cmd = [PROG, 'run_drc']
+    cmd = [PROG, '-vv', 'run_drc']
     ctx.run(cmd)
     ctx.expect_out_file(REPORT)
     assert os.path.getsize(ctx.board_file) == size
