@@ -59,13 +59,17 @@ void pango_layout_set_text(PangoLayout *layout, const char *text, int length)
  if (text[0]!=0 &&  /* Emty strings??!! */
      !(text[0]=='g' && text[1]==0) &&   /* g seems to be used to meassure */
      !(text[0]=='.' && text[1]=='.' && text[2]=='.' && text[3]==0) &&
-     !(text[0]=='‚' && text[1]=='ó' && text[2]=='è' && text[3]==0) &&  /* Ball 1 */
-     !(text[0]=='‚' && text[1]=='Ä' && text[2]=='¢' && text[3]==0) &&  /* Ball 2 */
+     !(text[0]==(char)0xE2 && text[1]==(char)0x97 && text[2]==(char)0x8F && text[3]==0) &&  /* Ball 1 */
+     !(text[0]==(char)0xE2 && text[1]==(char)0x80 && text[2]==(char)0xA2 && text[3]==0) &&  /* Ball 2 */
      strcmp(text, "ABCDEFHXfgkj"))  /* To meassure? */
    {/* Avoid repetition */
-    if (strncmp(text, buffer, MAX_STORE))
-       printf("PANGO:%s\n", text); /* Most stuff is sent 3 times!!! */
+    if (strncmp(text, buffer, MAX_STORE))  /* Most stuff is sent 3 times!!! */
+      {
+       fputs("PANGO:", stdout);
+       fputs(text, stdout);
+       fputc('\n', stdout);
        fflush(stdout);
+      }
     strncpy(buffer, text, MAX_STORE);
    }
  return next_func(layout, text, length);
