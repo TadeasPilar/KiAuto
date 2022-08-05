@@ -46,7 +46,7 @@ from kiauto.misc import (REC_W, REC_H, __version__, NO_SCHEMATIC, EESCHEMA_CFG_P
                          USER_HOTKEYS_PRESENT, __copyright__, __license__, TIME_OUT_MULT, get_en_locale)
 from kiauto.interposer import (check_interposer, dump_interposer_dialog, start_queue, wait_start_by_msg,
                                create_interposer_print_options_file, set_kicad_process, open_dialog_i,
-                               paste_output_file_i, exit_kicad_i, paste_text_i)
+                               paste_output_file_i, exit_kicad_i, paste_text_i, wait_kicad_ready_i, wait_queue)
 from kiauto.ui_automation import (PopenContext, xdotool, wait_for_window, wait_not_focused, recorded_xvfb,
                                   wait_point, text_replace, set_time_out_scale, wait_xserver, wait_window_get_ref,
                                   wait_window_change, open_dialog_with_retry, ShowInfoAction)
@@ -179,6 +179,9 @@ def wait_eeschema_start(cfg):
 
 
 def exit_eeschema(cfg):
+    if cfg.use_interposer:
+        exit_kicad_i(cfg)
+        return
     # Wait until the dialog is closed, useful when more than one file are created
     id = wait_eeschema(cfg, 10)
 
@@ -200,6 +203,18 @@ def exit_eeschema(cfg):
     # If we failed to exit we will kill it anyways
 
 
+def wait_create(cfg, name):
+    cfg.logger.info('Wait for '+name+' file creation')
+    wait_point(cfg)
+    wait_for_file_created_by_process(cfg.eeschema_pid, cfg.output_file)
+
+
+def send_keys(cfg, msg, keys):
+    cfg.logger.info(msg)
+    wait_point(cfg)
+    xdotool(keys)
+
+
 def eeschema_plot_schematic(cfg):
     if cfg.ki5:
         open_keys = ['key', 'alt+f', 'l']
@@ -209,6 +224,12 @@ def eeschema_plot_schematic(cfg):
         eeschema_plot_schematic_i(cfg, open_keys)
     else:
         eeschema_plot_schematic_n(cfg, open_keys)
+    # Wait for the file
+    wait_create(cfg, 'plot')
+    # Close the dialog
+    send_keys(cfg, 'Closing window', ['key', 'Escape'])
+    # Exit
+    exit_eeschema(cfg)
 
 
 def eeschema_plot_schematic_i(cfg, open_keys):
@@ -220,16 +241,6 @@ def eeschema_plot_schematic_i(cfg, open_keys):
     paste_output_file_i(cfg, use_dir=True)
     # Press the corresponding Plot button
     xdotool(['key', 'alt+a' if cfg.all_pages else 'alt+c'])
-    # Wait for the file
-    logger.info('Wait for plot file creation')
-    wait_point(cfg)
-    wait_for_file_created_by_process(cfg.eeschema_pid, cfg.output_file)
-    # Close the dialog
-    logger.info('Closing window')
-    wait_point(cfg)
-    xdotool(['key', 'Escape'])
-    # Exit
-    exit_kicad_i(cfg)
 
 
 def eeschema_plot_schematic_n(cfg, open_keys):
@@ -257,16 +268,6 @@ def eeschema_plot_schematic_n(cfg, open_keys):
     logger.info('Plot')
     wait_point(cfg)
     xdotool(['key', 'Return'])
-    # Wait for the file
-    logger.info('Wait for plot file creation')
-    wait_point(cfg)
-    wait_for_file_created_by_process(cfg.eeschema_pid, cfg.output_file)
-    # Close the dialog
-    logger.info('Closing window')
-    wait_point(cfg)
-    xdotool(['key', 'Escape'])
-    # Exit
-    exit_eeschema(cfg)
 
 
 def eeschema_parse_erc(cfg):
@@ -383,10 +384,10 @@ def eeschema_run_erc_schematic_6_0(cfg):
 
 
 def eeschema_run_erc_schematic(cfg):
-    if cfg.kicad_version >= KICAD_VERSION_5_99:
-        eeschema_run_erc_schematic_6_0(cfg)
-    else:
+    if cfg.ki5:
         eeschema_run_erc_schematic_5_1(cfg)
+    else:
+        eeschema_run_erc_schematic_6_0(cfg)
     exit_eeschema(cfg)
 
 
@@ -404,6 +405,12 @@ def eeschema_netlist_commands(cfg):
         eeschema_netlist_commands_i(cfg, open_keys, dialog_name)
     else:
         eeschema_netlist_commands_n(cfg, open_keys, generate_keys, dialog_name)
+    # Confirm the name and generate the netlist
+    send_keys(cfg, 'Generate Netlist', ['key', 'Return'])
+    # Wait until created
+    wait_create(cfg, 'Netlist')
+    # Exit
+    exit_eeschema(cfg)
 
 
 def eeschema_netlist_commands_i(cfg, open_keys, dialog_name):
@@ -413,16 +420,6 @@ def eeschema_netlist_commands_i(cfg, open_keys, dialog_name):
     open_dialog_i(cfg, 'Save Netlist File', ['key', 'alt+e'], show=True)
     # Paste the output file
     paste_output_file_i(cfg)
-    # Confirm the name and generate the netlist
-    logger.info('Generate Netlist')
-    wait_point(cfg)
-    xdotool(['key', 'Return'])
-    # Wait until created
-    logger.info('Wait for Netlist file creation')
-    wait_point(cfg)
-    wait_for_file_created_by_process(cfg.eeschema_pid, cfg.output_file)
-    # Exit
-    exit_kicad_i(cfg)
 
 
 def eeschema_netlist_commands_n(cfg, open_keys, generate_keys, dialog_name):
@@ -452,16 +449,13 @@ def eeschema_netlist_commands_n(cfg, open_keys, generate_keys, dialog_name):
     logger.info('Pasting output file')
     wait_point(cfg)
     text_replace(cfg.output_file)
-    # Confirm the name and generate the netlist
-    logger.info('Generate Netlist')
-    wait_point(cfg)
-    xdotool(['key', 'Return'])
-    # Wait until created
-    logger.info('Wait for Netlist file creation')
-    wait_point(cfg)
-    wait_for_file_created_by_process(cfg.eeschema_pid, cfg.output_file)
-    # Exit
-    exit_eeschema(cfg)
+
+
+def wait_bom(cfg):
+    # Waiting for the file creation isn't a good idea because the file is created by other process
+    wait_queue(cfg, ['PANGO:Success', 'PANGO:Command error'], starts=True, times=3)
+    # Note: we will get the XML updated even on fail
+    wait_kicad_ready_i(cfg, swaps=0)
 
 
 def eeschema_bom_xml_commands(cfg):
@@ -474,8 +468,20 @@ def eeschema_bom_xml_commands(cfg):
         exit_keys = ['Escape']
     if cfg.use_interposer:
         eeschema_bom_xml_commands_i(cfg, open_keys)
+        exit_keys = ['alt+l']
     else:
         eeschema_bom_xml_commands_n(cfg, open_keys, exit_keys)
+    # Generate the netlist
+    send_keys(cfg, 'Generate Netlist', ['key', 'Return'])
+    # Wait until the file is created
+    if cfg.use_interposer:
+        wait_bom(cfg)
+    else:
+        wait_create(cfg, 'BoM')
+    # Close the dialog
+    send_keys(cfg, 'Closing dialog', ['key']+exit_keys)
+    # Exit
+    exit_eeschema(cfg)
 
 
 def eeschema_bom_xml_commands_i(cfg, open_keys):
@@ -485,20 +491,6 @@ def eeschema_bom_xml_commands_i(cfg, open_keys):
     xdotool(['key', 'alt+o'])
     paste_text_i(cfg, 'Paste xslt command',
                  'xsltproc -o "'+cfg.output_file+'" "/usr/share/kicad/plugins/bom2grouped_csv.xsl" "%I"')
-    # Generate the netlist
-    logger.info('Generating netlist')
-    wait_point(cfg)
-    xdotool(['key', 'alt+g'])
-    # Wait until the file is created
-    logger.info('Wait for BoM file creation')
-    wait_point(cfg)
-    wait_for_file_created_by_process(cfg.eeschema_pid, cfg.output_file)
-    # Close the dialog
-    logger.info('Closing dialog')
-    wait_point(cfg)
-    xdotool(['key', 'alt+c'])
-    # Exit
-    exit_kicad_i(cfg)
 
 
 def eeschema_bom_xml_commands_n(cfg, open_keys, exit_keys):
@@ -510,20 +502,6 @@ def eeschema_bom_xml_commands_n(cfg, open_keys, exit_keys):
     wait_point(cfg)
     xdotool(['key', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab'])
     text_replace('xsltproc -o "'+cfg.output_file+'" "/usr/share/kicad/plugins/bom2grouped_csv.xsl" "%I"')
-    # Generate the netlist
-    logger.info('Generating netlist')
-    wait_point(cfg)
-    xdotool(['key', 'Return'])
-    # Wait until the file is created
-    logger.info('Wait for BoM file creation')
-    wait_point(cfg)
-    wait_for_file_created_by_process(cfg.eeschema_pid, cfg.output_file)
-    # Close the dialog
-    logger.info('Closing dialog')
-    wait_point(cfg)
-    xdotool(['key']+exit_keys)
-    # Exit
-    exit_eeschema(cfg)
 
 
 def create_eeschema_config(cfg):
@@ -620,6 +598,7 @@ if __name__ == '__main__':
     log.set_level(logger, args.verbose)
 
     cfg = Config(logger, args.schematic, args)
+    logger.debug('Setting timeout scale to {}'.format(cfg.time_out_scale))
     set_time_out_scale(cfg.time_out_scale)
     set_time_out_scale_f(cfg.time_out_scale)
     cfg.is_pcbnew = False
