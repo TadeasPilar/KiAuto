@@ -26,7 +26,7 @@ def test_bom_xml(test_dir):
     prj = 'good-project'
     bom = prj+'.csv'
     ctx = context.TestContextSCH(test_dir, 'BoM_XML', prj)
-    cmd = [PROG, '-vv', '-r', '--time_out_scale', '3.0', 'bom_xml']
+    cmd = [PROG, '-vv', '-r', '--time_out_scale', '0.9', 'bom_xml']
     ctx.run(cmd)
     ctx.expect_out_file(bom)
     ctx.search_in_file(bom, [r'C1 C2 ,2,"C","Capacitor_SMD:C_0402_1005Metric"',
