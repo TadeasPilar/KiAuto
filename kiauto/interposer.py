@@ -356,20 +356,27 @@ def exit_kicad_i(cfg):
     xdotool(keys_exit)
     pre = 'GTK:Window Title:'
     pre_l = len(pre)
+    retries = 3
     while True:
         # Wait for any window
-        res = wait_queue(cfg, pre, starts=True, timeout=5, kicad_can_exit=True)
-        cfg.logger.debug('exit_kicad_i got '+res)
-        if res == KICAD_EXIT_MSG:
+        res = wait_queue(cfg, pre, starts=True, timeout=2, kicad_can_exit=True, do_to=False)
+        if res is not None:
+            cfg.logger.debug('exit_kicad_i got '+res)
+            if res == KICAD_EXIT_MSG:
+                return
+            title = res[pre_l:]
+            if title == 'Save Changes?' or title == '':  # KiCad 5 without title!!!!
+                dismiss_save_changes(cfg, title)
+            elif title == 'Pcbnew —  [Unsaved]':
+                # KiCad 5 does it
+                pass
+            else:
+                unknown_dialog(cfg, title)
+        retries -= 1
+        if not retries:
+            cfg.logger.error("Can't exit KiCad")
             return
-        title = res[pre_l:]
-        if title == 'Save Changes?' or title == '':  # KiCad 5 without title!!!!
-            dismiss_save_changes(cfg, title)
-        elif title == 'Pcbnew —  [Unsaved]':
-            # KiCad 5 does it
-            pass
-        else:
-            unknown_dialog(cfg, title)
+        cfg.logger.warning("Retrying KiCad exit")
         # Wait until KiCad is sleeping again
         wait_kicad_ready_i(cfg, swaps=0, kicad_can_exit=True)
         # Retry the exit
