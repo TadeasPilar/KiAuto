@@ -105,7 +105,7 @@ def test_erc_ok_eeschema_running(test_dir):
     assert ctx.search_err(r"\[36;1mDEBUG:") is not None
     if ctx.kicad_version < context.KICAD_VERSION_5_99:
         # Only KiCad 5 reports it as a problem
-        assert ctx.search_err(r"Dismiss eeschema already running") is not None
+        assert ctx.search_err(r"already running") is not None
     ctx.clean_up()
 
 
@@ -140,7 +140,7 @@ def test_erc_error(test_dir):
         cmd = [PROG, 'run_erc']
         ctx.run(cmd)
         ctx.expect_out_file(rep)
-        assert ctx.search_err(r"Missing library") is not None
+        assert ctx.search_err(r"Missing librar") is not None
     ctx.clean_up()
 
 

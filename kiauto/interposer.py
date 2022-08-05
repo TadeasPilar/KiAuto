@@ -330,17 +330,32 @@ def dismiss_already_running(cfg, title):
     unknown_dialog(cfg, title, msgs)
 
 
-def dismiss_already_open(cfg, title):
-    """ KiCad 5 when already open file """
+def dismiss_warning(cfg, title):
+    """ KiCad 5 when already open file (PCB/SCH)
+        KiCad 5 with bogus SCH files """
     msgs = collect_dialog_messages(cfg, title)
     kind = 'PCB' if cfg.is_pcbnew else 'Schematic'
     if kind+' file "'+cfg.input_file+'" is already open.' in msgs:
         cfg.logger.error('File already opened by another KiCad instance')
         exit(PCBNEW_ERROR if cfg.is_pcbnew else EESCHEMA_ERROR)
+    if 'Error loading schematic file "'+os.path.abspath(cfg.input_file)+'".' in msgs:
+        cfg.logger.error('eeschema reported an error while loading the schematic')
+        exit(EESCHEMA_ERROR)
+    unknown_dialog(cfg, title, msgs)
+
+
+def dismiss_remap_symbols(cfg, title):
+    """ KiCad 5 opening an old file """
+    msgs = collect_dialog_messages(cfg, title)
+    if "Output Messages" in msgs and "Close" in msgs:
+        cfg.logger.warning('Schematic needs update')
+        dismiss_dialog(cfg, title, ['Escape'])
+        return
     unknown_dialog(cfg, title, msgs)
 
 
 def dismiss_save_changes(cfg, title):
+    """ KiCad 5/6 asking for save changes to disk """
     msgs = collect_dialog_messages(cfg, title)
     if ("Save changes to '"+os.path.basename(cfg.input_file)+"' before closing?" in msgs or   # KiCad 6
        "If you don't save, all your changes will be permanently lost." in msgs):  # KiCad 5
@@ -447,6 +462,8 @@ def wait_start_by_msg(cfg):
         elif title == 'Confirmation':
             dismiss_already_running(cfg, title)
         elif title == 'Warning':
-            dismiss_already_open(cfg, title)
+            dismiss_warning(cfg, title)
+        elif title == 'Remap Symbols':
+            dismiss_remap_symbols(cfg, title)
         else:
             unknown_dialog(cfg, title)
