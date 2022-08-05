@@ -315,7 +315,7 @@ def wait_focused(id, timeout=10):
     timeout *= time_out_scale
     DELAY = 0.5
     logger.debug('Waiting for %s window to get focus...', id)
-    for i in range(int(timeout/DELAY)):
+    for i in range(min(int(timeout/DELAY), 1)):
         cur_id = xdotool(['getwindowfocus']).rstrip()
         logger.debug('Currently focused id: %s', cur_id)
         if cur_id == id:
