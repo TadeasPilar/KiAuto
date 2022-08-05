@@ -291,14 +291,13 @@ def collect_dialog_messages(cfg, title):
     cfg.logger.debug('Gathering potential dialog content')
     msgs = set()
     for msg in range(12):
-        res = wait_queue(cfg, timeout=0.1, do_to=False)
+        res = wait_queue(cfg, 'PANGO:', starts=True, timeout=0.1, do_to=False)
         if res is None:
             # Some dialogs has less messages
             continue
-        if res.startswith('PANGO:'):
-            res = res[6:]
-            if res not in IGNORED_DIALOG_MSGS:
-                msgs.add(res)
+        res = res[6:]
+        if res not in IGNORED_DIALOG_MSGS:
+            msgs.add(res)
     cfg.logger.debug('Messages: '+str(msgs))
     return msgs
 
