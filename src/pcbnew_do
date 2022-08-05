@@ -51,7 +51,7 @@ from kiauto.misc import (REC_W, REC_H, __version__, NO_PCB, PCBNEW_CFG_PRESENT, 
 from kiauto.interposer import (check_interposer, dump_interposer_dialog, start_queue,
                                create_interposer_print_options_file, wait_queue, wait_start_by_msg,
                                wait_swap, set_kicad_process, open_dialog_i, wait_kicad_ready_i,
-                               paste_output_file_i, exit_kicad_i, send_keys, wait_create_i)
+                               paste_output_file_i, exit_kicad_i, send_keys, wait_create_i, save_interposer_print_data)
 from kiauto.ui_automation import (PopenContext, xdotool, wait_not_focused, wait_for_window, recorded_xvfb,
                                   wait_point, text_replace, set_time_out_scale, open_dialog_with_retry, ShowInfoAction)
 
@@ -354,13 +354,7 @@ def print_layers_i(cfg, id_pcbnew, print_dialog_keys):
     # GTK is limited to the names we can choose, so we let it create the name and move to the arbitrary one
     with TemporaryDirectory() as tmpdir:
         # Pass the target dir, file name and format to the interposer
-        ext = 'pdf' if not cfg.svg else 'svg'
-        fn = 'interposer'
-        with open(cfg.interposer_print_file, 'wt') as f:
-            f.write(tmpdir+'\n')
-            f.write(fn+'\n')
-            f.write(ext+'\n')
-        fname = os.path.join(tmpdir, fn+'.'+ext)
+        fname = save_interposer_print_data(cfg, tmpdir, 'interposer', 'pdf' if not cfg.svg else 'svg')
         # Fill zones if the user asked for it
         if cfg.fill_zones:
             fill_zones_i(cfg)

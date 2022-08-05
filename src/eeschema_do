@@ -498,7 +498,7 @@ def eeschema_netlist_commands_n(cfg, open_keys, generate_keys, dialog_name):
 
 def wait_bom(cfg):
     # Waiting for the file creation isn't a good idea because the file is created by other process
-    wait_queue(cfg, ['PANGO:Success', 'PANGO:Command error'], starts=True, times=3)
+    wait_queue(cfg, ['PANGO:Success', 'PANGO:Command error'], starts=True, times=2)
     # Note: we will get the XML updated even on fail
     wait_kicad_ready_i(cfg, swaps=0)
 
@@ -525,6 +525,8 @@ def eeschema_bom_xml_commands(cfg):
         wait_create(cfg, 'BoM')
     # Close the dialog
     send_keys(cfg, 'Closing dialog', ['key']+exit_keys)
+    # This is arbitrary and ridiculous, KiCad is sleeping but we must wait
+    time.sleep(0.4)
     # Exit
     exit_eeschema(cfg)
 
@@ -532,11 +534,11 @@ def eeschema_bom_xml_commands(cfg):
 def eeschema_bom_xml_commands_i(cfg, open_keys):
     # Open the dialog
     # TODO: When we open this dialog we start to get some random messages from the interposer, why?!
+    # Seems to be related to the fork done by KiCad.
     open_dialog_i(cfg, 'Bill of Material', open_keys)
     # Select the command input and paste the command
     xdotool(['key', 'alt+o'])
-    paste_text_i(cfg, 'Paste xslt command',
-                 'xsltproc -o "'+cfg.output_file+'" "/usr/share/kicad/plugins/bom2grouped_csv.xsl" "%I"')
+    paste_text_i(cfg, 'Paste bogus command', 'echo "%I"')
 
 
 def eeschema_bom_xml_commands_n(cfg, open_keys, exit_keys):
@@ -547,7 +549,7 @@ def eeschema_bom_xml_commands_n(cfg, open_keys, exit_keys):
     logger.info('Paste xslt command')
     wait_point(cfg)
     xdotool(['key', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab'])
-    text_replace('xsltproc -o "'+cfg.output_file+'" "/usr/share/kicad/plugins/bom2grouped_csv.xsl" "%I"')
+    text_replace('echo "%I"')
 
 
 def create_eeschema_config(cfg):

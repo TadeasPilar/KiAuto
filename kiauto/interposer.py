@@ -69,12 +69,22 @@ def remove_interposer_print_dir(cfg):
 
 
 def create_interposer_print_options_file(cfg):
+    """ Creates a temporal holder for the print options """
     # We need a file to save the print options, make it unique to avoid collisions
     cfg.interposer_print_dir = mkdtemp()
     cfg.interposer_print_file = os.path.join(cfg.interposer_print_dir, INTERPOSER_OPS)
     cfg.logger.debug('Using temporal file {} for interposer print options'.format(cfg.interposer_print_file))
     os.environ['KIAUTO_INTERPOSER_PRINT'] = cfg.interposer_print_file
     atexit.register(remove_interposer_print_dir, cfg)
+
+
+def save_interposer_print_data(cfg, tmpdir, fn, ext):
+    """ Write the print options to the created file """
+    with open(cfg.interposer_print_file, 'wt') as f:
+        f.write(tmpdir+'\n')
+        f.write(fn+'\n')
+        f.write(ext+'\n')
+    return os.path.join(tmpdir, fn+'.'+ext)
 
 
 # def flush_queue():
