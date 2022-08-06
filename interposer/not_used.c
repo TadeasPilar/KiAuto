@@ -290,4 +290,62 @@ int creat(const char *pathname, mode_t mode)
 }
 
 
+void gtk_tool_item_set_tooltip(GtkToolItem *tool_item, GtkTooltips *tooltips, const gchar *tip_text, const gchar *tip_private)
+{
+ static void (*next_func)(GtkToolItem *, GtkTooltips *, const gchar *, const gchar *)=NULL;
+
+ if (next_func==NULL)
+   { /* Initialization */
+    char *msg;
+    printf("* wrapping tooltip set\n");
+    next_func=dlsym(RTLD_NEXT,"gtk_tool_item_set_tooltip");
+    if ((msg=dlerror())!=NULL)
+       printf("** dlopen failed : %s\n", msg);
+   }
+
+ next_func(tool_item, tooltips, tip_text, tip_private);
+ printf("GTK:Tootip:%s\n", tip_text);
+ fflush(stdout);
+}
+
+
+
+
+void gtk_tool_item_set_tooltip_text(GtkToolItem *tool_item, const gchar *text)
+{
+ static void (*next_func)(GtkToolItem *,const gchar *)=NULL;
+ static int cnt=0;
+
+ if (next_func==NULL)
+   { /* Initialization */
+    char *msg;
+    printf("* wrapping tooltip set text\n");
+    next_func=dlsym(RTLD_NEXT,"gtk_tool_item_set_tooltip_text");
+    if ((msg=dlerror())!=NULL)
+       printf("** dlopen failed : %s\n", msg);
+   }
+
+ next_func(tool_item, text);
+ printf("GTK:Tootip:%s\n", text);
+ fflush(stdout);
+}
+
+
+void gtk_toolbar_insert(GtkToolbar *toolbar, GtkToolItem *item, gint pos)
+{
+ static void (*next_func)(GtkToolbar *, GtkToolItem *, gint)=NULL;
+
+ if (next_func==NULL)
+   { /* Initialization */
+    char *msg;
+    printf("* wrapping toolbar insert\n");
+    next_func=dlsym(RTLD_NEXT,"gtk_toolbar_insert");
+    if ((msg=dlerror())!=NULL)
+       printf("** dlopen failed : %s\n", msg);
+   }
+
+ next_func(toolbar, item, pos);
+ printf("GTK:Tootip:\n");
+ fflush(stdout);
+}
 

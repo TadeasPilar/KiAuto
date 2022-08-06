@@ -287,12 +287,13 @@ def send_keys(cfg, msg, keys):
     xdotool(keys)
 
 
-def wait_create_i(cfg, name, fn=None):
+def wait_create_i(cfg, name, fn=None, wait_open=True):
     cfg.logger.info('Wait for '+name+' file creation')
     wait_point(cfg)
     if fn is None:
         fn = cfg.output_file
-    wait_queue(cfg, 'IO:open:'+fn)
+    if wait_open:
+        wait_queue(cfg, 'IO:open:'+fn)
     wait_queue(cfg, 'IO:close:'+fn, starts=True)
     wait_kicad_ready_i(cfg, swaps=0)
 

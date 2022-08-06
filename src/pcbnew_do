@@ -48,9 +48,9 @@ from kiauto.misc import (REC_W, REC_H, __version__, NO_PCB, PCBNEW_CFG_PRESENT, 
                          WRONG_PCB_NAME, PCBNEW_ERROR, WRONG_ARGUMENTS, Config, USER_HOTKEYS_PRESENT,
                          CORRUPTED_PCB, __copyright__, __license__, TIME_OUT_MULT, get_en_locale, KICAD_CFG_PRESENT,
                          MISSING_TOOL, KICAD_DIED)
-from kiauto.interposer import (check_interposer, dump_interposer_dialog, start_queue,
+from kiauto.interposer import (check_interposer, dump_interposer_dialog, start_queue, setup_interposer_filename,
                                create_interposer_print_options_file, wait_queue, wait_start_by_msg,
-                               wait_swap, set_kicad_process, open_dialog_i, wait_kicad_ready_i,
+                               wait_swap, set_kicad_process, open_dialog_i, wait_kicad_ready_i, paste_bogus_filename,
                                paste_output_file_i, exit_kicad_i, send_keys, wait_create_i, save_interposer_print_data)
 from kiauto.ui_automation import (PopenContext, xdotool, wait_not_focused, wait_for_window, recorded_xvfb,
                                   wait_point, text_replace, set_time_out_scale, open_dialog_with_retry, ShowInfoAction)
@@ -352,6 +352,7 @@ def fill_zones_i(cfg):
 def print_layers_i(cfg, id_pcbnew, print_dialog_keys):
     # Create a temporal dir for the output file
     # GTK is limited to the names we can choose, so we let it create the name and move to the arbitrary one
+    # Note: we can't control the extension
     with TemporaryDirectory() as tmpdir:
         # Pass the target dir, file name and format to the interposer
         fname = save_interposer_print_data(cfg, tmpdir, 'interposer', 'pdf' if not cfg.svg else 'svg')
@@ -667,7 +668,6 @@ def export_gencad_i(cfg, keys):
     paste_output_file_i(cfg)
     # Change the settings to what the user wants
     # To make it easier we add accelerators
-    logger.info('Changing settings')
     keys = ['key']
     if not cfg.flip_bottom_padstacks:
         # We used Alt+F to go to the file name, so here the logic is inverted
@@ -681,8 +681,8 @@ def export_gencad_i(cfg, keys):
     if cfg.save_origin:
         keys.append('alt+s')
     keys.append('Return')
-    xdotool(keys)
-    wait_for_file_created_by_process(cfg.pcbnew_pid, cfg.output_file)
+    send_keys(cfg, 'Changing settings', keys)
+    wait_create_i(cfg, 'GenCAD')
     # Exit
     exit_kicad_i(cfg)
 
@@ -720,10 +720,12 @@ def ipc_netlist_i(cfg, keys, pattern):
     # Open the "Export D-356 Test File"
     # Note: This is a pre-created GTK save dialog, so we wait for the save pattern
     open_dialog_i(cfg, 'Export D-356 Test File', keys, msg_done=pattern)
-    # Paste the name
-    paste_output_file_i(cfg)
-    xdotool(['key', 'Return'])
-    wait_for_file_created_by_process(cfg.pcbnew_pid, cfg.output_file)
+    # Paste the name (well, something that will be replaced by the real name)
+    paste_bogus_filename(cfg)
+    # Generate the netlist
+    send_keys(cfg, 'Generate the netlist', 'Return')
+    # Wait for file creation
+    wait_create_i(cfg, 'IPC D-356')
     # Exit
     exit_kicad_i(cfg)
 
@@ -987,6 +989,8 @@ def capture_3d_view_i(cfg):
     # Switch to orthographic (KiCad 6 has persistence)
     if cfg.orthographic and cfg.ki5:
         # Can easily break, no persistence, no option, no shortcut ... KiCad's way
+        # Note: This is just for KiCad 5, and can't be patched by the interposer because
+        # this button is handled by the WX AUI (not by the underlying widgets)
         xdotool(['mousemove', '711', '44', 'click', '1', 'mousemove', 'restore'])
 
     # Apply the view axis
@@ -1034,22 +1038,14 @@ def capture_3d_view_i(cfg):
     # Open the Save dialog
     logger.info('Saving the image')
     open_save_image_i(cfg, id)
-
     # Paste the name
-    paste_output_file_i(cfg)
-
+    paste_bogus_filename(cfg)
     # Wait for the image to be created
-    logger.info('Wait for the image file creation')
-    wait_point(cfg)
-    xdotool(['key', 'Return'])
-    wait_swap(cfg, 3)
-    wait_kicad_ready_i(cfg, swaps=0)
-
+    send_keys(cfg, 'Wait for the image file creation', 'Return')
+    # Wait until the file is created (why we just see the close?)
+    wait_create_i(cfg, 'PNG', wait_open=False)
     # Close the 3D viewer
-    logger.info('Closing the 3D viewer')
-    wait_point(cfg)
-    xdotool(['key', cfg.key_close_3d])
-
+    send_keys(cfg, 'Closing the 3D viewer', cfg.key_close_3d)
     exit_kicad_i(cfg)
 
 
@@ -1601,6 +1597,8 @@ if __name__ == '__main__':
     cfg.video_name = 'pcbnew_'+args.command+'_screencast.ogv'
     # Interposer settings
     check_interposer(args, logger, cfg)
+    # When using the interposer inform the output file name using the environment
+    setup_interposer_filename(cfg)
     #
     # Do all the work
     #

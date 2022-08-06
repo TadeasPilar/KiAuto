@@ -26,7 +26,7 @@ PROG = 'pcbnew_do'
 def test_export_gencad_1(test_dir):
     """ Generate a GenCAD file with no special options test """
     ctx = context.TestContext(test_dir, 'export_gencad_1', 'good-project')
-    cmd = [PROG, 'export_gencad', '-f', '-n', '-O', '--output_name', 'good.cad']
+    cmd = [PROG, '-vv', 'export_gencad', '-f', '-n', '-O', '--output_name', 'good.cad']
     ctx.run(cmd)
     ctx.expect_out_file('good.cad')
     file = ctx.get_out_path('good.cad')
