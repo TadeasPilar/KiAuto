@@ -491,13 +491,14 @@ def wait_start_by_msg(cfg):
             if title[0] == '*':
                 # This is an old format file that will be saved in the new format
                 cfg.logger.warning('Old file format detected, please convert it to KiCad 6 if experimenting problems')
+            wait_queue(cfg, 'GTK:Main:In')
             return
         elif cfg.ki5 and title.startswith(prg_msg):
             # KiCad 5 title
             if not title.endswith(unsaved):
                 # KiCad 5 name is "Pcbnew — PCB_NAME" or "Eeschema — SCH_NAME [HIERARCHY] — SCH_FILE_NAME"
                 # wait_pcbnew()
-                wait_queue(cfg, 'GTK:Window Show:'+title, starts=True, timeout=cfg.wait_start)
+                wait_queue(cfg, ['GTK:Window Show:'+title, 'GTK:Main:In'], starts=True, timeout=cfg.wait_start, times=2)
                 return
             # The "  [Unsaved]" is changed before the final load, ignore it
         elif title == '' or title == cfg.pn_simple_window_title or title == 'Eeschema':

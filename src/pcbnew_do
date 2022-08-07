@@ -1318,7 +1318,6 @@ def parse_color(color):
 
 def wait_pcbnew_start_by_msg(cfg):
     wait_start_by_msg(cfg)
-    wait_queue(cfg, 'GTK:Main:In')
     # Make sure pcbnew has the focus, I saw problems with WM pop-ups getting the focus
     return wait_pcbnew()
 
