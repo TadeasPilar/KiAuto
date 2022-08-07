@@ -290,6 +290,8 @@ void gtk_label_set_text_with_mnemonic(GtkLabel *label, const gchar *str)
     str="E_xport";
  else if (g_strcmp0(str, "GenCAD...")==0)
     str="_GenCAD...";
+ else if (g_strcmp0(str, "IPC-D-356 Netlist File...")==0)
+    str="_IPC-D-356 Netlist File...";
   /* EEschema Plot Schematic Options */
  else if (g_strcmp0(str, "Output directory:")==0)
     str="_Output directory:";

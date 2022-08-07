@@ -215,7 +215,7 @@ def wait_kicad_ready_i(cfg, swaps=2, kicad_can_exit=False):
     return res
 
 
-def open_dialog_i(cfg, name, keys, msg_done=None, show=False, no_wait=False):
+def open_dialog_i(cfg, name, keys, msg_done=None, show=False, no_wait=False, wait_main=False):
     wait_point(cfg)
     # Wait for KiCad to be sleeping
     wait_kicad_ready_i(cfg, swaps=0)
@@ -233,6 +233,8 @@ def open_dialog_i(cfg, name, keys, msg_done=None, show=False, no_wait=False):
         name = res[len(pre_gtk):]
     if no_wait:
         return None
+    if wait_main:
+        wait_queue(cfg, 'GTK:Main:In')
     # Wait for KiCad to be sleeping
     wait_kicad_ready_i(cfg, swaps=0)
     # The dialog is there, just make sure it has the focus

@@ -447,3 +447,26 @@ int pselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, cons
  return res;
 }
 
+/* Hangs!?! */
+int pthread_cond_wait(pthread_cond_t *restrict cond, pthread_mutex_t *restrict mutex)
+{
+ static int (*next_func)(pthread_cond_t *restrict , pthread_mutex_t *restrict )=NULL;
+ int res;
+
+ if (next_func==NULL)
+   { /* Initialization */
+    char *msg;
+    //printf("* wrapping pthread_cond_wait\n");
+    next_func=dlsym(RTLD_NEXT,"pthread_cond_wait");
+    if ((msg=dlerror())!=NULL)
+       printf("** dlopen failed : %s\n", msg);
+   }
+
+ /*printf("IO:Wait:In\n");
+ fflush(stdout);*/
+ res=next_func(cond, mutex);
+ /*printf("IO:Main:Out %d\n", res);
+ fflush(stdout);*/
+
+ return res;
+}

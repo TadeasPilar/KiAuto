@@ -659,7 +659,7 @@ def export_gencad_select_options(cfg):
 
 def export_gencad_i(cfg, keys):
     # Open the "Export to GenCAD settings"
-    open_dialog_i(cfg, 'Export to GenCAD settings', keys)
+    open_dialog_i(cfg, 'Export to GenCAD settings', keys, wait_main=True)
     # KiCad dialogs are unreliable, you never know which widget is selected
     # This goes to the top left corner of the dialog
     # Note: lamentably this widget doesn't have a label
@@ -696,13 +696,14 @@ def export_gencad_n(cfg, keys):
 def ipc_netlist(cfg):
     wait_point(cfg)
     if cfg.ki5:
-        keys = ['key', 'alt+f', 'f', 'Down', 'Down', 'Down', 'Return']
-        pattern = 'IPC-D-356 Test Files ( *.d356)'    # WTF!!
+        if cfg.use_interposer:
+            keys = ['key', 'alt+f', 'f', 'i']
+        else:
+            keys = ['key', 'alt+f', 'f', 'Down', 'Down', 'Down', 'Return']
     else:
         keys = ['key', 'shift+alt+e']
-        pattern = 'IPC-D-356 Test Files (*.d356)'
     if cfg.use_interposer:
-        ipc_netlist_i(cfg, keys, pattern)
+        ipc_netlist_i(cfg, keys)
     else:
         ipc_netlist_n(cfg, keys)
 
@@ -716,10 +717,9 @@ def ipc_netlist_n(cfg, keys):
     wait_for_file_created_by_process(cfg.pcbnew_pid, cfg.output_file)
 
 
-def ipc_netlist_i(cfg, keys, pattern):
+def ipc_netlist_i(cfg, keys):
     # Open the "Export D-356 Test File"
-    # Note: This is a pre-created GTK save dialog, so we wait for the save pattern
-    open_dialog_i(cfg, 'Export D-356 Test File', keys, msg_done=pattern)
+    open_dialog_i(cfg, 'Export D-356 Test File', keys, show=True, wait_main=True)
     # Paste the name (well, something that will be replaced by the real name)
     paste_bogus_filename(cfg)
     # Generate the netlist
