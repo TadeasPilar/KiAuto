@@ -468,3 +468,24 @@ int close(int fd)
  fflush(stdout);
  return res;
 }
+
+
+void gtk_main(void)
+{
+ static void (*next_func)(void)=NULL;
+
+ if (next_func==NULL)
+   { /* Initialization */
+    char *msg;
+    printf("* wrapping gtk_main\n");
+    next_func=dlsym(RTLD_NEXT,"gtk_main");
+    if ((msg=dlerror())!=NULL)
+       printf("** dlopen failed : %s\n", msg);
+   }
+
+ printf("GTK:Main:In\n");
+ fflush(stdout);
+ next_func();
+ printf("GTK:Main:Out\n");
+ fflush(stdout);
+}

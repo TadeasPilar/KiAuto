@@ -1,3 +1,5 @@
+#include <sys/epoll.h>
+#include <sys/select.h>
 Random pieces of code used for the interposer during tests.
 
     GtkPageOrientation orie=gtk_print_settings_get_orientation(set);
@@ -347,5 +349,101 @@ void gtk_toolbar_insert(GtkToolbar *toolbar, GtkToolItem *item, gint pos)
  next_func(toolbar, item, pos);
  printf("GTK:Tootip:\n");
  fflush(stdout);
+}
+
+
+gboolean gtk_main_iteration(void)
+{
+ static gboolean (*next_func)(void)=NULL;
+ gboolean res;
+
+ if (next_func==NULL)
+   { /* Initialization */
+    char *msg;
+    printf("* wrapping gtk_main_iteration\n");
+    next_func=dlsym(RTLD_NEXT,"gtk_main_iteration");
+    if ((msg=dlerror())!=NULL)
+       printf("** dlopen failed : %s\n", msg);
+   }
+
+ printf("GTK:gtk_main_iteration:In\n");
+ fflush(stdout);
+ res=next_func();
+ printf("GTK:gtk_main_iteration:Out %d\n", res);
+ fflush(stdout);
+
+ return res;
+}
+
+
+int epoll_wait(int epfd, struct epoll_event *events, int maxevents, int timeout)
+{
+ static int(*next_func)(int , struct epoll_event *, int , int )=NULL;
+ int res;
+
+ if (next_func==NULL)
+   { /* Initialization */
+    char *msg;
+    printf("* wrapping epoll_wait\n");
+    next_func=dlsym(RTLD_NEXT,"epoll_wait");
+    if ((msg=dlerror())!=NULL)
+       printf("** dlopen failed : %s\n", msg);
+   }
+
+ printf("IO:Event:In\n");
+ fflush(stdout);
+ res=next_func(epfd, events, maxevents, timeout);
+ printf("IO:Event:Out %d\n", res);
+ fflush(stdout);
+
+ return res;
+}
+
+
+int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout)
+{
+ static int (*next_func)(int , fd_set *, fd_set *, fd_set *, struct timeval *)=NULL;
+ int res;
+
+ if (next_func==NULL)
+   { /* Initialization */
+    char *msg;
+    printf("* wrapping select\n");
+    next_func=dlsym(RTLD_NEXT,"select");
+    if ((msg=dlerror())!=NULL)
+       printf("** dlopen failed : %s\n", msg);
+   }
+
+ printf("IO:Select:In\n");
+ fflush(stdout);
+ res=next_func(nfds, readfds, writefds, exceptfds, timeout);
+ printf("IO:Select:Out %d\n", res);
+ fflush(stdout);
+
+ return res;
+}
+
+
+int pselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, const struct timespec *timeout, const __sigset_t *sigmask)
+{
+ static int (*next_func)(int , fd_set *, fd_set *, fd_set *, const struct timespec *, const __sigset_t *)=NULL;
+ int res;
+
+ if (next_func==NULL)
+   { /* Initialization */
+    char *msg;
+    printf("* wrapping pselect\n");
+    next_func=dlsym(RTLD_NEXT,"pselect");
+    if ((msg=dlerror())!=NULL)
+       printf("** dlopen failed : %s\n", msg);
+   }
+
+ printf("IO:Select:In\n");
+ fflush(stdout);
+ res=next_func(nfds, readfds, writefds, exceptfds, timeout, sigmask);
+ printf("IO:Select:Out %d\n", res);
+ fflush(stdout);
+
+ return res;
 }
 

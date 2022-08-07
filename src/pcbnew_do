@@ -49,7 +49,7 @@ from kiauto.misc import (REC_W, REC_H, __version__, NO_PCB, PCBNEW_CFG_PRESENT, 
                          CORRUPTED_PCB, __copyright__, __license__, TIME_OUT_MULT, get_en_locale, KICAD_CFG_PRESENT,
                          MISSING_TOOL, KICAD_DIED)
 from kiauto.interposer import (check_interposer, dump_interposer_dialog, start_queue, setup_interposer_filename,
-                               create_interposer_print_options_file, wait_queue, wait_start_by_msg,
+                               create_interposer_print_options_file, wait_queue, wait_start_by_msg, wait_close_dialog_i,
                                wait_swap, set_kicad_process, open_dialog_i, wait_kicad_ready_i, paste_bogus_filename,
                                paste_output_file_i, exit_kicad_i, send_keys, wait_create_i, save_interposer_print_data)
 from kiauto.ui_automation import (PopenContext, xdotool, wait_not_focused, wait_for_window, recorded_xvfb,
@@ -371,8 +371,8 @@ def print_layers_i(cfg, id_pcbnew, print_dialog_keys):
         wait_create_i(cfg, 'print', fname)
         # Close KiCad Print dialog
         send_keys(cfg, 'Close Print dialog', 'Escape')
-        # Wait sleeping
-        wait_kicad_ready_i(cfg, swaps=0)
+        # Wait for KiCad to get the control again
+        wait_close_dialog_i(cfg)
         # Move the file to the user selected name
         shutil.move(fname, cfg.output_file)
         # Exit
@@ -1036,8 +1036,7 @@ def capture_3d_view_i(cfg):
 
     # Save the image as PNG
     # Open the Save dialog
-    logger.info('Saving the image')
-    open_save_image_i(cfg, id)
+    open_dialog_i(cfg, '3D Image File Name', ['key', 'alt+f', 'Return'], show=True)
     # Paste the name
     paste_bogus_filename(cfg)
     # Wait for the image to be created
@@ -1319,6 +1318,7 @@ def parse_color(color):
 
 def wait_pcbnew_start_by_msg(cfg):
     wait_start_by_msg(cfg)
+    wait_queue(cfg, 'GTK:Main:In')
     # Make sure pcbnew has the focus, I saw problems with WM pop-ups getting the focus
     return wait_pcbnew()
 

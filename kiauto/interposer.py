@@ -447,6 +447,13 @@ def exit_kicad_i(cfg):
         xdotool(keys_exit)
 
 
+def wait_close_dialog_i(cfg):
+    """ Wait for the end of the main loop for the dialog.
+        Then the main loop for the parent exits and enters again. """
+    wait_queue(cfg, 'GTK:Main:Out', times=2)
+    wait_queue(cfg, 'GTK:Main:In')
+
+
 def wait_start_by_msg(cfg):
     cfg.logger.info('Waiting for PCB new window ...')
     pre = 'GTK:Window Title:'
