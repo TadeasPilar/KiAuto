@@ -119,6 +119,12 @@ def start_queue(cfg):
     cfg.kicad_t = Thread(target=enqueue_output, args=(cfg.popen_obj.stdout, cfg.kicad_q))
     cfg.kicad_t.daemon = True   # thread dies with the program
     cfg.kicad_t.start()
+    cfg.collecting_io = False
+
+
+def collect_io_from_queue(cfg):
+    cfg.collected_io = set()
+    cfg.collecting_io = True
 
 
 def wait_queue(cfg, strs='', starts=False, times=1, timeout=300, do_to=True, kicad_can_exit=False):
@@ -136,14 +142,18 @@ def wait_queue(cfg, strs='', starts=False, times=1, timeout=300, do_to=True, kic
     while time.time() < end_time:
         try:
             tm, line = cfg.kicad_q.get(timeout=.1)
+            line = line[:-1]
             if cfg.verbose > 1:
                 tm *= 1000
                 diff = 0
                 if last_msg_time:
                     diff = tm-last_msg_time
                 last_msg_time = tm
-                cfg.logger.debug('>>Interposer<<:{} (@{} D {})'.format(line[:-1], round(tm, 3), round(diff, 3)))
-            interposer_dialog.append(line[:-1])
+                cfg.logger.debug('>>Interposer<<:{} (@{} D {})'.format(line, round(tm, 3), round(diff, 3)))
+            interposer_dialog.append(line)
+            # The I/O can be in parallel to the UI
+            if cfg.collecting_io and line.startswith('IO:'):
+                cfg.collected_io.add(line)
         except Empty:
             line = ''
         if line == '' and cfg.popen_obj.poll() is not None:
@@ -156,19 +166,19 @@ def wait_queue(cfg, strs='', starts=False, times=1, timeout=300, do_to=True, kic
             if s == '':
                 # Waiting for anything ... but not for nothing
                 if line != '':
-                    return line[:-1]
+                    return line
                 continue
             if starts:
                 if line.startswith(s):
                     times -= 1
                     break
-            elif line[:-1] == s:
+            elif line == s:
                 times -= 1
                 break
         if times == 0:
             interposer_dialog.append('KiAuto:match')
-            cfg.logger.debug('Interposer match: '+line[:-1])
-            return line[:-1]
+            cfg.logger.debug('Interposer match: '+line)
+            return line
         if old_times != times:
             interposer_dialog.append('KiAuto:times '+str(times))
             cfg.logger.debug('Interposer match, times='+str(times))
@@ -283,12 +293,17 @@ def setup_interposer_filename(cfg, fn=None):
         os.remove(BOGUS_FILENAME)
 
 
-def send_keys(cfg, msg, keys):
+def send_keys(cfg, msg, keys, closes=None, delay_io=False):
     cfg.logger.info(msg)
     wait_point(cfg)
     if isinstance(keys, str):
         keys = ['key', keys]
+    if delay_io:
+        collect_io_from_queue(cfg)
     xdotool(keys)
+    if closes is not None:
+        wait_queue(cfg, 'GTK:Window Destroy:'+closes)
+        wait_kicad_ready_i(cfg)
 
 
 def wait_create_i(cfg, name, fn=None):
@@ -296,8 +311,23 @@ def wait_create_i(cfg, name, fn=None):
     wait_point(cfg)
     if fn is None:
         fn = cfg.output_file
-    wait_queue(cfg, 'IO:open:'+fn)
-    wait_queue(cfg, 'IO:close:'+fn, starts=True)
+    open_msg = 'IO:open:'+fn
+    close_msg = 'IO:close:'+fn
+    if cfg.collecting_io:
+        cfg.collecting_io = False
+        got_open = open_msg in cfg.collected_io
+        got_close = close_msg in cfg.collected_io
+    else:
+        got_open = False
+        got_close = False
+    if got_open:
+        cfg.logger.debug('Found IO '+open_msg)
+    else:
+        wait_queue(cfg, open_msg)
+    if got_close:
+        cfg.logger.debug('Found IO '+close_msg)
+    else:
+        wait_queue(cfg, close_msg, starts=True)
     wait_kicad_ready_i(cfg)
 
 

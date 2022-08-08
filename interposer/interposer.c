@@ -470,3 +470,29 @@ void gtk_main(void)
  printf("GTK:Main:Out\n");
  fflush(stdout);
 }
+
+
+void gtk_widget_destroy(GtkWidget *widget)
+{
+ static void (*next_func)(GtkWidget *)=NULL;
+
+ if (next_func==NULL)
+   { /* Initialization */
+    char *msg;
+    printf("* wrapping widget destroy\n");
+    next_func=dlsym(RTLD_NEXT,"gtk_widget_destroy");
+    if ((msg=dlerror())!=NULL)
+       printf("** dlopen failed : %s\n", msg);
+   }
+
+ next_func(widget);
+ if (GTK_IS_WINDOW(widget))
+   {
+    const char *name=gtk_window_get_title(GTK_WINDOW(widget));
+    if (name)
+      {
+       printf("GTK:Window Destroy:%s\n", name);
+       fflush(stdout);
+      }
+   }
+}

@@ -2,7 +2,7 @@
 $c=1;
 while (<>)
   {
-   if ($_=~/(GTK:Window|GTK:Main|DEBUG:=|INFO:|DEBUG:Waiting for \`\[\'IO:|DEBUG:\['xdotool', '(key|click)',|Interposer match)/)  # "\* "
+   if ($_=~/(GTK:Window|GTK:Main|DEBUG:=|INFO:|DEBUG:Waiting for \`\[\'IO:|DEBUG:\['xdotool', '(key|click)',|Interposer match|DEBUG:Found IO)/)  # "\* "
      {
       if ($_=~/(INFO:)/)
         {

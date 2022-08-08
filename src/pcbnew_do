@@ -557,36 +557,40 @@ def run_drc_n(cfg):
 
 
 def run_drc_5_1_i(cfg):
-    open_dialog_i(cfg, 'DRC Control', ['key', 'alt+i', 'd'], no_main=True)
+    control_dlg = 'DRC Control'
+    open_dialog_i(cfg, control_dlg, ['key', 'alt+i', 'd'], no_main=True)
     # Enable report all errors for tracks and go to the file name
     # Here we added a shortcut for "Report all errors for tracks (slower)"
     send_keys(cfg, 'Enable reporting all errors for tracks', ['key', 'alt+r', 'alt+c'])
     paste_output_file_i(cfg)
-    open_dialog_i(cfg, 'Disk File Report Completed', 'Return', no_show=True, no_main=True)
-    wait_for_window('Report completed dialog', 'Disk File Report Completed')
-    send_keys(cfg, 'Close dialog', 'Return')
-    wait_for_window('DRC modal window', 'DRC Control')
-    send_keys(cfg, 'Closing the DRC dialog', 'alt+l')
-    wait_pcbnew()
+    # The following dialog indicates the report was finished
+    # 'Disk File Report Completed' dialog
+    file_dialog = 'Disk File Report Completed'
+    open_dialog_i(cfg, file_dialog, 'Return', no_show=True, no_main=True)
+    send_keys(cfg, 'Close dialog', 'Return', closes=file_dialog)
+    # Now close the DRC control
+    send_keys(cfg, 'Closing the DRC dialog', 'alt+l', closes=control_dlg)
 
 
 def run_drc_6_0_i(cfg):
-    open_dialog_i(cfg, 'DRC Control', 'ctrl+shift+i', no_main=True)
+    control_dlg = 'DRC Control'
+    open_dialog_i(cfg, control_dlg, 'ctrl+shift+i', no_main=True)
     # Run the DRC
     send_keys(cfg, 'Run DRC', 'Return')
-    # Wait for the end of the DRC
-    wait_queue(cfg, 'PANGO:Done.')
+    # Wait for the end of the DRC (at the end KiCad restores the Close button)
+    wait_queue(cfg, 'GTK:Button Label:C_lose')
     wait_kicad_ready_i(cfg)
     # Save the DRC
     # We added a short-cut for Save...
-    open_dialog_i(cfg, 'Save Report to File', 'alt+s')
+    file_dialog = 'Save Report to File'
+    open_dialog_i(cfg, file_dialog, 'alt+s')
     # Paste the name
     paste_bogus_filename(cfg)
-    # Wait for report created
-    send_keys(cfg, 'Create report', 'Return')
+    # Close the report dialog and also wait for the report creation (both in parallel)
+    send_keys(cfg, 'Create report', 'Return', closes=file_dialog, delay_io=True)
     wait_create_i(cfg, 'DRC report')
     # Close the dialog
-    send_keys(cfg, 'Closing the DRC dialog', 'Escape')
+    send_keys(cfg, 'Closing the DRC dialog', 'Escape', closes=control_dlg)
 
 
 def run_drc_i(cfg):
@@ -598,8 +602,6 @@ def run_drc_i(cfg):
     if cfg.save:
         os.rename(cfg.input_file, cfg.input_file+'-bak')
         wait_kicad_ready_i(cfg)
-        if cfg.ki5:
-            sleep(0.4)
         send_keys(cfg, 'Saving PCB', 'ctrl+s')
         wait_create_i(cfg, 'PCB', fn=os.path.realpath(cfg.input_file))
     # Exit
