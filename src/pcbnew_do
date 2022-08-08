@@ -311,18 +311,13 @@ def fill_zones_i(cfg):
     # Now we fill the zones
     send_keys(cfg, 'Filling zones ...',  'b')
     # Inform the elapsed time for slow fills
-    pre = 'GTK:Window Title:'
-    pre_d = 'GTK:Window Destroy:'
-    pres = [pre, pre_d, 'PANGO:0:']
+    destroyed = 'GTK:Window Destroy:Fill All Zones'
+    pres = [destroyed, 'PANGO:0:']
     elapsed_r = re.compile(r'PANGO:(\d:\d\d:\d\d)')
-    dialog = 'Fill All Zones'
-    destroyed = pre_d+dialog
-    opened = pre+dialog
     with_elapsed = False
     while True:
-        # Wait for any window, or elapsed info
+        # Wait for fill dialog destroyed or elapsed info
         res = wait_queue(cfg, pres, starts=True)
-        logger.debug('fill_zones_i got '+res)
         match = elapsed_r.match(res)
         if not match and with_elapsed:
             log.flush_info()
@@ -330,20 +325,11 @@ def fill_zones_i(cfg):
             # The fill dialog was closed
             wait_kicad_ready_i(cfg)
             return
-        elif res == opened:
-            # This is the dialog for the fill in progress, wait
-            pass
-        elif res.endswith(' — PCB Editor') or res.startswith(pre+'Pcbnew —'):
-            # This is the main window title indicating we modified the PCB
-            pass
         elif match is not None:
             msg = match.group(1)
             if msg != '0:00:00':
                 log.info_progress('Elapsed time: '+msg)
                 with_elapsed = True
-        else:
-            logger.error('KiCad dialog: '+res[len(pre):])
-            exit(PCBNEW_ERROR)
 
 
 def print_layers_i(cfg, id_pcbnew, print_dialog_keys):
