@@ -244,13 +244,13 @@ def open_dialog_i(cfg, name, keys, msg_done=None, no_show=False, no_wait=False, 
         res = wait_queue(cfg, [pre_gtk+f for f in name])
         name = res[len(pre_gtk):]
     if no_wait:
-        return None
+        return name, None
     if not no_main:
         wait_queue(cfg, 'GTK:Main:In')
     # Wait for KiCad to be sleeping
     wait_kicad_ready_i(cfg)
     # The dialog is there, just make sure it has the focus
-    return wait_for_window(name, name, 1)[0]
+    return name, wait_for_window(name, name, 1)[0]
 
 
 def check_text_replace(cfg, name):

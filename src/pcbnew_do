@@ -367,13 +367,11 @@ def print_layers_i(cfg, id_pcbnew, print_dialog_keys):
         open_dialog_i(cfg, 'Print', 'alt+p', extra_msg='GTK', no_main=True, no_show=True)
         # Confirm the options
         # Big magic 2: the interposer selected the printer, output file name and format, just confirm them
-        send_keys(cfg, 'Print', 'Return')
+        send_keys(cfg, 'Print', 'Return', closes='Print', delay_io=True)
         # Wait until the file is created
         wait_create_i(cfg, 'print', fname)
         # Close KiCad Print dialog
-        send_keys(cfg, 'Close Print dialog', 'Escape')
-        # Wait for KiCad to get the control again
-        wait_close_dialog_i(cfg)
+        send_keys(cfg, 'Close Print dialog', 'Escape', closes='Print')
         # Move the file to the user selected name
         shutil.move(fname, cfg.output_file)
         # Exit
@@ -557,24 +555,21 @@ def run_drc_n(cfg):
 
 
 def run_drc_5_1_i(cfg):
-    control_dlg = 'DRC Control'
-    open_dialog_i(cfg, control_dlg, ['key', 'alt+i', 'd'], no_main=True)
+    control_dlg, _ = open_dialog_i(cfg, 'DRC Control', ['key', 'alt+i', 'd'], no_main=True)
     # Enable report all errors for tracks and go to the file name
     # Here we added a shortcut for "Report all errors for tracks (slower)"
     send_keys(cfg, 'Enable reporting all errors for tracks', ['key', 'alt+r', 'alt+c'])
     paste_output_file_i(cfg)
     # The following dialog indicates the report was finished
     # 'Disk File Report Completed' dialog
-    file_dialog = 'Disk File Report Completed'
-    open_dialog_i(cfg, file_dialog, 'Return', no_show=True, no_main=True)
+    file_dialog, _ =open_dialog_i(cfg, 'Disk File Report Completed', 'Return', no_show=True, no_main=True)
     send_keys(cfg, 'Close dialog', 'Return', closes=file_dialog)
     # Now close the DRC control
     send_keys(cfg, 'Closing the DRC dialog', 'alt+l', closes=control_dlg)
 
 
 def run_drc_6_0_i(cfg):
-    control_dlg = 'DRC Control'
-    open_dialog_i(cfg, control_dlg, 'ctrl+shift+i', no_main=True)
+    control_dlg, _ = open_dialog_i(cfg, 'DRC Control', 'ctrl+shift+i', no_main=True)
     # Run the DRC
     send_keys(cfg, 'Run DRC', 'Return')
     # Wait for the end of the DRC (at the end KiCad restores the Close button)
@@ -582,8 +577,7 @@ def run_drc_6_0_i(cfg):
     wait_kicad_ready_i(cfg)
     # Save the DRC
     # We added a short-cut for Save...
-    file_dialog = 'Save Report to File'
-    open_dialog_i(cfg, file_dialog, 'alt+s')
+    file_dialog, _ = open_dialog_i(cfg, 'Save Report to File', 'alt+s')
     # Paste the name
     paste_bogus_filename(cfg)
     # Close the report dialog and also wait for the report creation (both in parallel)
@@ -649,9 +643,8 @@ def export_gencad_select_options(cfg):
 
 
 def export_gencad_i(cfg, keys):
-    dialog = 'Export to GenCAD settings'
     # Open the "Export to GenCAD settings"
-    open_dialog_i(cfg, dialog, keys)
+    dialog, _ = open_dialog_i(cfg, 'Export to GenCAD settings', keys)
     # KiCad dialogs are unreliable, you never know which widget is selected
     # This goes to the top left corner of the dialog
     # Note: lamentably this widget doesn't have a label
@@ -710,9 +703,8 @@ def ipc_netlist_n(cfg, keys):
 
 
 def ipc_netlist_i(cfg, keys):
-    dialog = 'Export D-356 Test File'
     # Open the "Export D-356 Test File"
-    open_dialog_i(cfg, dialog, keys)
+    dialog, _ = open_dialog_i(cfg, 'Export D-356 Test File', keys)
     # Paste the name (well, something that will be replaced by the real name)
     paste_bogus_filename(cfg)
     # Generate the netlist
@@ -936,8 +928,7 @@ def capture_3d_view_n(cfg):
 
 def capture_3d_view_i(cfg):
     """ 3D View capture, interposer version """
-    dialog = '3D Viewer'
-    id = open_dialog_i(cfg, dialog, 'alt+3', no_wait=True)
+    dialog, id = open_dialog_i(cfg, '3D Viewer', 'alt+3', no_wait=True)
     logger.debug('3D Viewer is drawing')
 
     # Detect the 3D models load (On Ki5 we can miss the "loading..." message
@@ -1020,8 +1011,7 @@ def capture_3d_view_i(cfg):
 
     # Save the image as PNG
     # Open the Save dialog
-    file_dlg = '3D Image File Name'
-    open_dialog_i(cfg, file_dlg, ['key', 'alt+f', 'Return'])
+    file_dlg, _ = open_dialog_i(cfg, '3D Image File Name', ['key', 'alt+f', 'Return'])
     # Paste the name
     paste_bogus_filename(cfg)
     # Wait for the image to be created
