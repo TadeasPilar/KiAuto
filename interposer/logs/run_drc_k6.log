@@ -1,0 +1,101 @@
+00009 INFO:Loading .../tests/kicad6/good-project/good-project.kicad_pcb
+00025 DEBUG:** Using interposer: .../kiauto/interposer/libinterposer.so (pcbnew_do - interposer.py:36)
+
+00031 INFO:Starting pcbnew ...
+
+00033 INFO:Waiting for PCB new window ...
+00035 DEBUG:Waiting for `['GTK:Window Title:', 'PANGO:0:']` starts=True times=1 (pcbnew_do - interposer.py:134)
+00162 DEBUG:>>Interposer<<:GTK:Window Title:PCB Editor (@447.117 D 25.491) (pcbnew_do - interposer.py:145)
+00163 DEBUG:Interposer match: GTK:Window Title:PCB Editor (pcbnew_do - interposer.py:170)
+00164 DEBUG:wait_pcbew_start_by_msg got GTK:Window Title:PCB Editor (pcbnew_do - interposer.py:484)
+00165 DEBUG:Waiting for `['GTK:Window Title:', 'PANGO:0:']` starts=True times=1 (pcbnew_do - interposer.py:134)
+05651 DEBUG:>>Interposer<<:GTK:Window Title:Loading PCB (@1587.573 D 1.787) (pcbnew_do - interposer.py:145)
+05652 DEBUG:Interposer match: GTK:Window Title:Loading PCB (pcbnew_do - interposer.py:170)
+05653 DEBUG:wait_pcbew_start_by_msg got GTK:Window Title:Loading PCB (pcbnew_do - interposer.py:484)
+05654 DEBUG:Waiting for `['GTK:Window Title:', 'PANGO:0:']` starts=True times=1 (pcbnew_do - interposer.py:134)
+05671 DEBUG:>>Interposer<<:GTK:Window Show:Loading PCB (@1594.815 D 1.527) (pcbnew_do - interposer.py:145)
+05674 DEBUG:Interposer match: PANGO:0:00:00 (pcbnew_do - interposer.py:170)
+05676 DEBUG:Waiting for `['GTK:Window Title:', 'PANGO:0:']` starts=True times=1 (pcbnew_do - interposer.py:134)
+06146 DEBUG:Interposer match: PANGO:0:00:00 (pcbnew_do - interposer.py:170)
+06148 DEBUG:Waiting for `['GTK:Window Title:', 'PANGO:0:']` starts=True times=1 (pcbnew_do - interposer.py:134)
+06151 DEBUG:Interposer match: PANGO:0:00:00 (pcbnew_do - interposer.py:170)
+06153 DEBUG:Waiting for `['GTK:Window Title:', 'PANGO:0:']` starts=True times=1 (pcbnew_do - interposer.py:134)
+06479 DEBUG:Interposer match: PANGO:0:00:00 (pcbnew_do - interposer.py:170)
+06481 DEBUG:Waiting for `['GTK:Window Title:', 'PANGO:0:']` starts=True times=1 (pcbnew_do - interposer.py:134)
+06958 DEBUG:Interposer match: PANGO:0:00:01 (pcbnew_do - interposer.py:170)
+06960 DEBUG:Waiting for `['GTK:Window Title:', 'PANGO:0:']` starts=True times=1 (pcbnew_do - interposer.py:134)
+06966 DEBUG:>>Interposer<<:GTK:Window Title:good-project &#x2014; PCB Editor (@1933.317 D 0.36) (pcbnew_do - interposer.py:145)
+06967 DEBUG:Interposer match: GTK:Window Title:good-project &#x2014; PCB Editor (pcbnew_do - interposer.py:170)
+06968 DEBUG:wait_pcbew_start_by_msg got GTK:Window Title:good-project &#x2014; PCB Editor (pcbnew_do - interposer.py:484)
+06969 DEBUG:Waiting for `['GTK:Main:In']` starts=False times=1 (pcbnew_do - interposer.py:134)
+07474 DEBUG:>>Interposer<<:GTK:Main:In (@2071.309 D 0.752) (pcbnew_do - interposer.py:145)
+07475 DEBUG:Interposer match: GTK:Main:In (pcbnew_do - interposer.py:170)
+
+07476 INFO:Waiting for "Main pcbnew window" ...
+07491 DEBUG:= KiCad still running, waiting more (pcbnew_do - interposer.py:205)
+08412 DEBUG:= KiCad finally sleeping (pcbnew_do - interposer.py:214)
+
+08413 INFO:Opening dialog `DRC Control` 
+08414 DEBUG:['xdotool', 'key', 'ctrl+shift+i'] (pcbnew_do.kiauto.ui_automation - ui_automation.py:218)
+08415 DEBUG:Waiting for `['GTK:Window Show:DRC Control']` starts=False times=1 (pcbnew_do - interposer.py:134)
+08416 DEBUG:>>Interposer<<:GTK:Window Title:DRC Control (@2592.7 D 125.937) (pcbnew_do - interposer.py:145)
+08472 DEBUG:>>Interposer<<:GTK:Window Show:DRC Control (@2668.337 D 5.368) (pcbnew_do - interposer.py:145)
+08473 DEBUG:Interposer match: GTK:Window Show:DRC Control (pcbnew_do - interposer.py:170)
+08474 DEBUG:= KiCad still running, waiting more (pcbnew_do - interposer.py:205)
+08495 DEBUG:= KiCad finally sleeping (pcbnew_do - interposer.py:214)
+
+08496 INFO:Waiting for "DRC Control" ...
+
+08515 INFO:Run DRC
+08516 DEBUG:['xdotool', 'key', 'Return'] (pcbnew_do.kiauto.ui_automation - ui_automation.py:218)
+16046 DEBUG:Interposer match: PANGO:Done. (pcbnew_do - interposer.py:170)
+16047 DEBUG:= KiCad still running, waiting more (pcbnew_do - interposer.py:205)
+18354 DEBUG:= KiCad finally sleeping (pcbnew_do - interposer.py:214)
+18355 DEBUG:= KiCad already sleeping (sleeping) (pcbnew_do - interposer.py:216)
+
+18356 INFO:Opening dialog `Save Report to File` 
+18357 DEBUG:['xdotool', 'key', 'alt+s'] (pcbnew_do.kiauto.ui_automation - ui_automation.py:218)
+18358 DEBUG:Waiting for `['GTK:Window Show:Save Report to File']` starts=False times=1 (pcbnew_do - interposer.py:134)
+18454 DEBUG:>>Interposer<<:GTK:Window Set Modal:Save Report to File 1 (@5671.623 D 0.219) (pcbnew_do - interposer.py:145)
+18506 DEBUG:>>Interposer<<:GTK:Window Show:Save Report to File (@5702.963 D 2.607) (pcbnew_do - interposer.py:145)
+18507 DEBUG:Interposer match: GTK:Window Show:Save Report to File (pcbnew_do - interposer.py:170)
+18508 DEBUG:Waiting for `['GTK:Main:In']` starts=False times=1 (pcbnew_do - interposer.py:134)
+18509 DEBUG:>>Interposer<<:GTK:Main:In (@5702.993 D 0.03) (pcbnew_do - interposer.py:145)
+18510 DEBUG:Interposer match: GTK:Main:In (pcbnew_do - interposer.py:170)
+18511 DEBUG:= KiCad still running, waiting more (pcbnew_do - interposer.py:205)
+18661 DEBUG:= KiCad finally sleeping (pcbnew_do - interposer.py:214)
+
+18662 INFO:Waiting for "Save Report to File" ...
+
+18685 INFO:Paste bogus short name
+18687 DEBUG:['xdotool', 'key', '--delay', '12', 'ctrl+a', 'type', '--delay', '12', '#'] (pcbnew_do.kiauto.ui_automation - ui_automation.py:218)
+18691 DEBUG:Interposer match: PANGO:# (pcbnew_do - interposer.py:170)
+18692 DEBUG:= KiCad still running, waiting more (pcbnew_do - interposer.py:205)
+18697 DEBUG:= KiCad finally sleeping (pcbnew_do - interposer.py:214)
+
+18698 INFO:Create report
+18699 DEBUG:['xdotool', 'key', 'Return'] (pcbnew_do.kiauto.ui_automation - ui_automation.py:218)
+
+18700 INFO:Wait for DRC report file creation
+18701 DEBUG:Waiting for `['IO:open:.../pp/DRC_Ok/drc_result.rpt']` starts=False times=1 (pcbnew_do - interposer.py:134)
+18710 DEBUG:>>Interposer<<:GTK:Main:Out (@6893.686 D 0.3) (pcbnew_do - interposer.py:145)
+18711 DEBUG:>>Interposer<<:GTK:Window Set Modal:Save Report to File 0 (@6893.743 D 0.057) (pcbnew_do - interposer.py:145)
+18715 DEBUG:Interposer match: IO:open:.../pp/DRC_Ok/drc_result.rpt (pcbnew_do - interposer.py:170)
+18716 DEBUG:Waiting for `['IO:close:.../pp/DRC_Ok/drc_result.rpt']` starts=True times=1 (pcbnew_do - interposer.py:134)
+18718 DEBUG:Interposer match: IO:close:.../pp/DRC_Ok/drc_result.rpt (pcbnew_do - interposer.py:170)
+18719 DEBUG:= KiCad still running, waiting more (pcbnew_do - interposer.py:205)
+18837 DEBUG:>>Interposer<<:GTK:Main:Out (@6982.638 D 0.334) (pcbnew_do - interposer.py:145)
+18838 DEBUG:>>Interposer<<:GTK:Main:In (@6982.673 D 0.035) (pcbnew_do - interposer.py:145)
+18849 DEBUG:= KiCad finally sleeping (pcbnew_do - interposer.py:214)
+
+18850 INFO:Closing the DRC dialog
+18851 DEBUG:['xdotool', 'key', 'Escape'] (pcbnew_do.kiauto.ui_automation - ui_automation.py:218)
+18852 DEBUG:= KiCad still running, waiting more (pcbnew_do - interposer.py:205)
+18870 DEBUG:= KiCad finally sleeping (pcbnew_do - interposer.py:214)
+
+18871 INFO:Exiting KiCad
+18872 DEBUG:['xdotool', 'key', 'ctrl+q'] (pcbnew_do.kiauto.ui_automation - ui_automation.py:218)
+18873 DEBUG:Waiting for `['GTK:Window Title:']` starts=True times=1 (pcbnew_do - interposer.py:134)
+18888 DEBUG:>>Interposer<<:GTK:Main:Out (@7489.489 D 0.045) (pcbnew_do - interposer.py:145)
+
+18895 INFO:No errors

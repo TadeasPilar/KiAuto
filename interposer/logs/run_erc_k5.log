@@ -1,0 +1,88 @@
+
+00023 INFO:Waiting for PCB new window ...
+00025 DEBUG:Waiting for `['GTK:Window Title:', 'PANGO:0:']` starts=True times=1 (eeschema_do - interposer.py:134)
+00057 DEBUG:>>Interposer<<:GTK:Window Title:Eeschema (@234.121 D 27.622) (eeschema_do - interposer.py:145)
+00058 DEBUG:Interposer match: GTK:Window Title:Eeschema (eeschema_do - interposer.py:170)
+00059 DEBUG:wait_pcbew_start_by_msg got GTK:Window Title:Eeschema (eeschema_do - interposer.py:484)
+00060 DEBUG:Waiting for `['GTK:Window Title:', 'PANGO:0:']` starts=True times=1 (eeschema_do - interposer.py:134)
+00936 DEBUG:>>Interposer<<:GTK:Window Title:Eeschema — noname.sch (@856.359 D 4.009) (eeschema_do - interposer.py:145)
+00937 DEBUG:Interposer match: GTK:Window Title:Eeschema — noname.sch (eeschema_do - interposer.py:170)
+00938 DEBUG:wait_pcbew_start_by_msg got GTK:Window Title:Eeschema — noname.sch (eeschema_do - interposer.py:484)
+00939 DEBUG:Waiting for `['GTK:Window Title:', 'PANGO:0:']` starts=True times=1 (eeschema_do - interposer.py:134)
+00965 DEBUG:>>Interposer<<:GTK:Window Title:Eeschema — good-project.sch [/] — .../tests/kicad5/good-project (@918.511 D 0.006) (eeschema_do - interposer.py:145)
+00966 DEBUG:Interposer match: GTK:Window Title:Eeschema — good-project.sch [/] — .../tests/kicad5/good-project (eeschema_do - interposer.py:170)
+00967 DEBUG:wait_pcbew_start_by_msg got GTK:Window Title:Eeschema — good-project.sch [/] — .../tests/kicad5/good-project (eeschema_do - interposer.py:484)
+00968 DEBUG:Waiting for `['GTK:Window Show:Eeschema — good-project.sch [/] — .../tests/kicad5/good-project', 'GTK:Main:In']` starts=True times=2 (eeschema_do - interposer.py:134)
+00973 DEBUG:>>Interposer<<:GTK:Window Show:Eeschema — good-project.sch [/] — .../tests/kicad5/good-project (@923.392 D 1.382) (eeschema_do - interposer.py:145)
+00974 DEBUG:Interposer match, times=1 (eeschema_do - interposer.py:174)
+00975 DEBUG:>>Interposer<<:GTK:Main:In (@923.994 D 0.602) (eeschema_do - interposer.py:145)
+00976 DEBUG:Interposer match: GTK:Main:In (eeschema_do - interposer.py:170)
+
+00977 INFO:Waiting for "Main eeschema window" ...
+00992 DEBUG:= KiCad already sleeping (sleeping) (eeschema_do - interposer.py:216)
+
+00993 INFO:Opening dialog `Electrical Rules Checker` 
+00994 DEBUG:['xdotool', 'key', 'alt+i', 'c'] (eeschema_do.kiauto.ui_automation - ui_automation.py:218)
+00995 DEBUG:Waiting for `['GTK:Window Show:Electrical Rules Checker']` starts=False times=1 (eeschema_do - interposer.py:134)
+01037 DEBUG:>>Interposer<<:GTK:Window Title:Electrical Rules Checker (@1007.804 D 13.77) (eeschema_do - interposer.py:145)
+01199 DEBUG:>>Interposer<<:GTK:Window Show:Electrical Rules Checker (@1076.631 D 0.448) (eeschema_do - interposer.py:145)
+01200 DEBUG:Interposer match: GTK:Window Show:Electrical Rules Checker (eeschema_do - interposer.py:170)
+01201 DEBUG:= KiCad still running, waiting more (eeschema_do - interposer.py:205)
+01245 DEBUG:= KiCad finally sleeping (eeschema_do - interposer.py:214)
+
+01246 INFO:Waiting for "Electrical Rules Checker" ...
+
+01265 INFO:Enable report creation
+01266 DEBUG:['xdotool', 'key', 'alt+c'] (eeschema_do.kiauto.ui_automation - ui_automation.py:218)
+01267 DEBUG:= KiCad still running, waiting more (eeschema_do - interposer.py:205)
+01269 DEBUG:= KiCad finally sleeping (eeschema_do - interposer.py:214)
+
+01270 INFO:Opening dialog `ERC File` 
+01271 DEBUG:['xdotool', 'key', 'Return'] (eeschema_do.kiauto.ui_automation - ui_automation.py:218)
+01272 DEBUG:Waiting for `['GTK:Window Show:ERC File']` starts=False times=1 (eeschema_do - interposer.py:134)
+01352 DEBUG:>>Interposer<<:GTK:Window Set Modal:ERC File 1 (@1830.982 D 0.19) (eeschema_do - interposer.py:145)
+01374 DEBUG:>>Interposer<<:GTK:Window Show:ERC File (@1848.075 D 1.51) (eeschema_do - interposer.py:145)
+01375 DEBUG:Interposer match: GTK:Window Show:ERC File (eeschema_do - interposer.py:170)
+01376 DEBUG:Waiting for `['GTK:Main:In']` starts=False times=1 (eeschema_do - interposer.py:134)
+01377 DEBUG:>>Interposer<<:GTK:Main:In (@1848.116 D 0.04) (eeschema_do - interposer.py:145)
+01378 DEBUG:Interposer match: GTK:Main:In (eeschema_do - interposer.py:170)
+01379 DEBUG:= KiCad still running, waiting more (eeschema_do - interposer.py:205)
+01519 DEBUG:= KiCad finally sleeping (eeschema_do - interposer.py:214)
+
+01520 INFO:Waiting for "ERC File" ...
+
+01543 INFO:Paste bogus short name
+01545 DEBUG:['xdotool', 'key', '--delay', '12', 'ctrl+a', 'type', '--delay', '12', '#'] (eeschema_do.kiauto.ui_automation - ui_automation.py:218)
+01549 DEBUG:Interposer match: PANGO:# (eeschema_do - interposer.py:170)
+01550 DEBUG:= KiCad still running, waiting more (eeschema_do - interposer.py:205)
+01551 DEBUG:= KiCad finally sleeping (eeschema_do - interposer.py:214)
+
+01552 INFO:Run ERC
+01553 DEBUG:['xdotool', 'key', 'Return'] (eeschema_do.kiauto.ui_automation - ui_automation.py:218)
+
+01554 INFO:Wait for ERC file creation
+01555 DEBUG:Waiting for `['IO:open:.../output/ERC_Ok/good-project.erc']` starts=False times=1 (eeschema_do - interposer.py:134)
+01560 DEBUG:>>Interposer<<:GTK:Main:Out (@2658.026 D 0.403) (eeschema_do - interposer.py:145)
+01561 DEBUG:>>Interposer<<:GTK:Window Set Modal:ERC File 0 (@2658.214 D 0.188) (eeschema_do - interposer.py:145)
+01565 DEBUG:Interposer match: IO:open:.../output/ERC_Ok/good-project.erc (eeschema_do - interposer.py:170)
+01566 DEBUG:Waiting for `['IO:close:.../output/ERC_Ok/good-project.erc']` starts=True times=1 (eeschema_do - interposer.py:134)
+01568 DEBUG:Interposer match: IO:close:.../output/ERC_Ok/good-project.erc (eeschema_do - interposer.py:170)
+01569 DEBUG:= KiCad still running, waiting more (eeschema_do - interposer.py:205)
+01576 DEBUG:>>Interposer<<:GTK:Main:Out (@2696.897 D 0.341) (eeschema_do - interposer.py:145)
+01577 DEBUG:>>Interposer<<:GTK:Main:In (@2696.927 D 0.03) (eeschema_do - interposer.py:145)
+01583 DEBUG:= KiCad finally sleeping (eeschema_do - interposer.py:214)
+
+01584 INFO:Exit ERC
+01585 DEBUG:['xdotool', 'key', 'alt+l'] (eeschema_do.kiauto.ui_automation - ui_automation.py:218)
+01586 DEBUG:= KiCad still running, waiting more (eeschema_do - interposer.py:205)
+01588 DEBUG:= KiCad finally sleeping (eeschema_do - interposer.py:214)
+
+01589 INFO:Exiting KiCad
+01590 DEBUG:['xdotool', 'key', 'ctrl+q'] (eeschema_do.kiauto.ui_automation - ui_automation.py:218)
+01591 DEBUG:Waiting for `['GTK:Window Title:']` starts=True times=1 (eeschema_do - interposer.py:134)
+01598 DEBUG:= KiCad already sleeping (sleeping) (eeschema_do - interposer.py:216)
+01599 DEBUG:['xdotool', 'key', 'ctrl+q'] (eeschema_do.kiauto.ui_automation - ui_automation.py:218)
+01600 DEBUG:Waiting for `['GTK:Window Title:']` starts=True times=1 (eeschema_do - interposer.py:134)
+01607 DEBUG:>>Interposer<<:GTK:Main:Out (@5036.989 D 0.078) (eeschema_do - interposer.py:145)
+
+01615 INFO:No errors

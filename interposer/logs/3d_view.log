@@ -1,0 +1,157 @@
+00027 DEBUG:** Using interposer: .../kiauto/interposer/libinterposer.so (pcbnew_do - interposer.py:36)
+
+00037 INFO:Starting pcbnew ...
+
+00039 INFO:Waiting for PCB new window ...
+00041 DEBUG:Waiting for `['GTK:Window Title:', 'PANGO:0:']` starts=True times=1 (pcbnew_do - interposer.py:134)
+00169 DEBUG:>>Interposer<<:GTK:Window Title:PCB Editor (@421.588 D 25.337) (pcbnew_do - interposer.py:145)
+00170 DEBUG:Interposer match: GTK:Window Title:PCB Editor (pcbnew_do - interposer.py:170)
+00171 DEBUG:wait_pcbew_start_by_msg got GTK:Window Title:PCB Editor (pcbnew_do - interposer.py:484)
+00172 DEBUG:Waiting for `['GTK:Window Title:', 'PANGO:0:']` starts=True times=1 (pcbnew_do - interposer.py:134)
+05659 DEBUG:>>Interposer<<:GTK:Window Title:Loading PCB (@1563.215 D 1.662) (pcbnew_do - interposer.py:145)
+05660 DEBUG:Interposer match: GTK:Window Title:Loading PCB (pcbnew_do - interposer.py:170)
+05661 DEBUG:wait_pcbew_start_by_msg got GTK:Window Title:Loading PCB (pcbnew_do - interposer.py:484)
+05662 DEBUG:Waiting for `['GTK:Window Title:', 'PANGO:0:']` starts=True times=1 (pcbnew_do - interposer.py:134)
+05679 DEBUG:>>Interposer<<:GTK:Window Show:Loading PCB (@1571.141 D 1.852) (pcbnew_do - interposer.py:145)
+05682 DEBUG:Interposer match: PANGO:0:00:00 (pcbnew_do - interposer.py:170)
+05684 DEBUG:Waiting for `['GTK:Window Title:', 'PANGO:0:']` starts=True times=1 (pcbnew_do - interposer.py:134)
+06152 DEBUG:Interposer match: PANGO:0:00:00 (pcbnew_do - interposer.py:170)
+06154 DEBUG:Waiting for `['GTK:Window Title:', 'PANGO:0:']` starts=True times=1 (pcbnew_do - interposer.py:134)
+06157 DEBUG:Interposer match: PANGO:0:00:00 (pcbnew_do - interposer.py:170)
+06159 DEBUG:Waiting for `['GTK:Window Title:', 'PANGO:0:']` starts=True times=1 (pcbnew_do - interposer.py:134)
+06485 DEBUG:Interposer match: PANGO:0:00:00 (pcbnew_do - interposer.py:170)
+06487 DEBUG:Waiting for `['GTK:Window Title:', 'PANGO:0:']` starts=True times=1 (pcbnew_do - interposer.py:134)
+06967 DEBUG:>>Interposer<<:GTK:Window Title:good-project — PCB Editor (@1907.615 D 0.306) (pcbnew_do - interposer.py:145)
+06968 DEBUG:Interposer match: GTK:Window Title:good-project — PCB Editor (pcbnew_do - interposer.py:170)
+06969 DEBUG:wait_pcbew_start_by_msg got GTK:Window Title:good-project — PCB Editor (pcbnew_do - interposer.py:484)
+06970 DEBUG:Waiting for `['GTK:Main:In']` starts=False times=1 (pcbnew_do - interposer.py:134)
+07475 DEBUG:>>Interposer<<:GTK:Main:In (@2047.353 D 0.781) (pcbnew_do - interposer.py:145)
+07476 DEBUG:Interposer match: GTK:Main:In (pcbnew_do - interposer.py:170)
+
+07477 INFO:Waiting for "Main pcbnew window" ...
+07492 DEBUG:= KiCad still running, waiting more (pcbnew_do - interposer.py:205)
+08406 DEBUG:= KiCad finally sleeping (pcbnew_do - interposer.py:214)
+
+08407 INFO:Opening dialog `3D Viewer` 
+08408 DEBUG:['xdotool', 'key', 'alt+3'] (pcbnew_do.kiauto.ui_automation - ui_automation.py:218)
+08409 DEBUG:Waiting for `['GTK:Window Show:3D Viewer']` starts=False times=1 (pcbnew_do - interposer.py:134)
+08415 DEBUG:>>Interposer<<:GTK:Window Title:3D Viewer (@2451.663 D 11.27) (pcbnew_do - interposer.py:145)
+08470 DEBUG:>>Interposer<<:GTK:Window Show:3D Viewer (@2792.525 D 4.687) (pcbnew_do - interposer.py:145)
+08471 DEBUG:Interposer match: GTK:Window Show:3D Viewer (pcbnew_do - interposer.py:170)
+
+08473 INFO:Loading 3D models
+08564 DEBUG:Interposer match: PANGO:Reload time 0.009 s (pcbnew_do - interposer.py:170)
+08579 DEBUG:Interposer match: PANGO:Loading… (pcbnew_do - interposer.py:170)
+08615 DEBUG:Interposer match: PANGO:Loading 3D models... (pcbnew_do - interposer.py:170)
+08618 DEBUG:Interposer match: PANGO:Loading C_0402_1005Metric.wrl... (pcbnew_do - interposer.py:170)
+08623 DEBUG:Interposer match: PANGO:Loading B02B-JWPF-SK-R.step... (pcbnew_do - interposer.py:170)
+08628 DEBUG:Interposer match: PANGO:Loading R_0402_1005Metric.wrl... (pcbnew_do - interposer.py:170)
+08633 DEBUG:Interposer match: PANGO:Reload time 0.033 s (pcbnew_do - interposer.py:170)
+
+08635 INFO:Finished loading 3D models
+08636 DEBUG:= KiCad still running, waiting more (pcbnew_do - interposer.py:205)
+08637 DEBUG:= KiCad finally sleeping (pcbnew_do - interposer.py:214)
+
+08638 INFO:Waiting for "3D Viewer" ...
+
+08659 INFO:Step (Right)
+08660 DEBUG:['xdotool', 'key', '--window', '2109275', 'Right'] (pcbnew_do.kiauto.ui_automation - ui_automation.py:218)
+
+08662 INFO:Step (alt+x)
+08663 DEBUG:['xdotool', 'key', '--window', '2109275', 'alt+x'] (pcbnew_do.kiauto.ui_automation - ui_automation.py:218)
+
+08665 INFO:Step (alt+x)
+08666 DEBUG:['xdotool', 'key', '--window', '2109275', 'alt+x'] (pcbnew_do.kiauto.ui_automation - ui_automation.py:218)
+
+08668 INFO:Step (alt+x)
+08669 DEBUG:['xdotool', 'key', '--window', '2109275', 'alt+x'] (pcbnew_do.kiauto.ui_automation - ui_automation.py:218)
+
+08671 INFO:Step (alt+z)
+08672 DEBUG:['xdotool', 'key', '--window', '2109275', 'alt+z'] (pcbnew_do.kiauto.ui_automation - ui_automation.py:218)
+
+08674 INFO:Step (alt+z)
+08675 DEBUG:['xdotool', 'key', '--window', '2109275', 'alt+z'] (pcbnew_do.kiauto.ui_automation - ui_automation.py:218)
+
+08677 INFO:Step (alt+z)
+08678 DEBUG:['xdotool', 'key', '--window', '2109275', 'alt+z'] (pcbnew_do.kiauto.ui_automation - ui_automation.py:218)
+
+08680 INFO:Zoom
+08681 DEBUG:['xdotool', 'click', '--window', '2109275', '4'] (pcbnew_do.kiauto.ui_automation - ui_automation.py:218)
+
+08683 INFO:Zoom
+08684 DEBUG:['xdotool', 'click', '--window', '2109275', '4'] (pcbnew_do.kiauto.ui_automation - ui_automation.py:218)
+
+08686 INFO:Zoom
+08687 DEBUG:['xdotool', 'click', '--window', '2109275', '4'] (pcbnew_do.kiauto.ui_automation - ui_automation.py:218)
+
+08689 INFO:Start ray tracing
+08690 DEBUG:['xdotool', 'key', 'alt+p', 'Return'] (pcbnew_do.kiauto.ui_automation - ui_automation.py:218)
+08778 DEBUG:Interposer match: PANGO:Raytracing (pcbnew_do - interposer.py:170)
+08893 DEBUG:Interposer match: PANGO:Rendering: 1 % (pcbnew_do - interposer.py:170)
+08903 DEBUG:Interposer match: PANGO:Rendering: 2 % (pcbnew_do - interposer.py:170)
+08909 DEBUG:Interposer match: PANGO:Rendering: 3 % (pcbnew_do - interposer.py:170)
+08915 DEBUG:Interposer match: PANGO:Rendering: 4 % (pcbnew_do - interposer.py:170)
+08921 DEBUG:Interposer match: PANGO:Rendering: 5 % (pcbnew_do - interposer.py:170)
+08927 DEBUG:Interposer match: PANGO:Rendering: 6 % (pcbnew_do - interposer.py:170)
+08933 DEBUG:Interposer match: PANGO:Rendering: 7 % (pcbnew_do - interposer.py:170)
+08939 DEBUG:Interposer match: PANGO:Rendering: 8 % (pcbnew_do - interposer.py:170)
+08945 DEBUG:Interposer match: PANGO:Rendering: 10 % (pcbnew_do - interposer.py:170)
+08951 DEBUG:Interposer match: PANGO:Rendering: 13 % (pcbnew_do - interposer.py:170)
+08957 DEBUG:Interposer match: PANGO:Rendering: 16 % (pcbnew_do - interposer.py:170)
+08963 DEBUG:Interposer match: PANGO:Rendering: 19 % (pcbnew_do - interposer.py:170)
+08969 DEBUG:Interposer match: PANGO:Rendering: 22 % (pcbnew_do - interposer.py:170)
+08975 DEBUG:Interposer match: PANGO:Rendering: 27 % (pcbnew_do - interposer.py:170)
+08981 DEBUG:Interposer match: PANGO:Rendering: 34 % (pcbnew_do - interposer.py:170)
+08987 DEBUG:Interposer match: PANGO:Rendering: 42 % (pcbnew_do - interposer.py:170)
+08993 DEBUG:Interposer match: PANGO:Rendering: 54 % (pcbnew_do - interposer.py:170)
+08999 DEBUG:Interposer match: PANGO:Rendering: 100 % (pcbnew_do - interposer.py:170)
+09010 DEBUG:Interposer match: PANGO:Rendering time 3.556 s (pcbnew_do - interposer.py:170)
+09015 DEBUG:Interposer match: GLX:Swap 48 (pcbnew_do - interposer.py:170)
+09016 DEBUG:= KiCad still running, waiting more (pcbnew_do - interposer.py:205)
+09018 DEBUG:= KiCad finally sleeping (pcbnew_do - interposer.py:214)
+
+09019 INFO:Opening dialog `3D Image File Name` 
+09020 DEBUG:['xdotool', 'key', 'alt+f', 'Return'] (pcbnew_do.kiauto.ui_automation - ui_automation.py:218)
+09021 DEBUG:Waiting for `['GTK:Window Show:3D Image File Name']` starts=False times=1 (pcbnew_do - interposer.py:134)
+09128 DEBUG:>>Interposer<<:GTK:Window Set Modal:3D Image File Name 1 (@7943.836 D 0.231) (pcbnew_do - interposer.py:145)
+09184 DEBUG:>>Interposer<<:GTK:Window Show:3D Image File Name (@7982.309 D 3.075) (pcbnew_do - interposer.py:145)
+09185 DEBUG:Interposer match: GTK:Window Show:3D Image File Name (pcbnew_do - interposer.py:170)
+09186 DEBUG:Waiting for `['GTK:Main:In']` starts=False times=1 (pcbnew_do - interposer.py:134)
+09187 DEBUG:>>Interposer<<:GTK:Main:In (@7982.346 D 0.037) (pcbnew_do - interposer.py:145)
+09188 DEBUG:Interposer match: GTK:Main:In (pcbnew_do - interposer.py:170)
+09189 DEBUG:= KiCad still running, waiting more (pcbnew_do - interposer.py:205)
+09332 DEBUG:Interposer match: GLX:Swap 50 (pcbnew_do - interposer.py:170)
+09334 DEBUG:= KiCad finally sleeping (pcbnew_do - interposer.py:214)
+
+09335 INFO:Waiting for "3D Image File Name" ...
+
+09360 INFO:Paste bogus short name
+09362 DEBUG:['xdotool', 'key', '--delay', '12', 'ctrl+a', 'type', '--delay', '12', '#'] (pcbnew_do.kiauto.ui_automation - ui_automation.py:218)
+09366 DEBUG:Interposer match: PANGO:# (pcbnew_do - interposer.py:170)
+09367 DEBUG:= KiCad still running, waiting more (pcbnew_do - interposer.py:205)
+09371 DEBUG:= KiCad finally sleeping (pcbnew_do - interposer.py:214)
+
+09372 INFO:Export the PNG
+09373 DEBUG:['xdotool', 'key', 'Return'] (pcbnew_do.kiauto.ui_automation - ui_automation.py:218)
+
+09374 INFO:Wait for PNG file creation
+09375 DEBUG:Waiting for `['IO:close:.../pp/3DView_1/good_3d_rt_1.png']` starts=True times=1 (pcbnew_do - interposer.py:134)
+09383 DEBUG:>>Interposer<<:GTK:Main:Out (@8948.349 D 2.489) (pcbnew_do - interposer.py:145)
+09384 DEBUG:>>Interposer<<:GTK:Window Set Modal:3D Image File Name 0 (@8948.395 D 0.046) (pcbnew_do - interposer.py:145)
+09406 DEBUG:Interposer match: IO:close:.../pp/3DView_1/good_3d_rt_1.png (pcbnew_do - interposer.py:170)
+09407 DEBUG:= KiCad still running, waiting more (pcbnew_do - interposer.py:205)
+09413 DEBUG:>>Interposer<<:GTK:Main:Out (@9269.243 D 0.023) (pcbnew_do - interposer.py:145)
+09414 DEBUG:>>Interposer<<:GTK:Main:In (@9269.253 D 0.01) (pcbnew_do - interposer.py:145)
+09419 DEBUG:Interposer match: GLX:Swap 53 (pcbnew_do - interposer.py:170)
+09420 DEBUG:= KiCad finally sleeping (pcbnew_do - interposer.py:214)
+
+09421 INFO:Closing the 3D viewer
+09422 DEBUG:['xdotool', 'key', 'ctrl+w'] (pcbnew_do.kiauto.ui_automation - ui_automation.py:218)
+09423 DEBUG:= KiCad still running, waiting more (pcbnew_do - interposer.py:205)
+09426 DEBUG:Interposer match: GLX:Swap 54 (pcbnew_do - interposer.py:170)
+09454 DEBUG:= KiCad finally sleeping (pcbnew_do - interposer.py:214)
+
+09455 INFO:Exiting KiCad
+09456 DEBUG:['xdotool', 'key', 'ctrl+q'] (pcbnew_do.kiauto.ui_automation - ui_automation.py:218)
+09457 DEBUG:Waiting for `['GTK:Window Title:']` starts=True times=1 (pcbnew_do - interposer.py:134)
+09472 DEBUG:>>Interposer<<:GTK:Main:Out (@9641.625 D 0.06) (pcbnew_do - interposer.py:145)

@@ -1,0 +1,83 @@
+00029 INFO:Waiting for PCB new window ...
+00031 DEBUG:Waiting for `['GTK:Window Title:', 'PANGO:0:']` starts=True times=1 (eeschema_do - interposer.py:134)
+00159 DEBUG:>>Interposer<<:GTK:Window Title:Eeschema (@443.341 D 25.746) (eeschema_do - interposer.py:145)
+00160 DEBUG:Interposer match: GTK:Window Title:Eeschema (eeschema_do - interposer.py:170)
+00161 DEBUG:wait_pcbew_start_by_msg got GTK:Window Title:Eeschema (eeschema_do - interposer.py:484)
+00162 DEBUG:Waiting for `['GTK:Window Title:', 'PANGO:0:']` starts=True times=1 (eeschema_do - interposer.py:134)
+00820 DEBUG:>>Interposer<<:GTK:Window Title:[no schematic loaded] &#x2014; Schematic Editor (@562.831 D 2.462) (eeschema_do - interposer.py:145)
+00821 DEBUG:Interposer match: GTK:Window Title:[no schematic loaded] &#x2014; Schematic Editor (eeschema_do - interposer.py:170)
+00822 DEBUG:wait_pcbew_start_by_msg got GTK:Window Title:[no schematic loaded] &#x2014; Schematic Editor (eeschema_do - interposer.py:484)
+00823 DEBUG:Waiting for `['GTK:Window Title:', 'PANGO:0:']` starts=True times=1 (eeschema_do - interposer.py:134)
+00863 DEBUG:>>Interposer<<:GTK:Window Title:Loading Schematic (@692.891 D 8.383) (eeschema_do - interposer.py:145)
+00864 DEBUG:Interposer match: GTK:Window Title:Loading Schematic (eeschema_do - interposer.py:170)
+00865 DEBUG:wait_pcbew_start_by_msg got GTK:Window Title:Loading Schematic (eeschema_do - interposer.py:484)
+00866 DEBUG:Waiting for `['GTK:Window Title:', 'PANGO:0:']` starts=True times=1 (eeschema_do - interposer.py:134)
+00883 DEBUG:>>Interposer<<:GTK:Window Show:Loading Schematic (@703.518 D 2.439) (eeschema_do - interposer.py:145)
+00886 DEBUG:Interposer match: PANGO:0:00:00 (eeschema_do - interposer.py:170)
+00888 DEBUG:Waiting for `['GTK:Window Title:', 'PANGO:0:']` starts=True times=1 (eeschema_do - interposer.py:134)
+00906 DEBUG:Interposer match: PANGO:0:00:00 (eeschema_do - interposer.py:170)
+00908 DEBUG:Waiting for `['GTK:Window Title:', 'PANGO:0:']` starts=True times=1 (eeschema_do - interposer.py:134)
+00911 DEBUG:Interposer match: PANGO:0:00:00 (eeschema_do - interposer.py:170)
+00913 DEBUG:Waiting for `['GTK:Window Title:', 'PANGO:0:']` starts=True times=1 (eeschema_do - interposer.py:134)
+01087 DEBUG:>>Interposer<<:GTK:Window Title:good-project [good-project/] &#x2014; Schematic Editor (@814.22 D 6.783) (eeschema_do - interposer.py:145)
+01088 DEBUG:Interposer match: GTK:Window Title:good-project [good-project/] &#x2014; Schematic Editor (eeschema_do - interposer.py:170)
+01089 DEBUG:wait_pcbew_start_by_msg got GTK:Window Title:good-project [good-project/] &#x2014; Schematic Editor (eeschema_do - interposer.py:484)
+01090 DEBUG:Waiting for `['GTK:Main:In']` starts=False times=1 (eeschema_do - interposer.py:134)
+01091 DEBUG:>>Interposer<<:GTK:Main:In (@814.889 D 0.669) (eeschema_do - interposer.py:145)
+01092 DEBUG:Interposer match: GTK:Main:In (eeschema_do - interposer.py:170)
+
+01093 INFO:Waiting for "Main eeschema window" ...
+01108 DEBUG:= KiCad already sleeping (sleeping) (eeschema_do - interposer.py:216)
+
+01109 INFO:Opening dialog `Plot Schematic Options` 
+01110 DEBUG:['xdotool', 'key', 'ctrl+shift+p'] (eeschema_do.kiauto.ui_automation - ui_automation.py:218)
+01111 DEBUG:Waiting for `['GTK:Window Show:Plot Schematic Options']` starts=False times=1 (eeschema_do - interposer.py:134)
+01125 DEBUG:>>Interposer<<:GTK:Window Title:Plot Schematic Options (@902.293 D 57.915) (eeschema_do - interposer.py:145)
+01261 DEBUG:>>Interposer<<:GTK:Window Set Modal:Plot Schematic Options 1 (@948.787 D 0.252) (eeschema_do - interposer.py:145)
+01339 DEBUG:>>Interposer<<:GTK:Window Show:Plot Schematic Options (@975.233 D 2.221) (eeschema_do - interposer.py:145)
+01340 DEBUG:Interposer match: GTK:Window Show:Plot Schematic Options (eeschema_do - interposer.py:170)
+01341 DEBUG:Waiting for `['GTK:Main:In']` starts=False times=1 (eeschema_do - interposer.py:134)
+01342 DEBUG:>>Interposer<<:GTK:Main:In (@975.788 D 0.555) (eeschema_do - interposer.py:145)
+01343 DEBUG:Interposer match: GTK:Main:In (eeschema_do - interposer.py:170)
+01344 DEBUG:= KiCad still running, waiting more (eeschema_do - interposer.py:205)
+01604 DEBUG:= KiCad finally sleeping (eeschema_do - interposer.py:214)
+
+01605 INFO:Waiting for "Plot Schematic Options" ...
+
+01624 INFO:Select the output dir widget
+01625 DEBUG:['xdotool', 'key', 'alt+o'] (eeschema_do.kiauto.ui_automation - ui_automation.py:218)
+
+01626 INFO:Pasting output file
+01628 DEBUG:['xdotool', 'key', '--delay', '12', 'ctrl+a', 'type', '--delay', '12', '.../pp/Export_PDF/'] (eeschema_do.kiauto.ui_automation - ui_automation.py:218)
+01690 DEBUG:Interposer match: PANGO:.../pp/Export_PDF/ (eeschema_do - interposer.py:170)
+01691 DEBUG:= KiCad already sleeping (sleeping) (eeschema_do - interposer.py:216)
+
+01692 INFO:Plot
+01693 DEBUG:['xdotool', 'key', 'alt+c'] (eeschema_do.kiauto.ui_automation - ui_automation.py:218)
+
+01694 INFO:Wait for plot file creation
+01695 DEBUG:Waiting for `['IO:open:.../pp/Export_PDF/good-project.pdf']` starts=False times=1 (eeschema_do - interposer.py:134)
+01699 DEBUG:Interposer match: IO:open:.../pp/Export_PDF/good-project.pdf (eeschema_do - interposer.py:170)
+01700 DEBUG:Waiting for `['IO:close:.../pp/Export_PDF/good-project.pdf']` starts=True times=1 (eeschema_do - interposer.py:134)
+01710 DEBUG:Interposer match: IO:close:.../pp/Export_PDF/good-project.pdf (eeschema_do - interposer.py:170)
+01711 DEBUG:= KiCad still running, waiting more (eeschema_do - interposer.py:205)
+01716 DEBUG:= KiCad finally sleeping (eeschema_do - interposer.py:214)
+
+01717 INFO:Closing window
+01718 DEBUG:['xdotool', 'key', 'Escape'] (eeschema_do.kiauto.ui_automation - ui_automation.py:218)
+01719 DEBUG:Waiting for `['GTK:Main:Out']` starts=False times=2 (eeschema_do - interposer.py:134)
+01726 DEBUG:>>Interposer<<:GTK:Main:Out (@2150.937 D 0.324) (eeschema_do - interposer.py:145)
+01727 DEBUG:Interposer match, times=1 (eeschema_do - interposer.py:174)
+01728 DEBUG:>>Interposer<<:GTK:Window Set Modal:Plot Schematic Options 0 (@2150.955 D 0.018) (eeschema_do - interposer.py:145)
+01735 DEBUG:>>Interposer<<:GTK:Main:Out (@2233.288 D 0.059) (eeschema_do - interposer.py:145)
+01736 DEBUG:Interposer match: GTK:Main:Out (eeschema_do - interposer.py:170)
+01737 DEBUG:Waiting for `['GTK:Main:In']` starts=False times=1 (eeschema_do - interposer.py:134)
+01738 DEBUG:>>Interposer<<:GTK:Main:In (@2233.296 D 0.008) (eeschema_do - interposer.py:145)
+01739 DEBUG:Interposer match: GTK:Main:In (eeschema_do - interposer.py:170)
+01740 DEBUG:= KiCad still running, waiting more (eeschema_do - interposer.py:205)
+01742 DEBUG:= KiCad finally sleeping (eeschema_do - interposer.py:214)
+
+01743 INFO:Exiting KiCad
+01744 DEBUG:['xdotool', 'key', 'ctrl+q'] (eeschema_do.kiauto.ui_automation - ui_automation.py:218)
+01745 DEBUG:Waiting for `['GTK:Window Title:']` starts=True times=1 (eeschema_do - interposer.py:134)
+01760 DEBUG:>>Interposer<<:GTK:Main:Out (@2406.627 D 0.051) (eeschema_do - interposer.py:145)

@@ -1,0 +1,76 @@
+
+00009 INFO:Loading .../tests/kicad6/good-project/good-project.kicad_pcb
+00025 DEBUG:** Using interposer: .../kiauto/interposer/libinterposer.so (pcbnew_do - interposer.py:36)
+
+00032 INFO:Starting pcbnew ...
+
+00034 INFO:Waiting for PCB new window ...
+00036 DEBUG:Waiting for `['GTK:Window Title:', 'PANGO:0:']` starts=True times=1 (pcbnew_do - interposer.py:134)
+00529 DEBUG:>>Interposer<<:GTK:Window Title:PCB Editor (@469.117 D 23.28) (pcbnew_do - interposer.py:145)
+00530 DEBUG:wait_pcbew_start_by_msg got GTK:Window Title:PCB Editor (pcbnew_do - interposer.py:482)
+00531 DEBUG:Waiting for `['GTK:Window Title:', 'PANGO:0:']` starts=True times=1 (pcbnew_do - interposer.py:134)
+06017 DEBUG:>>Interposer<<:GTK:Window Title:Loading PCB (@1604.496 D 1.779) (pcbnew_do - interposer.py:145)
+06018 DEBUG:wait_pcbew_start_by_msg got GTK:Window Title:Loading PCB (pcbnew_do - interposer.py:482)
+06019 DEBUG:Waiting for `['GTK:Window Title:', 'PANGO:0:']` starts=True times=1 (pcbnew_do - interposer.py:134)
+06036 DEBUG:>>Interposer<<:GTK:Window Show:Loading PCB (@1612.55 D 1.648) (pcbnew_do - interposer.py:145)
+06040 DEBUG:Waiting for `['GTK:Window Title:', 'PANGO:0:']` starts=True times=1 (pcbnew_do - interposer.py:134)
+06511 DEBUG:Waiting for `['GTK:Window Title:', 'PANGO:0:']` starts=True times=1 (pcbnew_do - interposer.py:134)
+06515 DEBUG:Waiting for `['GTK:Window Title:', 'PANGO:0:']` starts=True times=1 (pcbnew_do - interposer.py:134)
+06842 DEBUG:Waiting for `['GTK:Window Title:', 'PANGO:0:']` starts=True times=1 (pcbnew_do - interposer.py:134)
+07320 DEBUG:Waiting for `['GTK:Window Title:', 'PANGO:0:']` starts=True times=1 (pcbnew_do - interposer.py:134)
+07326 DEBUG:>>Interposer<<:GTK:Window Title:good-project — PCB Editor (@1951.844 D 0.363) (pcbnew_do - interposer.py:145)
+07327 DEBUG:wait_pcbew_start_by_msg got GTK:Window Title:good-project — PCB Editor (pcbnew_do - interposer.py:482)
+07328 DEBUG:Waiting for `['GTK:Main:In']` starts=False times=1 (pcbnew_do - interposer.py:134)
+07833 DEBUG:>>Interposer<<:GTK:Main:In (@2089.694 D 0.741) (pcbnew_do - interposer.py:145)
+
+07834 INFO:Waiting for "Main pcbnew window" ...
+07849 DEBUG:= KiCad still running, waiting more (pcbnew_do - interposer.py:203)
+08770 DEBUG:= KiCad finally sleeping (pcbnew_do - interposer.py:212)
+
+08771 INFO:Opening dialog `Print` (KiCad)
+08772 DEBUG:['xdotool', 'key', 'ctrl+p'] (pcbnew_do.kiauto.ui_automation - ui_automation.py:218)
+08773 DEBUG:Waiting for `['GTK:Window Show:Print']` starts=False times=1 (pcbnew_do - interposer.py:134)
+08774 DEBUG:>>Interposer<<:GTK:Window Title:Print (@2613.832 D 127.771) (pcbnew_do - interposer.py:145)
+08845 DEBUG:>>Interposer<<:GTK:Window Set Modal:Print 1 (@2653.342 D 0.235) (pcbnew_do - interposer.py:145)
+08880 DEBUG:>>Interposer<<:GTK:Window Show:Print (@2685.745 D 3.235) (pcbnew_do - interposer.py:145)
+08881 DEBUG:Waiting for `['GTK:Main:In']` starts=False times=1 (pcbnew_do - interposer.py:134)
+08927 DEBUG:>>Interposer<<:GTK:Main:In (@2691.67 D 0.376) (pcbnew_do - interposer.py:145)
+08928 DEBUG:= KiCad still running, waiting more (pcbnew_do - interposer.py:203)
+09230 DEBUG:= KiCad finally sleeping (pcbnew_do - interposer.py:212)
+
+09231 INFO:Waiting for "Print" ...
+09250 DEBUG:= KiCad already sleeping (sleeping) (pcbnew_do - interposer.py:214)
+
+09251 INFO:Opening dialog `Print` (GTK)
+09252 DEBUG:['xdotool', 'key', 'alt+p'] (pcbnew_do.kiauto.ui_automation - ui_automation.py:218)
+09253 DEBUG:Waiting for `['GTK:Window Title:Print']` starts=False times=1 (pcbnew_do - interposer.py:134)
+09271 DEBUG:>>Interposer<<:GTK:Window Title:Print (@3379.196 D 242.244) (pcbnew_do - interposer.py:145)
+09272 DEBUG:= KiCad still running, waiting more (pcbnew_do - interposer.py:203)
+10189 DEBUG:= KiCad finally sleeping (pcbnew_do - interposer.py:212)
+
+10190 INFO:Waiting for "Print" ...
+
+10213 INFO:Print
+10214 DEBUG:['xdotool', 'key', 'Return'] (pcbnew_do.kiauto.ui_automation - ui_automation.py:218)
+
+10215 INFO:Wait for print file creation
+10216 DEBUG:Waiting for `['IO:open:/tmp/tmp_ypwvk5p/interposer.pdf']` starts=False times=1 (pcbnew_do - interposer.py:134)
+10228 DEBUG:Waiting for `['IO:close:/tmp/tmp_ypwvk5p/interposer.pdf']` starts=True times=1 (pcbnew_do - interposer.py:134)
+10230 DEBUG:= KiCad still running, waiting more (pcbnew_do - interposer.py:203)
+10234 DEBUG:= KiCad finally sleeping (pcbnew_do - interposer.py:212)
+
+10235 INFO:Close Print dialog
+10236 DEBUG:['xdotool', 'key', 'Escape'] (pcbnew_do.kiauto.ui_automation - ui_automation.py:218)
+10237 DEBUG:Waiting for `['GTK:Main:Out']` starts=False times=2 (pcbnew_do - interposer.py:134)
+10238 DEBUG:>>Interposer<<:GTK:Main:Out (@4413.674 D 116.667) (pcbnew_do - interposer.py:145)
+10239 DEBUG:>>Interposer<<:GTK:Window Set Modal:Print 0 (@4413.787 D 0.113) (pcbnew_do - interposer.py:145)
+10244 DEBUG:>>Interposer<<:GTK:Main:Out (@4482.765 D 0.407) (pcbnew_do - interposer.py:145)
+10245 DEBUG:Waiting for `['GTK:Main:In']` starts=False times=1 (pcbnew_do - interposer.py:134)
+10246 DEBUG:>>Interposer<<:GTK:Main:In (@4482.81 D 0.045) (pcbnew_do - interposer.py:145)
+10247 DEBUG:= KiCad still running, waiting more (pcbnew_do - interposer.py:203)
+10265 DEBUG:= KiCad finally sleeping (pcbnew_do - interposer.py:212)
+
+10266 INFO:Exiting KiCad
+10267 DEBUG:['xdotool', 'key', 'ctrl+q'] (pcbnew_do.kiauto.ui_automation - ui_automation.py:218)
+10268 DEBUG:Waiting for `['GTK:Window Title:']` starts=True times=1 (pcbnew_do - interposer.py:134)
+10282 DEBUG:>>Interposer<<:GTK:Main:Out (@4808.619 D 0.078) (pcbnew_do - interposer.py:145)
