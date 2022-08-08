@@ -225,6 +225,7 @@ def eeschema_plot_schematic(cfg):
 
 def eeschema_plot_schematic_i(cfg, open_keys):
     # Open the "Plot Schematic Options"
+    dialog = 'Plot Schematic Options'
     open_dialog_i(cfg, 'Plot Schematic Options', open_keys)
     # Make sure we are in the "Output directory:" box
     send_keys(cfg, 'Select the output dir widget', 'alt+o')
@@ -235,8 +236,7 @@ def eeschema_plot_schematic_i(cfg, open_keys):
     # Wait for the file
     wait_create_i(cfg, 'plot')
     # Close the dialog
-    send_keys(cfg, 'Closing dialog', 'Escape')
-    wait_close_dialog_i(cfg)
+    send_keys(cfg, 'Closing dialog', 'Escape', closes=dialog)
 
 
 def eeschema_plot_schematic_n(cfg, open_keys):
@@ -348,20 +348,22 @@ def eeschema_run_erc_schematic_5_1_n(cfg):
 
 
 def eeschema_run_erc_schematic_5_1_i(cfg):
+    dialog = 'Electrical Rules Checker'
     # Open the ERC dialog
-    open_dialog_i(cfg, 'Electrical Rules Checker', ['key', 'alt+i', 'c'], no_main=True)
+    open_dialog_i(cfg, dialog, ['key', 'alt+i', 'c'], no_main=True)
     # Enable the "Create ERC file report"
     send_keys(cfg, 'Enable report creation', 'alt+c')
     # Wait for the save dialog
-    open_dialog_i(cfg, 'ERC File', 'Return')
+    file_dlg = 'ERC File'
+    open_dialog_i(cfg, file_dlg, 'Return')
     # Paste the name
     paste_bogus_filename(cfg)
     # Run the ERC
-    send_keys(cfg, 'Run ERC', 'Return')
+    send_keys(cfg, 'Run ERC', 'Return', closes=file_dlg, delay_io=True)
     # Wait for report created
     wait_create_i(cfg, 'ERC')
     # Close the ERC dialog
-    send_keys(cfg, 'Exit ERC', 'alt+l')
+    send_keys(cfg, 'Exit ERC', 'alt+l', closes=dialog)
 
 
 def eeschema_run_erc_schematic_6_0_n(cfg):
@@ -401,21 +403,23 @@ def eeschema_run_erc_schematic_6_0_n(cfg):
 
 
 def eeschema_run_erc_schematic_6_0_i(cfg):
+    dialog = 'Electrical Rules Checker'
     # Open the ERC dialog
-    open_dialog_i(cfg, 'Electrical Rules Checker', 'ctrl+shift+i', no_main=True)
+    open_dialog_i(cfg, dialog, 'ctrl+shift+i', no_main=True)
     # Run the ERC
     send_keys(cfg, 'Run ERC', 'Return')
     # Wait for completion. The Close button is refreshed at the end
     wait_queue(cfg, 'GTK:Button Label:C_lose')
     # Save the report
-    open_dialog_i(cfg, 'Save Report to File', 'alt+s')
+    file_dlg = 'Save Report to File'
+    open_dialog_i(cfg, file_dlg, 'alt+s')
     # Paste the output file
     paste_bogus_filename(cfg)
-    send_keys(cfg, 'Create the report', 'Return')
+    send_keys(cfg, 'Create the report', 'Return', closes=file_dlg, delay_io=True)
     # Wait until created
     wait_create_i(cfg, 'ERC')
     # Close the ERC dialog
-    send_keys(cfg, 'Exit ERC', 'Escape')
+    send_keys(cfg, 'Exit ERC', 'Escape', closes=dialog)
 
 
 def eeschema_run_erc_schematic(cfg):
@@ -454,11 +458,12 @@ def eeschema_netlist_commands_i(cfg, open_keys, dialog_name):
     # Open the "Export Netlist" dialog
     open_dialog_i(cfg, dialog_name, open_keys)
     # Start to generate the netlist (select file name)
-    open_dialog_i(cfg, 'Save Netlist File', 'alt+e')
+    file_dlg = 'Save Netlist File'
+    open_dialog_i(cfg, file_dlg, 'alt+e')
     # Paste the output file
     paste_bogus_filename(cfg)
-    # Confirm the name and generate the netlist
-    send_keys(cfg, 'Generate Netlist', 'Return')
+    # Confirm the name and generate the netlist (both dialogs closes)
+    send_keys(cfg, 'Generate Netlist', 'Return', closes=[file_dlg, dialog_name], delay_io=True)
     # Wait until created
     wait_create_i(cfg, 'Netlist')
 
@@ -516,7 +521,8 @@ def eeschema_bom_xml_commands_i(cfg, open_keys):
     # Open the dialog
     # TODO: When we open this dialog we start to get some random messages from the interposer, why?!
     # Seems to be related to the fork done by KiCad.
-    open_dialog_i(cfg, 'Bill of Material', open_keys)
+    dialog = 'Bill of Material'
+    open_dialog_i(cfg, dialog, open_keys)
     # Select the command input and paste the command
     send_keys(cfg, 'Select the output file name', 'alt+o')
     paste_text_i(cfg, 'Paste bogus command', 'echo "%I"')
@@ -525,8 +531,7 @@ def eeschema_bom_xml_commands_i(cfg, open_keys):
     # Wait until the file is created
     wait_create_i(cfg, 'BoM')
     # Close the dialog
-    send_keys(cfg, 'Closing dialog', 'alt+l')
-    wait_close_dialog_i(cfg)
+    send_keys(cfg, 'Closing dialog', 'alt+l', closes=dialog)
 
 
 def eeschema_bom_xml_commands_n(cfg, open_keys, exit_keys):

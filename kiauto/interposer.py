@@ -302,7 +302,10 @@ def send_keys(cfg, msg, keys, closes=None, delay_io=False):
         collect_io_from_queue(cfg)
     xdotool(keys)
     if closes is not None:
-        wait_queue(cfg, 'GTK:Window Destroy:'+closes)
+        if isinstance(closes, str):
+            closes = [closes]
+        for w in closes:
+            wait_queue(cfg, 'GTK:Window Destroy:'+w)
         wait_kicad_ready_i(cfg)
 
 
