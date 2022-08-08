@@ -470,3 +470,51 @@ int pthread_cond_wait(pthread_cond_t *restrict cond, pthread_mutex_t *restrict m
 
  return res;
 }
+
+//int openat(int dirfd, const char *pathname, int flags);
+int openat(int dirfd, const char *pathname, int flags, mode_t mode)
+{
+ static int (*next_func)(int, const char *, int , mode_t)=NULL;
+ int res;
+
+ if (next_func==NULL)
+   { /* Initialization */
+    char *msg;
+    printf("* wrapping openat\n");
+    next_func=dlsym(RTLD_NEXT,"openat");
+    if ((msg=dlerror())!=NULL)
+       printf("** dlopen failed : %s\n", msg);
+   }
+
+ res=next_func(dirfd, pathname, flags, mode);
+
+ printf("IO:open:%s\n", pathname);
+ fflush(stdout);
+ return res;
+}
+
+
+FILE *fopen(const char *filename, const char *mode)
+{
+ static FILE *(*next_func)(const char *, const char *)=NULL;
+ FILE *res;
+
+ if (next_func==NULL)
+   { /* Initialization */
+    char *msg;
+    /* printf("* wrapping fopen\n"); */
+    next_func=dlsym(RTLD_NEXT,"fopen");
+    if ((msg=dlerror())!=NULL)
+       printf("** dlopen failed : %s\n", msg);
+   }
+
+ res=next_func(filename, mode);
+
+ if (mode[0]=='w' && mode[1]=='t')
+    printf("IO:fopen:%s\n", filename);
+ fflush(stdout);
+ return res;
+}
+
+
+

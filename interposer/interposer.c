@@ -273,6 +273,8 @@ void gtk_label_set_text_with_mnemonic(GtkLabel *label, const gchar *str)
   /* DRC Control dialog */
  if (g_strcmp0(str, "Report all errors for tracks (slower)")==0)
     str="_Report all errors for tracks (slower)";
+ else if (g_strcmp0(str, "Create report file:")==0)
+    str="_Create report file:";
   /* GenCad export dialog */
  else if (g_strcmp0(str, "Flip bottom footprint padstacks")==0)
     str="_Flip bottom footprint padstacks";
@@ -346,29 +348,6 @@ gchar *gtk_file_chooser_get_filename(GtkFileChooser *chooser)
 }
 
 
-FILE *fopen(const char *filename, const char *mode)
-{
- static FILE *(*next_func)(const char *, const char *)=NULL;
- FILE *res;
-
- if (next_func==NULL)
-   { /* Initialization */
-    char *msg;
-    /* printf("* wrapping fopen\n"); */
-    next_func=dlsym(RTLD_NEXT,"fopen");
-    if ((msg=dlerror())!=NULL)
-       printf("** dlopen failed : %s\n", msg);
-   }
-
- res=next_func(filename, mode);
-
- if (mode[0]=='w' && mode[1]=='t')
-    printf("IO:fopen:%s\n", filename);
- fflush(stdout);
- return res;
-}
-
-
 FILE *fopen64(const char *filename, const char *mode)
 {
  static FILE *(*next_func)(const char *, const char *)=NULL;
@@ -385,7 +364,7 @@ FILE *fopen64(const char *filename, const char *mode)
 
  res=next_func(filename, mode);
 
- if (mode[0]=='w' && mode[1]=='t')
+ if (mode[0]=='w')
     printf("IO:open:%s\n", filename);
  fflush(stdout);
  return res;

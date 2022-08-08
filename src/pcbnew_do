@@ -308,7 +308,7 @@ def print_layers(cfg, id_pcbnew):
 def fill_zones_i(cfg):
     logger.info('Filling zones ...')
     # Wait for KiCad to be sleeping
-    wait_kicad_ready_i(cfg, swaps=0)
+    wait_kicad_ready_i(cfg)
     # Now we fill the zones
     xdotool(['key', 'b'])
     # Inform the elapsed time for slow fills
@@ -360,10 +360,10 @@ def print_layers_i(cfg, id_pcbnew, print_dialog_keys):
         if cfg.fill_zones:
             fill_zones_i(cfg)
         # Open the KiCad print dialog
-        open_dialog_i(cfg, 'Print', ['key']+print_dialog_keys)
+        open_dialog_i(cfg, 'Print', ['key']+print_dialog_keys, extra_msg='KiCad')
         # Open the gtk print dialog
         # Big magic 1: we add an accelerator to the Print button, so Alt+P is enough
-        open_dialog_i(cfg, 'Print', 'alt+p')
+        open_dialog_i(cfg, 'Print', 'alt+p', extra_msg='GTK', no_main=True, no_show=True)
         # Confirm the options
         # Big magic 2: the interposer selected the printer, output file name and format, just confirm them
         send_keys(cfg, 'Print', 'Return')
@@ -556,47 +556,36 @@ def run_drc_n(cfg):
 
 
 def run_drc_5_1_i(cfg):
-    open_dialog_i(cfg, 'DRC Control', ['key', 'alt+i', 'd'])
-    logger.info('Enable reporting all errors for tracks')
-    wait_point(cfg)
+    open_dialog_i(cfg, 'DRC Control', ['key', 'alt+i', 'd'], no_main=True)
+    # Enable report all errors for tracks and go to the file name
     # Here we added a shortcut for "Report all errors for tracks (slower)"
-    xdotool(['key', 'alt+r', 'Tab', 'Tab', 'Tab', 'Tab'])
+    send_keys(cfg, 'Enable reporting all errors for tracks', ['key', 'alt+r', 'alt+c'])
     paste_output_file_i(cfg)
-    open_dialog_i(cfg, 'Disk File Report Completed', ['key', 'Return'])
+    open_dialog_i(cfg, 'Disk File Report Completed', 'Return', no_show=True, no_main=True)
     wait_for_window('Report completed dialog', 'Disk File Report Completed')
-    wait_point(cfg)
-    xdotool(['key', 'Return'])
+    send_keys(cfg, 'Close dialog', 'Return')
     wait_for_window('DRC modal window', 'DRC Control')
-    logger.info('Closing the DRC dialog')
-    wait_point(cfg)
-    xdotool(['key', 'shift+Tab', 'Return'])
+    send_keys(cfg, 'Closing the DRC dialog', 'alt+l')
     wait_pcbnew()
 
 
 def run_drc_6_0_i(cfg):
-    open_dialog_i(cfg, 'DRC Control', ['key', 'ctrl+shift+i'])
+    open_dialog_i(cfg, 'DRC Control', 'ctrl+shift+i', no_main=True)
     # Run the DRC
-    logger.info('Run DRC')
-    wait_point(cfg)
-    xdotool(['key', 'Return'])
+    send_keys(cfg, 'Run DRC', 'Return')
     # Wait for the end of the DRC
     wait_queue(cfg, 'PANGO:Done.')
-    wait_kicad_ready_i(cfg, swaps=0)
+    wait_kicad_ready_i(cfg)
     # Save the DRC
     # We added a short-cut for Save...
-    open_dialog_i(cfg, 'Save Report to File', ['key', 'alt+s'], show=True)
+    open_dialog_i(cfg, 'Save Report to File', 'alt+s')
     # Paste the name
-    paste_output_file_i(cfg)
+    paste_bogus_filename(cfg)
     # Wait for report created
-    logger.info('Wait for DRC file creation')
-    wait_point(cfg)
-    xdotool(['key', 'Return'])
-    wait_for_file_created_by_process(cfg.pcbnew_pid, cfg.output_file)
+    send_keys(cfg, 'Create report', 'Return')
+    wait_create_i(cfg, 'DRC report')
     # Close the dialog
-    logger.info('Closing the DRC dialog')
-    wait_point(cfg)
-    xdotool(['key', 'Escape'])
-    wait_pcbnew()
+    send_keys(cfg, 'Closing the DRC dialog', 'Escape')
 
 
 def run_drc_i(cfg):
@@ -659,7 +648,7 @@ def export_gencad_select_options(cfg):
 
 def export_gencad_i(cfg, keys):
     # Open the "Export to GenCAD settings"
-    open_dialog_i(cfg, 'Export to GenCAD settings', keys, wait_main=True)
+    open_dialog_i(cfg, 'Export to GenCAD settings', keys)
     # KiCad dialogs are unreliable, you never know which widget is selected
     # This goes to the top left corner of the dialog
     # Note: lamentably this widget doesn't have a label
@@ -719,7 +708,7 @@ def ipc_netlist_n(cfg, keys):
 
 def ipc_netlist_i(cfg, keys):
     # Open the "Export D-356 Test File"
-    open_dialog_i(cfg, 'Export D-356 Test File', keys, show=True, wait_main=True)
+    open_dialog_i(cfg, 'Export D-356 Test File', keys)
     # Paste the name (well, something that will be replaced by the real name)
     paste_bogus_filename(cfg)
     # Generate the netlist
@@ -824,7 +813,7 @@ def apply_steps(steps, key, neg_key, id, cfg):
             logger.debug('Step '+key)
             if cfg.use_interposer:
                 if cfg.wait_after_move:
-                    wait_kicad_ready_i(cfg, 1)
+                    wait_kicad_ready_i(cfg, swaps=1)
             else:
                 wait_3d_ready_n(cfg)
 
@@ -845,15 +834,6 @@ def open_save_image_n(cfg, id):
     if not found:
         logger.error('Failed to open the file save dialog')
         exit(PCBNEW_ERROR)
-
-
-def open_save_image_i(cfg, id):
-    keys = ['key', 'alt+f', 'Return']
-    xdotool(keys, id)
-    # Here we can get an optional swap, but before the menu
-    wait_queue(cfg, 'PANGO:Export Current View as PNG', starts=True)
-    # A final swap
-    wait_swap(cfg)
 
 
 def capture_3d_view(cfg):
@@ -952,7 +932,7 @@ def capture_3d_view_n(cfg):
 
 def capture_3d_view_i(cfg):
     """ 3D View capture, interposer version """
-    id = open_dialog_i(cfg, '3D Viewer', ['key', 'alt+3'], no_wait=True, show=True)
+    id = open_dialog_i(cfg, '3D Viewer', 'alt+3', no_wait=True)
     logger.debug('3D Viewer is drawing')
 
     # Detect the 3D models load (On Ki5 we can miss the "loading..." message
@@ -980,7 +960,7 @@ def capture_3d_view_i(cfg):
             log.info_progress(msg[:80])
     logger.info('Finished loading 3D models')
     # Wait until the dialog is ready
-    wait_kicad_ready_i(cfg, swaps=0)
+    wait_kicad_ready_i(cfg)
     id = wait_for_window('3D Viewer', '3D Viewer', 1)[0]
     if cfg.ki5:
         # KiCad 5 can't handle all commands at once
@@ -998,7 +978,7 @@ def capture_3d_view_i(cfg):
         logger.info('Changing view')
         xdotool(['key', cfg.view], id)
         if cfg.wait_after_move:
-            wait_kicad_ready_i(cfg, 1)
+            wait_kicad_ready_i(cfg, swaps=1)
 
     # Apply the movements
     apply_steps(cfg.move_x, 'Right', 'Left', id, cfg)
@@ -1026,23 +1006,22 @@ def capture_3d_view_i(cfg):
             logger.debug('Zoom')
             # An extra swap is done because we used the mouse (mouse "moved")
             if cfg.wait_after_move:
-                wait_kicad_ready_i(cfg, 1)
+                wait_kicad_ready_i(cfg, swaps=1)
 
     if cfg.ray_tracing:
-        xdotool(['key']+cfg.keys_rt+['Return'], id)
-        logger.debug('Ray tracing')
+        send_keys(cfg, 'Start ray tracing', ['key']+cfg.keys_rt+['Return'])
         wait_queue(cfg, 'PANGO:Raytracing')
         wait_ray_tracer_i(cfg)
 
     # Save the image as PNG
     # Open the Save dialog
-    open_dialog_i(cfg, '3D Image File Name', ['key', 'alt+f', 'Return'], show=True)
+    open_dialog_i(cfg, '3D Image File Name', ['key', 'alt+f', 'Return'])
     # Paste the name
     paste_bogus_filename(cfg)
     # Wait for the image to be created
-    send_keys(cfg, 'Wait for the image file creation', 'Return')
+    send_keys(cfg, 'Export the PNG', 'Return')
     # Wait until the file is created (why we just see the close?)
-    wait_create_i(cfg, 'PNG', wait_open=False)
+    wait_create_i(cfg, 'PNG')
     # Close the 3D viewer
     send_keys(cfg, 'Closing the 3D viewer', cfg.key_close_3d)
     exit_kicad_i(cfg)

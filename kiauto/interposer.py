@@ -167,9 +167,11 @@ def wait_queue(cfg, strs='', starts=False, times=1, timeout=300, do_to=True, kic
                 break
         if times == 0:
             interposer_dialog.append('KiAuto:match')
+            cfg.logger.debug('Interposer match: '+line[:-1])
             return line[:-1]
         if old_times != times:
             interposer_dialog.append('KiAuto:times '+str(times))
+            cfg.logger.debug('Interposer match, times='+str(times))
     if do_to:
         raise RuntimeError('Timed out waiting for `{}`'.format(strs))
 
@@ -192,7 +194,7 @@ def set_kicad_process(cfg, pid):
         exit(1)
 
 
-def wait_kicad_ready_i(cfg, swaps=2, kicad_can_exit=False):
+def wait_kicad_ready_i(cfg, swaps=0, kicad_can_exit=False):
     res = wait_swap(cfg, swaps, kicad_can_exit=kicad_can_exit)
     # KiCad 5 takes 0 to 2 extra swaps (is random) so here we ensure KiCad is sleeping
     status = cfg.kicad_process.status()
@@ -215,28 +217,28 @@ def wait_kicad_ready_i(cfg, swaps=2, kicad_can_exit=False):
     return res
 
 
-def open_dialog_i(cfg, name, keys, msg_done=None, show=False, no_wait=False, wait_main=False):
+def open_dialog_i(cfg, name, keys, msg_done=None, no_show=False, no_wait=False, no_main=False, extra_msg=None):
     wait_point(cfg)
     # Wait for KiCad to be sleeping
-    wait_kicad_ready_i(cfg, swaps=0)
-    cfg.logger.info('Opening dialog `{}`'.format(name))
+    wait_kicad_ready_i(cfg)
+    cfg.logger.info('Opening dialog `{}` {}'.format(name, '('+extra_msg+')' if extra_msg is not None else ''))
     if isinstance(keys, str):
         keys = ['key', keys]
     xdotool(keys)
     if msg_done is not None:
         res = wait_queue(cfg, 'PANGO:'+msg_done)
     else:
-        pre_gtk = 'GTK:Window Title:' if not show else 'GTK:Window Show:'
+        pre_gtk = 'GTK:Window Title:' if no_show else 'GTK:Window Show:'
         if isinstance(name, str):
             name = [name]
         res = wait_queue(cfg, [pre_gtk+f for f in name])
         name = res[len(pre_gtk):]
     if no_wait:
         return None
-    if wait_main:
+    if not no_main:
         wait_queue(cfg, 'GTK:Main:In')
     # Wait for KiCad to be sleeping
-    wait_kicad_ready_i(cfg, swaps=0)
+    wait_kicad_ready_i(cfg)
     # The dialog is there, just make sure it has the focus
     return wait_for_window(name, name, 1)[0]
 
@@ -255,7 +257,7 @@ def paste_text_i(cfg, msg, text):
     # Look for the echo
     check_text_replace(cfg, text)
     # Wait for KiCad to be sleeping
-    wait_kicad_ready_i(cfg, swaps=0)
+    wait_kicad_ready_i(cfg)
 
 
 def paste_output_file_i(cfg, use_dir=False):
@@ -289,15 +291,14 @@ def send_keys(cfg, msg, keys):
     xdotool(keys)
 
 
-def wait_create_i(cfg, name, fn=None, wait_open=True):
+def wait_create_i(cfg, name, fn=None):
     cfg.logger.info('Wait for '+name+' file creation')
     wait_point(cfg)
     if fn is None:
         fn = cfg.output_file
-    if wait_open:
-        wait_queue(cfg, 'IO:open:'+fn)
+    wait_queue(cfg, 'IO:open:'+fn)
     wait_queue(cfg, 'IO:close:'+fn, starts=True)
-    wait_kicad_ready_i(cfg, swaps=0)
+    wait_kicad_ready_i(cfg)
 
 
 def collect_dialog_messages(cfg, title):
@@ -415,7 +416,7 @@ def dismiss_save_changes(cfg, title):
 
 
 def exit_kicad_i(cfg):
-    wait_kicad_ready_i(cfg, swaps=0)
+    wait_kicad_ready_i(cfg)
     cfg.logger.info('Exiting KiCad')
     wait_point(cfg)
     keys_exit = ['key', 'ctrl+q']
@@ -444,7 +445,7 @@ def exit_kicad_i(cfg):
             return
         cfg.logger.warning("Retrying KiCad exit")
         # Wait until KiCad is sleeping again
-        wait_kicad_ready_i(cfg, swaps=0, kicad_can_exit=True)
+        wait_kicad_ready_i(cfg, kicad_can_exit=True)
         # Retry the exit
         xdotool(keys_exit)
 
@@ -511,8 +512,10 @@ def wait_start_by_msg(cfg):
             # This is the dialog for the loading progress, wait
             pass
         elif match is not None:
-            log.info_progress('Elapsed time: '+match.group(1))
-            with_elapsed = True
+            msg = match.group(1)
+            if msg != '0:00:00':
+                log.info_progress('Elapsed time: '+match.group(1))
+                with_elapsed = True
         elif title == 'Error':
             dismiss_error(cfg, title)
         elif title == 'File Open Error':
