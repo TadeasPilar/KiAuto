@@ -306,11 +306,10 @@ def print_layers(cfg, id_pcbnew):
 
 
 def fill_zones_i(cfg):
-    logger.info('Filling zones ...')
     # Wait for KiCad to be sleeping
     wait_kicad_ready_i(cfg)
     # Now we fill the zones
-    xdotool(['key', 'b'])
+    send_keys(cfg, 'Filling zones ...',  'b')
     # Inform the elapsed time for slow fills
     pre = 'GTK:Window Title:'
     pres = [pre, 'PANGO:0:']
@@ -323,7 +322,7 @@ def fill_zones_i(cfg):
         if res is None:
             # No message, is KiCad alive and running?
             try:
-                if cfg.kicad_process.status() != psutil.STATUS_RUNNING:
+                if cfg.kicad_process.status() == psutil.STATUS_SLEEPING:
                     logger.debug('= KiCad is sleeping')
                     return
             except psutil.NoSuchProcess:
@@ -342,8 +341,10 @@ def fill_zones_i(cfg):
             # This is the main window title indicating we modified the PCB
             pass
         elif match is not None:
-            log.info_progress('Elapsed time: '+match.group(1))
-            with_elapsed = True
+            msg = match.group(1)
+            if msg != '0:00:00':
+                log.info_progress('Elapsed time: '+msg)
+                with_elapsed = True
         else:
             logger.error('KiCad dialog: '+res[len(pre):])
             exit(PCBNEW_ERROR)
@@ -595,13 +596,12 @@ def run_drc_i(cfg):
         run_drc_5_1_i(cfg)
     # Save the PCB
     if cfg.save:
-        logger.info('Saving PCB')
-        wait_point(cfg)
-        os.rename(cfg.input_file, cfg.input_file + '-bak')
-        xdotool(['key', 'ctrl+s'])
-        logger.info('Wait for PCB file creation')
-        wait_point(cfg)
-        wait_for_file_created_by_process(cfg.pcbnew_pid, os.path.realpath(cfg.input_file))
+        os.rename(cfg.input_file, cfg.input_file+'-bak')
+        wait_kicad_ready_i(cfg)
+        if cfg.ki5:
+            sleep(0.4)
+        send_keys(cfg, 'Saving PCB', 'ctrl+s')
+        wait_create_i(cfg, 'PCB', fn=os.path.realpath(cfg.input_file))
     # Exit
     exit_kicad_i(cfg)
 

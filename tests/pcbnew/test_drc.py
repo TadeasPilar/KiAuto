@@ -105,18 +105,20 @@ def test_drc_save(test_dir):
         We run the DRC refilling, save it and then print. """
     ctx = context.TestContext(test_dir, 'DRC_Save_1', 'zone-refill')
     shutil.copy2(ctx.board_file+'.ok', ctx.board_file)
-    cmd = [PROG, 'run_drc', '-s']
-    ctx.run(cmd)
-    ctx.expect_out_file(REPORT)
-    ctx.clean_up()
+    try:
+        cmd = [PROG, '-vvv', '-r', 'run_drc', '-s']
+        ctx.run(cmd)
+        ctx.expect_out_file(REPORT)
+        ctx.clean_up()
 
-    ctx = context.TestContext(test_dir, 'DRC_Save_2', 'zone-refill')
-    cmd = [PROG, 'export']
-    layers = ['F.Cu', 'B.Cu', 'Edge.Cuts']
-    ctx.run(cmd, extra=layers)
-    ctx.expect_out_file(DEFAULT)
-    ctx.compare_image(DEFAULT, 'zone-refill.pdf')
-    shutil.copy2(ctx.board_file+'.ok', ctx.board_file)
+        ctx = context.TestContext(test_dir, 'DRC_Save_2', 'zone-refill')
+        cmd = [PROG, 'export']
+        layers = ['F.Cu', 'B.Cu', 'Edge.Cuts']
+        ctx.run(cmd, extra=layers)
+        ctx.expect_out_file(DEFAULT)
+        ctx.compare_image(DEFAULT, 'zone-refill.pdf')
+    finally:
+        shutil.copy2(ctx.board_file+'.ok', ctx.board_file)
     ctx.clean_up()
 
 

@@ -514,7 +514,7 @@ def wait_start_by_msg(cfg):
         elif match is not None:
             msg = match.group(1)
             if msg != '0:00:00':
-                log.info_progress('Elapsed time: '+match.group(1))
+                log.info_progress('Elapsed time: '+msg)
                 with_elapsed = True
         elif title == 'Error':
             dismiss_error(cfg, title)
