@@ -649,8 +649,9 @@ def export_gencad_select_options(cfg):
 
 
 def export_gencad_i(cfg, keys):
+    dialog = 'Export to GenCAD settings'
     # Open the "Export to GenCAD settings"
-    open_dialog_i(cfg, 'Export to GenCAD settings', keys)
+    open_dialog_i(cfg, dialog, keys)
     # KiCad dialogs are unreliable, you never know which widget is selected
     # This goes to the top left corner of the dialog
     # Note: lamentably this widget doesn't have a label
@@ -672,7 +673,7 @@ def export_gencad_i(cfg, keys):
     if cfg.save_origin:
         keys.append('alt+s')
     keys.append('Return')
-    send_keys(cfg, 'Changing settings', keys)
+    send_keys(cfg, 'Changing settings', keys, closes=dialog, delay_io=True)
     wait_create_i(cfg, 'GenCAD')
     # Exit
     exit_kicad_i(cfg)
@@ -709,12 +710,13 @@ def ipc_netlist_n(cfg, keys):
 
 
 def ipc_netlist_i(cfg, keys):
+    dialog = 'Export D-356 Test File'
     # Open the "Export D-356 Test File"
-    open_dialog_i(cfg, 'Export D-356 Test File', keys)
+    open_dialog_i(cfg, dialog, keys)
     # Paste the name (well, something that will be replaced by the real name)
     paste_bogus_filename(cfg)
     # Generate the netlist
-    send_keys(cfg, 'Generate the netlist', 'Return')
+    send_keys(cfg, 'Generate the netlist', 'Return', closes=dialog, delay_io=True)
     # Wait for file creation
     wait_create_i(cfg, 'IPC D-356')
     # Exit
@@ -934,7 +936,8 @@ def capture_3d_view_n(cfg):
 
 def capture_3d_view_i(cfg):
     """ 3D View capture, interposer version """
-    id = open_dialog_i(cfg, '3D Viewer', 'alt+3', no_wait=True)
+    dialog = '3D Viewer'
+    id = open_dialog_i(cfg, dialog, 'alt+3', no_wait=True)
     logger.debug('3D Viewer is drawing')
 
     # Detect the 3D models load (On Ki5 we can miss the "loading..." message
@@ -1017,15 +1020,16 @@ def capture_3d_view_i(cfg):
 
     # Save the image as PNG
     # Open the Save dialog
-    open_dialog_i(cfg, '3D Image File Name', ['key', 'alt+f', 'Return'])
+    file_dlg = '3D Image File Name'
+    open_dialog_i(cfg, file_dlg, ['key', 'alt+f', 'Return'])
     # Paste the name
     paste_bogus_filename(cfg)
     # Wait for the image to be created
-    send_keys(cfg, 'Export the PNG', 'Return')
+    send_keys(cfg, 'Export the PNG', 'Return', closes=file_dlg, delay_io=True)
     # Wait until the file is created (why we just see the close?)
     wait_create_i(cfg, 'PNG')
     # Close the 3D viewer
-    send_keys(cfg, 'Closing the 3D viewer', cfg.key_close_3d)
+    send_keys(cfg, 'Closing the 3D viewer', cfg.key_close_3d, closes=dialog)
     exit_kicad_i(cfg)
 
 
