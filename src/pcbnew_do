@@ -312,29 +312,25 @@ def fill_zones_i(cfg):
     send_keys(cfg, 'Filling zones ...',  'b')
     # Inform the elapsed time for slow fills
     pre = 'GTK:Window Title:'
-    pres = [pre, 'PANGO:0:']
+    pre_d = 'GTK:Window Destroy:'
+    pres = [pre, pre_d, 'PANGO:0:']
     elapsed_r = re.compile(r'PANGO:(\d:\d\d:\d\d)')
+    dialog = 'Fill All Zones'
+    destroyed = pre_d+dialog
+    opened = pre+dialog
     with_elapsed = False
-    logger.debug('= Wainting for KiCad sleeping')
     while True:
         # Wait for any window, or elapsed info
-        res = wait_queue(cfg, pres, starts=True, timeout=0.1, do_to=False)
-        if res is None:
-            # No message, is KiCad alive and running?
-            try:
-                if cfg.kicad_process.status() == psutil.STATUS_SLEEPING:
-                    logger.debug('= KiCad is sleeping')
-                    return
-            except psutil.NoSuchProcess:
-                logger.debug('= KiCad died')
-                logger.error('KiCad is no longer running')
-                exit(KICAD_DIED)
-            continue
+        res = wait_queue(cfg, pres, starts=True)
         logger.debug('fill_zones_i got '+res)
         match = elapsed_r.match(res)
         if not match and with_elapsed:
             log.flush_info()
-        if res.endswith('Fill All Zones'):
+        if res == destroyed:
+            # The fill dialog was closed
+            wait_kicad_ready_i(cfg)
+            return
+        elif res == opened:
             # This is the dialog for the fill in progress, wait
             pass
         elif res.endswith(' — PCB Editor') or res.startswith(pre+'Pcbnew —'):
