@@ -240,10 +240,7 @@ def exit_pcbnew(cfg):
     # Wait until the dialog is closed, useful when more than one file are created
     id = wait_pcbnew(10)
 
-    logger.info('Exiting pcbnew')
-    wait_point(cfg)
-    xdotool(['key', 'ctrl+q'])
-    wait_queue(cfg, 'None')
+    send_keys(cfg, 'Exiting pcbnew', 'ctrl+q')
     try:
         wait_not_focused(id[0], 5)
     except RuntimeError:  # pragma: no cover
@@ -356,8 +353,8 @@ def print_layers_i(cfg, id_pcbnew, print_dialog_keys):
         send_keys(cfg, 'Close Print dialog', 'Escape', closes='Print')
         # Move the file to the user selected name
         shutil.move(fname, cfg.output_file)
-        # Exit
-        exit_kicad_i(cfg)
+    # Exit
+    exit_kicad_i(cfg)
 
 
 def print_layers_n(cfg, id_pcbnew, print_dialog_keys):
@@ -698,22 +695,6 @@ def ipc_netlist_i(cfg, keys):
 
 
 def wait_ray_tracer(cfg):
-    if cfg.use_interposer:
-        # Wait until we see the 100% rendered and the time is reported
-        msg = 'PANGO:Rendering: '
-        msg_l = len(msg)
-        while True:
-            # Show the progress
-            res = wait_queue(cfg, msg, starts=True)[msg_l:]
-            if cfg.verbose:
-                log.info_progress('Rendering '+res)
-            if res == '100 %':
-                if cfg.verbose:
-                    log.flush_info()
-                break
-        wait_queue(cfg, 'PANGO:Rendering time', starts=True)
-        wait_swap(cfg)
-        return
     # I can't find a mechanism to determine if the render finished.
     # I think this is a bug in KiCad, you can save unfinished images!!!!
     logger.info('Waiting for the final render')
