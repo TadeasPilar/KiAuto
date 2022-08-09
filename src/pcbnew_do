@@ -1521,9 +1521,12 @@ if __name__ == '__main__':
                            '/usr/bin/pcbnew', cfg.input_file]
                 else:
                     cmd = [cfg.pcbnew, cfg.input_file]
+                use_low_level_io = False
                 if args.command == 'export' and cfg.use_interposer:
                     # We need a file to save the print options, make it unique to avoid collisions
                     create_interposer_print_options_file(cfg)
+                    use_low_level_io = True
+                os.environ['KIAUTO_INTERPOSER_LOWLEVEL_IO']='1' if use_low_level_io else ''
                 logger.info('Starting pcbnew ...')
                 # bufsize=1 is line buffered
                 with PopenContext(cmd, stderr=flog_err, close_fds=True, bufsize=1, text=True,

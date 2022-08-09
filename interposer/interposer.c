@@ -356,7 +356,7 @@ FILE *fopen64(const char *filename, const char *mode)
  if (next_func==NULL)
    { /* Initialization */
     char *msg;
-    /* printf("* wrapping fopen\n"); */
+    printf("* wrapping fopen64\n");
     next_func=dlsym(RTLD_NEXT,"fopen64");
     if ((msg=dlerror())!=NULL)
        printf("** dlopen failed : %s\n", msg);
@@ -382,7 +382,7 @@ int fclose(FILE *stream)
  if (next_func==NULL)
    { /* Initialization */
     char *msg;
-    /* printf("* wrapping fclose\n"); */
+    printf("* wrapping fclose\n");
     next_func=dlsym(RTLD_NEXT,"fclose");
     if ((msg=dlerror())!=NULL)
        printf("** dlopen failed : %s\n", msg);
@@ -395,56 +395,6 @@ int fclose(FILE *stream)
  readlink(path, result, 1023);
 
  res=next_func(stream);
- printf("IO:close:%s\n",result);
- fflush(stdout);
- return res;
-}
-
-
-int open64(const char *pathname, int flags, mode_t mode)
-{
- static int (*next_func)(const char *, int , mode_t)=NULL;
- int res;
-
- if (next_func==NULL)
-   { /* Initialization */
-    char *msg;
-    printf("* wrapping open\n");
-    next_func=dlsym(RTLD_NEXT,"open64");
-    if ((msg=dlerror())!=NULL)
-       printf("** dlopen failed : %s\n", msg);
-   }
-
- res=next_func(pathname, flags, mode);
-
- printf("IO:open:%s\n", pathname);
- fflush(stdout);
- return res;
-}
-
-
-int close(int fd)
-{
- static int(*next_func)(int)=NULL;
- int res;
- char path[1024];
- char result[1024];
-
- if (next_func==NULL)
-   { /* Initialization */
-    char *msg;
-    /* printf("* wrapping fclose\n"); */
-    next_func=dlsym(RTLD_NEXT,"close");
-    if ((msg=dlerror())!=NULL)
-       printf("** dlopen failed : %s\n", msg);
-   }
-
- /* Read out the link to our file descriptor. */
- sprintf(path, "/proc/self/fd/%d", fd);
- memset(result, 0, 1024);
- readlink(path, result, 1023);
-
- res=next_func(fd);
  printf("IO:close:%s\n",result);
  fflush(stdout);
  return res;
@@ -495,4 +445,76 @@ void gtk_widget_destroy(GtkWidget *widget)
        fflush(stdout);
       }
    }
+}
+
+
+int open64(const char *pathname, int flags, mode_t mode)
+{
+ static int (*next_func)(const char *, int , mode_t)=NULL;
+ static int do_log=0;
+ int res;
+
+ if (next_func==NULL)
+   { /* Initialization */
+    char *msg;
+    const char *fn;
+    printf("* wrapping open64\n");
+    next_func=dlsym(RTLD_NEXT,"open64");
+    if ((msg=dlerror())!=NULL)
+       printf("** dlopen failed : %s\n", msg);
+    fn=getenv("KIAUTO_INTERPOSER_LOWLEVEL_IO");
+    if (fn==NULL || !fn[0])
+       printf("* Not logging low level I/O\n");
+    else
+       do_log=1;
+   }
+
+ res=next_func(pathname, flags, mode);
+
+ if (do_log)
+   {
+    printf("IO:open:%s\n", pathname);
+    fflush(stdout);
+   }
+ return res;
+}
+
+
+int close(int fd)
+{
+ static int(*next_func)(int)=NULL;
+ static int do_log=0;
+ int res;
+ char path[1024];
+ char result[1024];
+
+ if (next_func==NULL)
+   { /* Initialization */
+    char *msg;
+    const char *fn;
+    printf("* wrapping close\n");
+    next_func=dlsym(RTLD_NEXT,"close");
+    if ((msg=dlerror())!=NULL)
+       printf("** dlopen failed : %s\n", msg);
+    fn=getenv("KIAUTO_INTERPOSER_LOWLEVEL_IO");
+    if (fn==NULL || !fn[0])
+       printf("* Not logging low level I/O\n");
+    else
+       do_log=1;
+   }
+
+ if (do_log)
+   {/* Read out the link to our file descriptor. */
+    sprintf(path, "/proc/self/fd/%d", fd);
+    memset(result, 0, 1024);
+    readlink(path, result, 1023);
+   }
+
+ res=next_func(fd);
+ if (do_log)
+   {
+    printf("IO:close:%s\n",result);
+    fflush(stdout);
+   }
+ return res;
 }

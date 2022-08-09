@@ -95,7 +95,8 @@ def enqueue_output(out, queue):
         * When we get an empty string we finish, this is the case for KiCad finished """
     tm_start = time.time()
     for line in iter(out.readline, ''):
-        if line.startswith('PANGO:') or line.startswith('GTK:') or line.startswith('IO:') or line.startswith('GLX:'):
+        if (line.startswith('PANGO:') or line.startswith('GTK:') or line.startswith('IO:') or line.startswith('GLX:') or
+           line.startswith('* ')):
             queue.put((time.time()-tm_start, line))
         # logger.error((time.time()-tm_start, line))
     out.close()

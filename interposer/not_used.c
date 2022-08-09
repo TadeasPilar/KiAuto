@@ -515,6 +515,3 @@ FILE *fopen(const char *filename, const char *mode)
  fflush(stdout);
  return res;
 }
-
-
-

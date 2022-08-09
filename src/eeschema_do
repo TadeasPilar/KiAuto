@@ -701,6 +701,7 @@ if __name__ == '__main__':
         do_retry = False
         problem = False
         # Setup the output file name
+        use_low_level_io = False
         if args.command == 'export':
             # Export
             ext = cfg.export_format
@@ -713,6 +714,7 @@ if __name__ == '__main__':
         elif args.command == 'bom_xml':
             # BoM XML
             cfg.output_file = os.path.splitext(cfg.input_file)[0]+'.xml'
+            use_low_level_io = cfg.ki5
         elif args.command == 'run_erc':
             # Run ERC
             if args.output_name is None:
@@ -723,6 +725,7 @@ if __name__ == '__main__':
                     logger.debug('Removing old file')
                     os.remove(cfg.output_file)
             logger.debug('Report file: '+cfg.output_file)
+        os.environ['KIAUTO_INTERPOSER_LOWLEVEL_IO']='1' if use_low_level_io else ''
         # When using the interposer inform the output file name using the environment
         setup_interposer_filename(cfg)
         with recorded_xvfb(cfg, retry):
