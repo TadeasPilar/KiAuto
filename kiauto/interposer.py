@@ -487,6 +487,37 @@ def exit_kicad_i(cfg):
 #     wait_queue(cfg, 'GTK:Main:In')
 
 
+def wait_and_show_progress(cfg, msg, regex_str, trigger, msg_reg, skip_match=None, with_windows=False):
+    """ msg: The message we are waiting
+        regex_str: A regex to extract the progress message (text after PANGO:)
+        trigger: A text that must be start at the beginning to test using the regex (PANGO:trigger)
+        msg_reg: Message to print before the info (msg_reg: MATCH)
+        skip_match: A match that we will skip
+        with_windows: KiCad could pop-up a window """
+    pres = [msg, 'PANGO:'+trigger]
+    regex = re.compile(regex_str)
+    with_info = False
+    padding = 80*' '
+    while True:
+        res = wait_queue(cfg, pres, starts=True, with_windows=with_windows)
+        if res.startswith(msg):
+            # End of process detected
+            if with_info:
+                log.flush_info()
+            wait_kicad_ready_i(cfg)
+            return
+        # Check if this message contains progress information
+        if cfg.verbose and res.startswith('PANGO:'):
+            res = res[6:]
+            match = regex.match(res)
+            if match is not None:
+                m = match.group(1)
+                if skip_match is None or m != skip_match:
+                    m = msg_reg+': '+m+padding
+                    log.info_progress(m[:80])
+                    with_info = True
+
+
 def wait_start_by_msg(cfg):
     cfg.logger.info('Waiting for PCB new window ...')
     pre = 'GTK:Window Title:'

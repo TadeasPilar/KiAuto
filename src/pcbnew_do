@@ -306,26 +306,9 @@ def fill_zones_i(cfg):
     wait_kicad_ready_i(cfg)
     # Now we fill the zones
     send_keys(cfg, 'Filling zones ...', 'b')
-    # Inform the elapsed time for slow fills
-    destroyed = 'GTK:Window Destroy:Fill All Zones'
-    pres = [destroyed, 'PANGO:0:']
-    elapsed_r = re.compile(r'PANGO:(\d:\d\d:\d\d)')
-    with_elapsed = False
-    while True:
-        # Wait for fill dialog destroyed or elapsed info
-        res = wait_queue(cfg, pres, starts=True, with_windows=True)
-        match = elapsed_r.match(res)
-        if not match and with_elapsed:
-            log.flush_info()
-        if res == destroyed:
-            # The fill dialog was closed
-            wait_kicad_ready_i(cfg)
-            return
-        elif match is not None:
-            msg = match.group(1)
-            if msg != '0:00:00':
-                log.info_progress('Elapsed time: '+msg)
-                with_elapsed = True
+    # Wait fill end and inform the elapsed time (for slow fills)
+    wait_and_show_progress(cfg, 'GTK:Window Destroy:Fill All Zones', r'(\d:\d\d:\d\d)', '0', 'Elapsed time',
+                           skip_match='0:00:00', with_windows=True)
 
 
 def print_layers_i(cfg, id_pcbnew, print_dialog_keys):
@@ -715,20 +698,8 @@ def wait_ray_tracer(cfg):
 
 def wait_ray_tracer_i(cfg):
     # Wait until we see the 100% rendered and the time is reported
-    msg = 'PANGO:Rendering: '
-    msg_l = len(msg)
-    while True:
-        # Show the progress
-        res = wait_queue(cfg, msg, starts=True)[msg_l:]
-        if cfg.verbose:
-            log.info_progress('Rendering '+res)
-        if res == '100 %':
-            if cfg.verbose:
-                log.flush_info()
-            break
-    wait_queue(cfg, 'PANGO:Rendering time', starts=True)
-    wait_swap(cfg)
-    return
+    wait_and_show_progress(cfg, 'PANGO:Rendering time', r'Rendering: (\d+ \%)', 'Rendering:', 'Rendering')
+    # wait_swap(cfg) should be absorved by the wait for sleep at the end of the progress
 
 
 def wait_3d_ready_n(cfg):
@@ -895,30 +866,14 @@ def capture_3d_view_i(cfg):
 
     # Detect the 3D models load (On Ki5 we can miss the "loading..." message
     logger.info('Loading 3D models')
-    loading_msg = 'PANGO:Loading'
-    loading_msg_l = len(loading_msg)
     reload_time_msg = 'PANGO:Reload time'
-    with_loading = False
-    padding = 80*' '
     if not cfg.ki5:
         # KiCad 6 does a first bogus render without loading the models
         wait_queue(cfg, reload_time_msg, starts=True)
         # Then comes the real action
-    while True:
-        res = wait_queue(cfg, [reload_time_msg, loading_msg], starts=True)
-        if res.startswith(reload_time_msg):
-            if with_loading:
-                log.flush_info()
-            break
-        res = res[loading_msg_l:]
-        if res[0] == ' ':
-            # The name of a 3D model, otherwise is "..."
-            with_loading = True
-            msg = 'Loading'+res+padding
-            log.info_progress(msg[:80])
+    wait_and_show_progress(cfg, reload_time_msg, r'Loading (.*)', 'Loading', 'Loading')
     logger.info('Finished loading 3D models')
     # Wait until the dialog is ready
-    wait_kicad_ready_i(cfg)
     id = wait_for_window('3D Viewer', '3D Viewer', 1)[0]
     if cfg.ki5:
         # KiCad 5 can't handle all commands at once
