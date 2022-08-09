@@ -223,7 +223,7 @@ def wait_kicad_ready_i(cfg, swaps=0, kicad_can_exit=False):
     return res
 
 
-def open_dialog_i(cfg, name, keys, msg_done=None, no_show=False, no_wait=False, no_main=False, extra_msg=None):
+def open_dialog_i(cfg, name, keys, no_show=False, no_wait=False, no_main=False, extra_msg=None):
     wait_point(cfg)
     # Wait for KiCad to be sleeping
     wait_kicad_ready_i(cfg)
@@ -231,14 +231,11 @@ def open_dialog_i(cfg, name, keys, msg_done=None, no_show=False, no_wait=False, 
     if isinstance(keys, str):
         keys = ['key', keys]
     xdotool(keys)
-    if msg_done is not None:
-        res = wait_queue(cfg, 'PANGO:'+msg_done)
-    else:
-        pre_gtk = 'GTK:Window Title:' if no_show else 'GTK:Window Show:'
-        if isinstance(name, str):
-            name = [name]
-        res = wait_queue(cfg, [pre_gtk+f for f in name])
-        name = res[len(pre_gtk):]
+    pre_gtk = 'GTK:Window Title:' if no_show else 'GTK:Window Show:'
+    if isinstance(name, str):
+        name = [name]
+    res = wait_queue(cfg, [pre_gtk+f for f in name])
+    name = res[len(pre_gtk):]
     if no_wait:
         return name, None
     if not no_main:
