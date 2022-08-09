@@ -48,7 +48,7 @@ from kiauto.misc import (REC_W, REC_H, __version__, NO_PCB, PCBNEW_CFG_PRESENT, 
                          CORRUPTED_PCB, __copyright__, __license__, TIME_OUT_MULT, get_en_locale, KICAD_CFG_PRESENT,
                          MISSING_TOOL)
 from kiauto.interposer import (check_interposer, dump_interposer_dialog, start_queue, setup_interposer_filename,
-                               create_interposer_print_options_file, wait_queue, wait_start_by_msg,
+                               create_interposer_print_options_file, wait_queue, wait_start_by_msg, wait_and_show_progress,
                                wait_swap, set_kicad_process, open_dialog_i, wait_kicad_ready_i, paste_bogus_filename,
                                paste_output_file_i, exit_kicad_i, send_keys, wait_create_i, save_interposer_print_data)
 from kiauto.ui_automation import (PopenContext, xdotool, wait_not_focused, wait_for_window, recorded_xvfb,
