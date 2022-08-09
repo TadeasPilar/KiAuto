@@ -124,7 +124,7 @@ def collect_io_from_queue(cfg):
     cfg.collecting_io = True
 
 
-def wait_queue(cfg, strs='', starts=False, times=1, timeout=300, do_to=True, kicad_can_exit=False):
+def wait_queue(cfg, strs='', starts=False, times=1, timeout=300, do_to=True, kicad_can_exit=False, with_windows=False):
     """ Wait for a string in the queue """
     if not cfg.use_interposer:
         return None
@@ -178,6 +178,10 @@ def wait_queue(cfg, strs='', starts=False, times=1, timeout=300, do_to=True, kic
         if old_times != times:
             cfg.interposer_dialog.append('KiAuto:times '+str(times))
             cfg.logger.debug('Interposer match, times='+str(times))
+        if not with_windows and not kicad_can_exit and line.startswith('GTK:Window Title:'):
+            # We aren't expecting a window, but something seems to be there
+            # Note that window title change is normal when we expect KiCad exiting
+            unknown_dialog(cfg, line[17:])
     if do_to:
         raise RuntimeError('Timed out waiting for `{}`'.format(strs))
 
@@ -234,7 +238,7 @@ def open_dialog_i(cfg, name, keys, no_show=False, no_wait=False, no_main=False, 
     pre_gtk = 'GTK:Window Title:' if no_show else 'GTK:Window Show:'
     if isinstance(name, str):
         name = [name]
-    res = wait_queue(cfg, [pre_gtk+f for f in name])
+    res = wait_queue(cfg, [pre_gtk+f for f in name], with_windows=True)
     name = res[len(pre_gtk):]
     if no_wait:
         return name, None
@@ -443,16 +447,14 @@ def dismiss_save_changes(cfg, title):
 
 def exit_kicad_i(cfg):
     wait_kicad_ready_i(cfg)
-    cfg.logger.info('Exiting KiCad')
-    wait_point(cfg)
-    keys_exit = ['key', 'ctrl+q']
-    xdotool(keys_exit)
+    send_keys(cfg, 'Exiting KiCad', 'ctrl+q')
     pre = 'GTK:Window Title:'
     pre_l = len(pre)
     retries = 3
     while True:
         # Wait for any window
-        res = wait_queue(cfg, pre, starts=True, timeout=2, kicad_can_exit=True, do_to=False)
+        res = wait_queue(cfg, pre, starts=True, timeout=2, kicad_can_exit=True, do_to=False, with_windows=True)
+        known_dialog = False
         if res is not None:
             cfg.logger.debug('exit_kicad_i got '+res)
             if res == KICAD_EXIT_MSG:
@@ -460,27 +462,29 @@ def exit_kicad_i(cfg):
             title = res[pre_l:]
             if title == 'Save Changes?' or title == '':  # KiCad 5 without title!!!!
                 dismiss_save_changes(cfg, title)
+                known_dialog = True
             elif title == 'Pcbnew —  [Unsaved]':
                 # KiCad 5 does it
-                pass
+                known_dialog = True
             else:
                 unknown_dialog(cfg, title)
         retries -= 1
         if not retries:
             cfg.logger.error("Can't exit KiCad")
             return
-        cfg.logger.warning("Retrying KiCad exit")
+        if not known_dialog:
+            cfg.logger.warning("Retrying KiCad exit")
         # Wait until KiCad is sleeping again
         wait_kicad_ready_i(cfg, kicad_can_exit=True)
         # Retry the exit
-        xdotool(keys_exit)
+        xdotool(['key', 'ctrl+q'])
 
 
-def wait_close_dialog_i(cfg):
-    """ Wait for the end of the main loop for the dialog.
-        Then the main loop for the parent exits and enters again. """
-    wait_queue(cfg, 'GTK:Main:Out', times=2)
-    wait_queue(cfg, 'GTK:Main:In')
+# def wait_close_dialog_i(cfg):
+#     """ Wait for the end of the main loop for the dialog.
+#         Then the main loop for the parent exits and enters again. """
+#     wait_queue(cfg, 'GTK:Main:Out', times=2)
+#     wait_queue(cfg, 'GTK:Main:In')
 
 
 def wait_start_by_msg(cfg):
@@ -505,7 +509,7 @@ def wait_start_by_msg(cfg):
     with_elapsed = False
     while True:
         # Wait for any window
-        res = wait_queue(cfg, pres, starts=True, timeout=cfg.wait_start)
+        res = wait_queue(cfg, pres, starts=True, timeout=cfg.wait_start, with_windows=True)
         cfg.logger.debug('wait_pcbew_start_by_msg got '+res)
         match = elapsed_r.match(res)
         title = res[pre_l:]
@@ -527,7 +531,8 @@ def wait_start_by_msg(cfg):
             if not title.endswith(unsaved):
                 # KiCad 5 name is "Pcbnew — PCB_NAME" or "Eeschema — SCH_NAME [HIERARCHY] — SCH_FILE_NAME"
                 # wait_pcbnew()
-                wait_queue(cfg, ['GTK:Window Show:'+title, 'GTK:Main:In'], starts=True, timeout=cfg.wait_start, times=2)
+                wait_queue(cfg, ['GTK:Window Show:'+title, 'GTK:Main:In'], starts=True, timeout=cfg.wait_start, times=2,
+                           with_windows=True)
                 return
             # The "  [Unsaved]" is changed before the final load, ignore it
         elif title == '' or title == cfg.pn_simple_window_title or title == 'Eeschema':

@@ -313,7 +313,7 @@ def fill_zones_i(cfg):
     with_elapsed = False
     while True:
         # Wait for fill dialog destroyed or elapsed info
-        res = wait_queue(cfg, pres, starts=True)
+        res = wait_queue(cfg, pres, starts=True, with_windows=True)
         match = elapsed_r.match(res)
         if not match and with_elapsed:
             log.flush_info()
