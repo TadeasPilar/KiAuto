@@ -22,7 +22,6 @@ import atexit
 import gettext
 import json
 import os
-import psutil
 import re
 import shutil
 import subprocess
@@ -47,9 +46,9 @@ from kiauto.file_util import (load_filters, wait_for_file_created_by_process, ap
 from kiauto.misc import (REC_W, REC_H, __version__, NO_PCB, PCBNEW_CFG_PRESENT, WAIT_START, WRONG_LAYER_NAME,
                          WRONG_PCB_NAME, PCBNEW_ERROR, WRONG_ARGUMENTS, Config, USER_HOTKEYS_PRESENT,
                          CORRUPTED_PCB, __copyright__, __license__, TIME_OUT_MULT, get_en_locale, KICAD_CFG_PRESENT,
-                         MISSING_TOOL, KICAD_DIED)
+                         MISSING_TOOL)
 from kiauto.interposer import (check_interposer, dump_interposer_dialog, start_queue, setup_interposer_filename,
-                               create_interposer_print_options_file, wait_queue, wait_start_by_msg, wait_close_dialog_i,
+                               create_interposer_print_options_file, wait_queue, wait_start_by_msg,
                                wait_swap, set_kicad_process, open_dialog_i, wait_kicad_ready_i, paste_bogus_filename,
                                paste_output_file_i, exit_kicad_i, send_keys, wait_create_i, save_interposer_print_data)
 from kiauto.ui_automation import (PopenContext, xdotool, wait_not_focused, wait_for_window, recorded_xvfb,
@@ -306,7 +305,7 @@ def fill_zones_i(cfg):
     # Wait for KiCad to be sleeping
     wait_kicad_ready_i(cfg)
     # Now we fill the zones
-    send_keys(cfg, 'Filling zones ...',  'b')
+    send_keys(cfg, 'Filling zones ...', 'b')
     # Inform the elapsed time for slow fills
     destroyed = 'GTK:Window Destroy:Fill All Zones'
     pres = [destroyed, 'PANGO:0:']
@@ -541,7 +540,7 @@ def run_drc_5_1_i(cfg):
     paste_output_file_i(cfg)
     # The following dialog indicates the report was finished
     # 'Disk File Report Completed' dialog
-    file_dialog, _ =open_dialog_i(cfg, 'Disk File Report Completed', 'Return', no_show=True, no_main=True)
+    file_dialog, _ = open_dialog_i(cfg, 'Disk File Report Completed', 'Return', no_show=True, no_main=True)
     send_keys(cfg, 'Close dialog', 'Return', closes=file_dialog)
     # Now close the DRC control
     send_keys(cfg, 'Closing the DRC dialog', 'alt+l', closes=control_dlg)
