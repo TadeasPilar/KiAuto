@@ -407,7 +407,7 @@ def eeschema_run_erc_schematic_6_0_i(cfg):
     # Wait for completion. The Close button is refreshed at the end
     wait_queue(cfg, 'GTK:Button Label:C_lose')
     # Save the report
-    file_dlg, _ =open_dialog_i(cfg, 'Save Report to File', 'alt+s')
+    file_dlg, _ = open_dialog_i(cfg, 'Save Report to File', 'alt+s')
     # Paste the output file
     paste_bogus_filename(cfg)
     send_keys(cfg, 'Create the report', 'Return', closes=file_dlg, delay_io=True)
