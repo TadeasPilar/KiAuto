@@ -1,0 +1,137 @@
+
+00007 INFO:Loading /home/salvador/0Data/Eccosur/kiauto/tests/kicad6/zone-refill/zone-refill.kicad_pcb
+
+00034 INFO:Starting pcbnew ...
+
+00036 INFO:Waiting for PCB new window ...
+00038 DEBUG:Waiting for `['GTK:Window Title:', 'PANGO:0:']` starts=True times=1 (pcbnew_do - interposer.py:140)
+00531 DEBUG:>>Interposer<<:GTK:Window Title:PCB Editor (@1720.158 D 45.063) (pcbnew_do - interposer.py:152)
+00532 DEBUG:Interposer match: GTK:Window Title:PCB Editor (pcbnew_do - interposer.py:180)
+00533 DEBUG:wait_pcbew_start_by_msg got GTK:Window Title:PCB Editor (pcbnew_do - interposer.py:516)
+00534 DEBUG:Waiting for `['GTK:Window Title:', 'PANGO:0:']` starts=True times=1 (pcbnew_do - interposer.py:140)
+06020 DEBUG:>>Interposer<<:GTK:Window Title:Loading PCB (@4240.447 D 1.741) (pcbnew_do - interposer.py:152)
+06021 DEBUG:Interposer match: GTK:Window Title:Loading PCB (pcbnew_do - interposer.py:180)
+06022 DEBUG:wait_pcbew_start_by_msg got GTK:Window Title:Loading PCB (pcbnew_do - interposer.py:516)
+06023 DEBUG:Waiting for `['GTK:Window Title:', 'PANGO:0:']` starts=True times=1 (pcbnew_do - interposer.py:140)
+06040 DEBUG:>>Interposer<<:GTK:Window Show:Loading PCB (@4284.796 D 2.478) (pcbnew_do - interposer.py:152)
+06043 DEBUG:Interposer match: PANGO:0:00:00 (pcbnew_do - interposer.py:180)
+06045 DEBUG:Waiting for `['GTK:Window Title:', 'PANGO:0:']` starts=True times=1 (pcbnew_do - interposer.py:140)
+06515 DEBUG:Interposer match: PANGO:0:00:00 (pcbnew_do - interposer.py:180)
+06517 DEBUG:Waiting for `['GTK:Window Title:', 'PANGO:0:']` starts=True times=1 (pcbnew_do - interposer.py:140)
+06520 DEBUG:Interposer match: PANGO:0:00:00 (pcbnew_do - interposer.py:180)
+06522 DEBUG:Waiting for `['GTK:Window Title:', 'PANGO:0:']` starts=True times=1 (pcbnew_do - interposer.py:140)
+07361 DEBUG:Interposer match: PANGO:0:00:00 (pcbnew_do - interposer.py:180)
+07363 DEBUG:Waiting for `['GTK:Window Title:', 'PANGO:0:']` starts=True times=1 (pcbnew_do - interposer.py:140)
+07385 DEBUG:Interposer match: PANGO:0:00:01 (pcbnew_do - interposer.py:180)
+07387 DEBUG:Waiting for `['GTK:Window Title:', 'PANGO:0:']` starts=True times=1 (pcbnew_do - interposer.py:140)
+07393 DEBUG:>>Interposer<<:GTK:Window Title:zone-refill — PCB Editor (@4944.51 D 0.171) (pcbnew_do - interposer.py:152)
+07394 DEBUG:Interposer match: GTK:Window Title:zone-refill — PCB Editor (pcbnew_do - interposer.py:180)
+07395 DEBUG:wait_pcbew_start_by_msg got GTK:Window Title:zone-refill — PCB Editor (pcbnew_do - interposer.py:516)
+07396 DEBUG:Waiting for `['GTK:Main:In']` starts=False times=1 (pcbnew_do - interposer.py:140)
+07864 DEBUG:>>Interposer<<:GTK:Window Destroy:Loading PCB (@5079.721 D 0.789) (pcbnew_do - interposer.py:152)
+07865 DEBUG:>>Interposer<<:GTK:Main:In (@5079.816 D 0.095) (pcbnew_do - interposer.py:152)
+07866 DEBUG:Interposer match: GTK:Main:In (pcbnew_do - interposer.py:180)
+
+07867 INFO:Waiting for "Main pcbnew window" ...
+07883 DEBUG:= KiCad already sleeping (sleeping) (pcbnew_do - interposer.py:226)
+
+07884 INFO:Filling zones ...
+07885 DEBUG:['xdotool', 'key', 'b'] (pcbnew_do.kiauto.ui_automation - ui_automation.py:218)
+07886 DEBUG:Waiting for `['GTK:Window Destroy:Fill All Zones', 'PANGO:0:']` starts=True times=1 (pcbnew_do - interposer.py:140)
+08460 DEBUG:>>Interposer<<:GTK:Window Title:Fill All Zones (@5830.545 D 346.264) (pcbnew_do - interposer.py:152)
+08475 DEBUG:>>Interposer<<:GTK:Window Show:Fill All Zones (@5841.482 D 2.501) (pcbnew_do - interposer.py:152)
+08478 DEBUG:Interposer match: PANGO:0:00:00 (pcbnew_do - interposer.py:180)
+08479 DEBUG:Waiting for `['GTK:Window Destroy:Fill All Zones', 'PANGO:0:']` starts=True times=1 (pcbnew_do - interposer.py:140)
+08550 DEBUG:Interposer match: PANGO:0:00:00 (pcbnew_do - interposer.py:180)
+08551 DEBUG:Waiting for `['GTK:Window Destroy:Fill All Zones', 'PANGO:0:']` starts=True times=1 (pcbnew_do - interposer.py:140)
+08554 DEBUG:Interposer match: PANGO:0:00:00 (pcbnew_do - interposer.py:180)
+08555 DEBUG:Waiting for `['GTK:Window Destroy:Fill All Zones', 'PANGO:0:']` starts=True times=1 (pcbnew_do - interposer.py:140)
+10311 DEBUG:>>Interposer<<:GTK:Window Title:*zone-refill — PCB Editor (@6139.299 D 0.415) (pcbnew_do - interposer.py:152)
+10312 DEBUG:>>Interposer<<:GTK:Window Destroy:Fill All Zones (@6152.082 D 12.784) (pcbnew_do - interposer.py:152)
+10313 DEBUG:Interposer match: GTK:Window Destroy:Fill All Zones (pcbnew_do - interposer.py:180)
+10314 DEBUG:= KiCad still running, waiting more (pcbnew_do - interposer.py:215)
+12488 DEBUG:= KiCad finally sleeping (pcbnew_do - interposer.py:224)
+12489 DEBUG:= KiCad already sleeping (sleeping) (pcbnew_do - interposer.py:226)
+
+12490 INFO:Opening dialog `Print` (KiCad)
+12491 DEBUG:['xdotool', 'key', 'ctrl+p'] (pcbnew_do.kiauto.ui_automation - ui_automation.py:218)
+12492 DEBUG:Waiting for `['GTK:Window Show:Print']` starts=False times=1 (pcbnew_do - interposer.py:140)
+12493 DEBUG:>>Interposer<<:GTK:Window Title:Print (@6685.097 D 126.104) (pcbnew_do - interposer.py:152)
+12564 DEBUG:>>Interposer<<:GTK:Window Set Modal:Print 1 (@6738.236 D 0.235) (pcbnew_do - interposer.py:152)
+12599 DEBUG:>>Interposer<<:GTK:Window Show:Print (@6771.726 D 3.945) (pcbnew_do - interposer.py:152)
+12600 DEBUG:Interposer match: GTK:Window Show:Print (pcbnew_do - interposer.py:180)
+12601 DEBUG:Waiting for `['GTK:Main:In']` starts=False times=1 (pcbnew_do - interposer.py:140)
+12643 DEBUG:>>Interposer<<:GTK:Main:In (@6779.817 D 0.605) (pcbnew_do - interposer.py:152)
+12644 DEBUG:Interposer match: GTK:Main:In (pcbnew_do - interposer.py:180)
+12645 DEBUG:= KiCad still running, waiting more (pcbnew_do - interposer.py:215)
+12922 DEBUG:= KiCad finally sleeping (pcbnew_do - interposer.py:224)
+
+12923 INFO:Waiting for "Print" ...
+12942 DEBUG:= KiCad already sleeping (sleeping) (pcbnew_do - interposer.py:226)
+
+12943 INFO:Opening dialog `Print` (GTK)
+12944 DEBUG:['xdotool', 'key', 'alt+p'] (pcbnew_do.kiauto.ui_automation - ui_automation.py:218)
+12945 DEBUG:Waiting for `['GTK:Window Title:Print']` starts=False times=1 (pcbnew_do - interposer.py:140)
+12963 DEBUG:>>Interposer<<:GTK:Window Title:Print (@7545.931 D 251.802) (pcbnew_do - interposer.py:152)
+12964 DEBUG:Interposer match: GTK:Window Title:Print (pcbnew_do - interposer.py:180)
+12965 DEBUG:= KiCad still running, waiting more (pcbnew_do - interposer.py:215)
+13878 DEBUG:= KiCad finally sleeping (pcbnew_do - interposer.py:224)
+
+13879 INFO:Waiting for "Print" ...
+
+13902 INFO:Print
+13903 DEBUG:['xdotool', 'key', 'Return'] (pcbnew_do.kiauto.ui_automation - ui_automation.py:218)
+13904 DEBUG:Waiting for `['GTK:Window Destroy:Print']` starts=False times=1 (pcbnew_do - interposer.py:140)
+13919 DEBUG:>>Interposer<<:GTK:Window Destroy:Print (@8313.177 D 0.038) (pcbnew_do - interposer.py:152)
+13920 DEBUG:Interposer match: GTK:Window Destroy:Print (pcbnew_do - interposer.py:180)
+13921 DEBUG:= KiCad still running, waiting more (pcbnew_do - interposer.py:215)
+13923 DEBUG:= KiCad finally sleeping (pcbnew_do - interposer.py:224)
+
+13924 INFO:Wait for print file creation
+13925 DEBUG:Found IO IO:open:/tmp/tmp9456j3l2/interposer.pdf (pcbnew_do - interposer.py:327)
+13926 DEBUG:Found IO IO:close:/tmp/tmp9456j3l2/interposer.pdf (pcbnew_do - interposer.py:331)
+13927 DEBUG:= KiCad already sleeping (sleeping) (pcbnew_do - interposer.py:226)
+
+13928 INFO:Close Print dialog
+13929 DEBUG:['xdotool', 'key', 'Escape'] (pcbnew_do.kiauto.ui_automation - ui_automation.py:218)
+13930 DEBUG:Waiting for `['GTK:Window Destroy:Print']` starts=False times=1 (pcbnew_do - interposer.py:140)
+13931 DEBUG:>>Interposer<<:GTK:Main:Out (@8429.57 D 116.393) (pcbnew_do - interposer.py:152)
+13932 DEBUG:>>Interposer<<:GTK:Window Set Modal:Print 0 (@8429.654 D 0.084) (pcbnew_do - interposer.py:152)
+13933 DEBUG:>>Interposer<<:GTK:Window Destroy:Print (@8436.034 D 6.38) (pcbnew_do - interposer.py:152)
+13934 DEBUG:Interposer match: GTK:Window Destroy:Print (pcbnew_do - interposer.py:180)
+13935 DEBUG:= KiCad still running, waiting more (pcbnew_do - interposer.py:215)
+13941 DEBUG:>>Interposer<<:GTK:Main:Out (@8502.54 D 0.407) (pcbnew_do - interposer.py:152)
+13942 DEBUG:>>Interposer<<:GTK:Main:In (@8502.585 D 0.045) (pcbnew_do - interposer.py:152)
+13960 DEBUG:= KiCad finally sleeping (pcbnew_do - interposer.py:224)
+13961 DEBUG:= KiCad already sleeping (sleeping) (pcbnew_do - interposer.py:226)
+
+13962 INFO:Exiting KiCad
+13963 DEBUG:['xdotool', 'key', 'ctrl+q'] (pcbnew_do.kiauto.ui_automation - ui_automation.py:218)
+13964 DEBUG:Waiting for `['GTK:Window Title:']` starts=True times=1 (pcbnew_do - interposer.py:140)
+13965 DEBUG:>>Interposer<<:GTK:Window Title:Save Changes? (@8691.033 D 126.905) (pcbnew_do - interposer.py:152)
+13966 DEBUG:Interposer match: GTK:Window Title:Save Changes? (pcbnew_do - interposer.py:180)
+13967 DEBUG:exit_kicad_i got GTK:Window Title:Save Changes? (pcbnew_do - interposer.py:464)
+
+13968 INFO:Save Changes? dialog found ...
+13972 DEBUG:Interposer match: PANGO:Discard Changes (pcbnew_do - interposer.py:180)
+13975 DEBUG:Interposer match: PANGO:Cancel (pcbnew_do - interposer.py:180)
+13978 DEBUG:Interposer match: PANGO:Save (pcbnew_do - interposer.py:180)
+13981 DEBUG:Interposer match: PANGO:Save changes to 'zone-refill.kicad_pcb' before closing? (pcbnew_do - interposer.py:180)
+13984 DEBUG:Interposer match: PANGO:The quick brown fox jumps over the lazy dog. (pcbnew_do - interposer.py:180)
+13987 DEBUG:Interposer match: PANGO:0123456789 (pcbnew_do - interposer.py:180)
+13990 DEBUG:Interposer match: PANGO:If you don't save, all your changes will be permanently lost. (pcbnew_do - interposer.py:180)
+13993 DEBUG:Interposer match: PANGO:Save changes to 'zone-refill.kicad_pcb' before closing? (pcbnew_do - interposer.py:180)
+13996 DEBUG:Interposer match: PANGO:If you don't save, all your changes will be permanently lost. (pcbnew_do - interposer.py:180)
+13999 DEBUG:Interposer match: PANGO:Save changes to 'zone-refill.kicad_pcb' before closing? (pcbnew_do - interposer.py:180)
+14002 DEBUG:Interposer match: PANGO:If you don't save, all your changes will be permanently lost. (pcbnew_do - interposer.py:180)
+14005 DEBUG:Interposer match: PANGO:Appearance (pcbnew_do - interposer.py:180)
+
+14008 INFO:Waiting for "Save Changes?" ...
+14027 DEBUG:['xdotool', 'key', 'Left', 'Left', 'Return'] (pcbnew_do.kiauto.ui_automation - ui_automation.py:218)
+14029 DEBUG:= KiCad still running, waiting more (pcbnew_do - interposer.py:215)
+14067 DEBUG:>>Interposer<<:GTK:Window Destroy:Save Changes? (@8875.844 D 6.591) (pcbnew_do - interposer.py:152)
+14082 DEBUG:>>Interposer<<:GTK:Window Destroy:*zone-refill — PCB Editor (@8955.975 D 65.157) (pcbnew_do - interposer.py:152)
+14088 DEBUG:>>Interposer<<:GTK:Main:Out (@9015.84 D 0.06) (pcbnew_do - interposer.py:152)
+14094 DEBUG:= KiCad died (pcbnew_do - interposer.py:222)
+14095 DEBUG:['xdotool', 'key', 'ctrl+q'] (pcbnew_do.kiauto.ui_automation - ui_automation.py:218)
+14096 DEBUG:Waiting for `['GTK:Window Title:']` starts=True times=1 (pcbnew_do - interposer.py:140)
