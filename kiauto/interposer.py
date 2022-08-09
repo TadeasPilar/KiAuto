@@ -39,26 +39,21 @@ def check_interposer(args, logger, cfg):
     cfg.logger = logger
 
 
-last_msg_time = 0
-interposer_dialog = []
-
-
 def dump_interposer_dialog(cfg):
     cfg.logger.debug('Storing interposer dialog ({})'.format(cfg.flog_int.name))
     if cfg.enable_interposer and not cfg.use_interposer:
         try:
-            global last_msg_time
             while True:
                 tm, line = cfg.kicad_q.get(timeout=.1)
                 tm *= 1000
                 diff = 0
-                if last_msg_time:
-                    diff = tm-last_msg_time
-                last_msg_time = tm
-                interposer_dialog.append('>>Interposer<<:{} (@{} D {})'.format(line[:-1], round(tm, 3), round(diff, 3)))
+                if cfg.last_msg_time:
+                    diff = tm-cfg.last_msg_time
+                cfg.last_msg_time = tm
+                cfg.interposer_dialog.append('>>Interposer<<:{} (@{} D {})'.format(line[:-1], round(tm, 3), round(diff, 3)))
         except Empty:
             pass
-    for ln in interposer_dialog:
+    for ln in cfg.interposer_dialog:
         cfg.flog_int.write(ln+'\n')
     cfg.flog_int.close()
 
@@ -120,6 +115,8 @@ def start_queue(cfg):
     cfg.kicad_t.daemon = True   # thread dies with the program
     cfg.kicad_t.start()
     cfg.collecting_io = False
+    cfg.last_msg_time = 0
+    cfg.interposer_dialog = []
 
 
 def collect_io_from_queue(cfg):
@@ -135,10 +132,9 @@ def wait_queue(cfg, strs='', starts=False, times=1, timeout=300, do_to=True, kic
         strs = [strs]
     end_time = time.time()+timeout*cfg.time_out_scale
     msg = 'Waiting for `{}` starts={} times={}'.format(strs, starts, times)
-    interposer_dialog.append('KiAuto:'+msg)
+    cfg.interposer_dialog.append('KiAuto:'+msg)
     if cfg.verbose > 1:
         cfg.logger.debug(msg)
-    global last_msg_time
     while time.time() < end_time:
         try:
             tm, line = cfg.kicad_q.get(timeout=.1)
@@ -146,11 +142,11 @@ def wait_queue(cfg, strs='', starts=False, times=1, timeout=300, do_to=True, kic
             if cfg.verbose > 1:
                 tm *= 1000
                 diff = 0
-                if last_msg_time:
-                    diff = tm-last_msg_time
-                last_msg_time = tm
+                if cfg.last_msg_time:
+                    diff = tm-cfg.last_msg_time
+                cfg.last_msg_time = tm
                 cfg.logger.debug('>>Interposer<<:{} (@{} D {})'.format(line, round(tm, 3), round(diff, 3)))
-            interposer_dialog.append(line)
+            cfg.interposer_dialog.append(line)
             # The I/O can be in parallel to the UI
             if cfg.collecting_io and line.startswith('IO:'):
                 cfg.collected_io.add(line)
@@ -176,11 +172,11 @@ def wait_queue(cfg, strs='', starts=False, times=1, timeout=300, do_to=True, kic
                 times -= 1
                 break
         if times == 0:
-            interposer_dialog.append('KiAuto:match')
+            cfg.interposer_dialog.append('KiAuto:match')
             cfg.logger.debug('Interposer match: '+line)
             return line
         if old_times != times:
-            interposer_dialog.append('KiAuto:times '+str(times))
+            cfg.interposer_dialog.append('KiAuto:times '+str(times))
             cfg.logger.debug('Interposer match, times='+str(times))
     if do_to:
         raise RuntimeError('Timed out waiting for `{}`'.format(strs))
