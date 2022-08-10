@@ -184,24 +184,23 @@ def exit_eeschema(cfg):
         exit_kicad_i(cfg)
         return
     # Wait until the dialog is closed, useful when more than one file are created
-    id = wait_eeschema(cfg, 10)
+    id = wait_eeschema(cfg, 10)[0]
 
-    logger.info('Exiting eeschema')
-    wait_point(cfg)
-    xdotool(['key', 'ctrl+q'])
+    send_keys(cfg, 'Exiting eeschema', 'ctrl+q')
     try:
-        wait_not_focused(id[0], 5)
+        wait_not_focused(id, 5)
     except RuntimeError:  # pragma: no cover
         logger.debug('EEschema not exiting, will retry')
         pass
     # Dismiss any dialog. I.e. failed to write the project
     xdotool(['key', 'Return', 'ctrl+q'])
     try:
-        wait_not_focused(id[0], 5)
+        wait_not_focused(id, 5)
     except RuntimeError:  # pragma: no cover
         logger.debug('EEschema not exiting, will kill')
         pass
-    # If we failed to exit we will kill it anyways
+    # If we failed to exit we will kill it
+    cfg.popen_obj.terminate()
 
 
 def wait_create(cfg, name):
@@ -219,8 +218,6 @@ def eeschema_plot_schematic(cfg):
         eeschema_plot_schematic_i(cfg, open_keys)
     else:
         eeschema_plot_schematic_n(cfg, open_keys)
-    # Exit
-    exit_eeschema(cfg)
 
 
 def eeschema_plot_schematic_i(cfg, open_keys):
@@ -428,7 +425,6 @@ def eeschema_run_erc_schematic(cfg):
             eeschema_run_erc_schematic_6_0_i(cfg)
         else:
             eeschema_run_erc_schematic_6_0_n(cfg)
-    exit_eeschema(cfg)
 
 
 def eeschema_netlist_commands(cfg):
@@ -445,8 +441,6 @@ def eeschema_netlist_commands(cfg):
         eeschema_netlist_commands_i(cfg, open_keys, dialog_name)
     else:
         eeschema_netlist_commands_n(cfg, open_keys, generate_keys, dialog_name)
-    # Exit
-    exit_eeschema(cfg)
 
 
 def eeschema_netlist_commands_i(cfg, open_keys, dialog_name):
@@ -507,8 +501,6 @@ def eeschema_bom_xml_commands(cfg):
         eeschema_bom_xml_commands_i(cfg, open_keys)
     else:
         eeschema_bom_xml_commands_n(cfg, open_keys, exit_keys)
-    # Exit
-    exit_eeschema(cfg)
 
 
 def eeschema_bom_xml_commands_i(cfg, open_keys):
@@ -775,7 +767,8 @@ if __name__ == '__main__':
                             error_level = -errors
                         else:
                             logger.info('No errors')
-                    eeschema_proc.terminate()
+                    # Exit
+                    exit_eeschema(cfg)
         if not do_retry:
             break
         logger.warning("Eeschema failed to start retrying ...")
