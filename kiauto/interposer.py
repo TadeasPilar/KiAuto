@@ -28,7 +28,8 @@ def check_interposer(args, logger, cfg):
     # Name of the interposer library
     interposer_lib = os.path.abspath(os.path.join(os.path.dirname(__file__), 'interposer', 'libinterposer.so'))
     if (not os.path.isfile(interposer_lib) or  # The lib isn't there
-       args.disable_interposer or             # The user disabled it
+       args.disable_interposer or              # The user disabled it
+       os.environ.get('KIAUTO_INTERPOSER_DISABLE') or  # The user disabled it using the environment
        platform.system() != 'Linux' or 'x86_64' not in platform.platform()):  # Not Linux 64 bits x86
         interposer_lib = None
     else:
