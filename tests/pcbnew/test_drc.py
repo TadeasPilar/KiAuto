@@ -95,7 +95,7 @@ def test_drc_ok_pcbnew_running(test_dir):
     ctx.expect_out_file(REPORT)
     logging.debug('Checking for colors in DEBUG logs')
     if ctx.kicad_version < context.KICAD_VERSION_5_99:
-        assert ctx.search_err(r"is already running") is not None
+        assert ctx.search_err(r"already running") is not None
     assert ctx.search_err(r"\[36;1mDEBUG:") is not None
     ctx.clean_up()
 
