@@ -34,7 +34,7 @@ jobs:
         flake8 . --count --exit-zero --statistics
     - name: Test ${{ matrix.ki_release }}
       run: |
-        if [ "${{ matrix.w_test}}" == 'no_interposer' ]; then export KIAUTO_INTERPOSER_DISABLE=1; fi
+        if [ "${{ matrix.w_tests }}" == 'no_interposer' ]; then export KIAUTO_INTERPOSER_DISABLE=1; fi
         make test_server_${{ matrix.ki_release }}
     - name: Store results
       if: ${{ always() }}
