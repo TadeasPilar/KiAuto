@@ -25,7 +25,7 @@ from kiauto.misc import (EESCHEMA_CFG_PRESENT, KICAD_CFG_PRESENT, NO_SCHEMATIC, 
                          WRONG_ARGUMENTS)
 
 PROG = 'eeschema_do'
-BOGUS_SCH = 'bogus.sch'
+BOGUS_SCH = 'bogus'
 
 
 def test_eeschema_config_backup(test_dir):
@@ -99,14 +99,17 @@ def test_bogus_sch(test_dir):
     ctx = context.TestContextSCH(test_dir, 'Bogus_SCH', 'good-project')
     # Current KiCad 5.99 (20201125) creates the warning dialog, but doesn't give it focus.
     # So we never know about the problem.
-    if ctx.kicad_version < context.KICAD_VERSION_5_99:
-        sch = ctx.get_out_path(BOGUS_SCH)
-        # Create an invalid SCH
-        with open(sch, 'w') as f:
-            f.write('dummy')
-        cmd = [PROG, '-vv', '-r', 'run_erc']
-        ctx.run(cmd, EESCHEMA_ERROR, filename=sch)
+    sch = ctx.get_out_path(BOGUS_SCH+ctx.sch_ext)
+    # Create an invalid SCH
+    with open(sch, 'w') as f:
+        f.write('dummy')
+    cmd = [PROG, '-vv', '-r', 'run_erc']
+    ctx.run(cmd, EESCHEMA_ERROR, filename=sch)
+    if context.ki5:
         assert ctx.search_err(r"eeschema reported an error") is not None
+    else:
+        assert (ctx.search_err(r"ERROR:Error loading schematic file") or
+                ctx.search_err(r"ERROR:Eeschema created an error dialog")) is not None
     ctx.clean_up()
 
 

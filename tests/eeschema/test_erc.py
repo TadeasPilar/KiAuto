@@ -13,6 +13,7 @@ pytest-3 --log-cli-level debug
 
 import os
 import sys
+import pytest
 import logging
 # Look for the 'utils' module from where the script is running
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -103,12 +104,13 @@ def test_erc_ok_eeschema_running(test_dir):
     ctx.expect_out_file(rep)
     logging.debug('Checking for colors in DEBUG logs')
     assert ctx.search_err(r"\[36;1mDEBUG:") is not None
-    if ctx.kicad_version < context.KICAD_VERSION_5_99:
+    if context.ki5:
         # Only KiCad 5 reports it as a problem
         assert ctx.search_err(r"already running") is not None
     ctx.clean_up()
 
 
+@pytest.mark.skipif(not context.ki5, reason="Test for KiCad 4 file under KiCad 5")
 def test_erc_remap(test_dir):
     """ Here we use a KiCad 4 .sch that needs symbol remapping """
     prj = 'kicad4-project'
@@ -123,24 +125,23 @@ def test_erc_remap(test_dir):
     # but doesn't respond until the other is finished.
     # KiCad is fully broken about handling modal dialogs, they blame wxWidgets,
     # but what they do is a really useless workaround.
-    if ctx.kicad_version < context.KICAD_VERSION_5_99:
-        ctx.run(cmd, ignore_ret=True)
-        ctx.expect_out_file(rep)
-        assert ctx.search_err(r"Schematic needs update") is not None
+    ctx.run(cmd, ignore_ret=True)
+    ctx.expect_out_file(rep)
+    assert ctx.search_err(r"Schematic needs update") is not None
     ctx.clean_up()
 
 
+@pytest.mark.skipif(not context.ki5, reason="Test for KiCad 5 schematic libs")
 def test_erc_error(test_dir):
     """ Here we have a missing library.
         On KiCad 6 there is no need for the libs. """
     prj = 'missing-lib'
     rep = prj+'.erc'
     ctx = context.TestContextSCH(test_dir, 'ERC_Error', prj)
-    if ctx.kicad_version < context.KICAD_VERSION_5_99:
-        cmd = [PROG, 'run_erc']
-        ctx.run(cmd)
-        ctx.expect_out_file(rep)
-        assert ctx.search_err(r"Missing librar") is not None
+    cmd = [PROG, 'run_erc']
+    ctx.run(cmd)
+    ctx.expect_out_file(rep)
+    assert ctx.search_err(r"Missing librar") is not None
     ctx.clean_up()
 
 

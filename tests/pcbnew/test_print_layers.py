@@ -70,7 +70,7 @@ def test_print_pcb_good_dwg_dism(test_dir):
         f.write('dummy')
     cfg = Config(logging)
     # Run pcbnew in parallel to get 'Dismiss pcbnew already running' (KiCad 5) or 'Skipping already open dialog' (KiCad 6)
-    if ctx.kicad_version < context.KICAD_VERSION_5_99:
+    if context.ki5:
         # Note: If we open the same file KiCad 5 will exit
         cmd = [cfg.pcbnew]
     else:
@@ -83,7 +83,7 @@ def test_print_pcb_good_dwg_dism(test_dir):
         ctx.stop_kicad()
     ctx.expect_out_file(pdf)
     ctx.compare_image(pdf)
-    if ctx.kicad_version < context.KICAD_VERSION_5_99:
+    if context.ki5:
         # Only KiCad 5 reports it as a problem
         assert ctx.search_err(r"already running") is not None
     else:
@@ -183,7 +183,7 @@ def test_print_pcb_good_dwg_2(test_dir):
     layers = ['F.Cu', 'F.SilkS', 'Dwgs.User', 'Edge.Cuts']
     ctx.run(cmd, extra=layers)
     ctx.expect_out_file(pdf)
-    if ctx.kicad_version < context.KICAD_VERSION_5_99:
+    if context.ki5:
         assert ctx.search_err(r"KiCad 5 doesn't support setting mirror")
     ctx.compare_pdf(pdf)
     ctx.clean_up()
@@ -198,7 +198,7 @@ def test_print_pcb_good_dwg_3(test_dir):
     layers = ['F.Cu', 'F.SilkS', 'Dwgs.User', 'Edge.Cuts']
     ctx.run(cmd, extra=layers)
     ctx.expect_out_file(pdf)
-    if ctx.kicad_version < context.KICAD_VERSION_5_99:
+    if context.ki5:
         assert ctx.search_err(r"KiCad 5 doesn't support setting mirror")
     ctx.compare_pdf(pdf)
     ctx.clean_up()

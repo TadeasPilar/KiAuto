@@ -17,11 +17,23 @@ from kiauto.ui_automation import recorded_xvfb, PopenContext
 
 COVERAGE_SCRIPT = 'python3-coverage'
 KICAD_PCB_EXT = '.kicad_pcb'
-
 MODE_SCH = 1
 MODE_PCB = 0
 
-KICAD_VERSION_5_99 = 5099000
+ng_ver = os.environ.get('KIAUS_USE_NIGHTLY')
+if ng_ver:
+    # Path to the Python module
+    sys.path.insert(0, '/usr/lib/kicad-nightly/lib/python3/dist-packages')
+import pcbnew
+# Detect version
+m = re.match(r'(\d+)\.(\d+)\.(\d+)', pcbnew.GetBuildVersion())
+major = int(m.group(1))
+minor = int(m.group(2))
+patch = int(m.group(3))
+kicad_version = major*1000000+minor*1000+patch
+logging.debug('Detected KiCad v{}.{}.{} ({})'.format(major, minor, patch, kicad_version))
+ki5 = kicad_version < 5099000
+ki6 = not ki5
 
 
 def usable_cmd(cmd):
@@ -44,19 +56,7 @@ class TestContext(object):
     pty_data = None
 
     def __init__(self, test_dir, test_name, prj_name):
-        ng_ver = os.environ.get('KIAUS_USE_NIGHTLY')
-        if ng_ver:
-            # Path to the Python module
-            sys.path.insert(0, '/usr/lib/kicad-nightly/lib/python3/dist-packages')
-        import pcbnew
-        # Detect version
-        m = re.match(r'(\d+)\.(\d+)\.(\d+)', pcbnew.GetBuildVersion())
-        major = int(m.group(1))
-        minor = int(m.group(2))
-        patch = int(m.group(3))
-        self.kicad_version = major*1000000+minor*1000+patch
-        logging.debug('Detected KiCad v{}.{}.{} ({})'.format(major, minor, patch, self.kicad_version))
-        if self.kicad_version < KICAD_VERSION_5_99:
+        if ki5:
             self.kicad_cfg_dir = pcbnew.GetKicadConfigPath()
             self.kicad_conf = os.path.join(self.kicad_cfg_dir, 'kicad_common')
             env = get_config_vars_ini(self.kicad_conf)
@@ -153,12 +153,12 @@ class TestContext(object):
         return os.path.getmtime(self.get_pro_filename())
 
     def get_prl_mtime(self):
-        if self.kicad_version < KICAD_VERSION_5_99:
+        if ki5:
             return os.path.getmtime(self.get_pro_filename())
         return os.path.getmtime(self.get_prl_filename())
 
     def get_sub_sheet_name(self, sub, ext):
-        if self.kicad_version < KICAD_VERSION_5_99:
+        if ki5:
             return sub.lower()+'-'+sub+'.'+ext
         return self.prj_name+'-'+sub+'.'+ext
 

@@ -11,10 +11,11 @@ pytest-3 --log-cli-level debug
 
 """
 
-import os
-import sys
 import logging
+import os
+import pytest
 import shutil
+import sys
 # Look for the 'utils' module from where the script is running
 script_dir = os.path.dirname(os.path.abspath(__file__))
 prev_dir = os.path.dirname(script_dir)
@@ -39,7 +40,7 @@ def test_drc_ok_1(test_dir):
     ctx.clean_up()
 
 
-def test_drc_fail(test_dir):
+def test_drc_fail_1(test_dir):
     ctx = context.TestContext(test_dir, 'DRC_Error', 'fail-project')
     # Here we use -v to cover "info" log level
     cmd = [PROG, '-v', 'run_drc']
@@ -48,6 +49,20 @@ def test_drc_fail(test_dir):
     m = ctx.search_err(OUT_REX)
     assert m is not None
     assert m.group(1) == '1'
+    assert m.group(2) == '1'
+    ctx.clean_up()
+
+
+@pytest.mark.skipif(context.ki5, reason="Test for KiCad 6 exclusions")
+def test_drc_fail_exclusions(test_dir):
+    ctx = context.TestContext(test_dir, 'DRC_Error_Exclusions', 'fail-project')
+    # Here we use -v to cover "info" log level
+    cmd = [PROG, '-v', 'run_drc', '-F']
+    ctx.run(cmd, 255)
+    ctx.expect_out_file(REPORT)
+    m = ctx.search_err(OUT_REX)
+    assert m is not None
+    assert m.group(1) == '0'
     assert m.group(2) == '1'
     ctx.clean_up()
 
@@ -94,7 +109,7 @@ def test_drc_ok_pcbnew_running(test_dir):
         ctx.stop_kicad()
     ctx.expect_out_file(REPORT)
     logging.debug('Checking for colors in DEBUG logs')
-    if ctx.kicad_version < context.KICAD_VERSION_5_99:
+    if context.ki5:
         assert ctx.search_err(r"already running") is not None
     assert ctx.search_err(r"\[36;1mDEBUG:") is not None
     ctx.clean_up()
