@@ -19,6 +19,7 @@ jobs:
     strategy:
       matrix:
         ki_release: [latest, ki6]
+        w_tests: [interposer, no_interposer]
 
     runs-on: ubuntu-latest
     container: setsoft/kicad_auto_test:${{ matrix.ki_release }}
@@ -33,19 +34,20 @@ jobs:
         flake8 . --count --exit-zero --statistics
     - name: Test ${{ matrix.ki_release }}
       run: |
+        if [ "${{ matrix.w_test}}" == 'no_interposer' ]; then export KIAUTO_INTERPOSER_DISABLE=1; fi
         make test_server_${{ matrix.ki_release }}
     - name: Store results
       if: ${{ always() }}
       uses: actions/upload-artifact@v1
       with:
-        name: Test_Output_${{ matrix.ki_release }}
+        name: Test_Output_${{ matrix.ki_release }}_${{ matrix.w_test}}
         path: output
     - name: Upload Coverage
       env:
         COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
-        COVERALLS_FLAG_NAME: ${{ matrix.ki_release }}
+        COVERALLS_FLAG_NAME: ${{ matrix.ki_release }}_${{ matrix.w_tests }}
         COVERALLS_PARALLEL: true
-        GITHUB_TOKEN: ¤{{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: coveralls
 
   coveralls:
