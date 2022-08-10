@@ -73,16 +73,23 @@ test_docker_local:
 
 t1k5: test_docker_local_1
 
+t1k5ni: test_docker_local_1_ni
+
 test_docker_local_1:
 	rm -rf output
 	#$(PY_COV) erase
 	# Run in the same directory to make the __pycache__ valid
 	# Also change the owner of the files to the current user (we run as root like in GitHub)
 	docker run --rm -v $(CWD):$(CWD) --workdir="$(CWD)" setsoft/kicad_auto_test:latest \
-		/bin/bash -c "flake8 . --count --statistics ; $(PYTEST) --log-cli-level debug -k '$(SINGLE_TEST)' --test_dir output ; chown -R $(USER_ID):$(GROUP_ID) output/ tests/kicad5/ .coverage"
+		/bin/bash -c "$(PYTEST) --log-cli-level debug -k '$(SINGLE_TEST)' --test_dir output ; chown -R $(USER_ID):$(GROUP_ID) output/ tests/kicad5/ .coverage"
 	#$(PY_COV) report
 	#$(PY_COV) html
 	#rm .coverage
+
+test_docker_local_1_ni:
+	rm -rf output
+	docker run --rm -v $(CWD):$(CWD) --workdir="$(CWD)" setsoft/kicad_auto_test:latest \
+		/bin/bash -c "export KIAUTO_INTERPOSER_DISABLE=1; $(PYTEST) --log-cli-level debug -k '$(SINGLE_TEST)' --test_dir output ; chown -R $(USER_ID):$(GROUP_ID) output/ tests/kicad5/ .coverage"
 
 test_docker_local_k6:
 	rm -rf output
