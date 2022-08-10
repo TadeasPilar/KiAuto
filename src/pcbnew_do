@@ -57,6 +57,7 @@ from kiauto.ui_automation import (PopenContext, xdotool, wait_not_focused, wait_
 TITLE_CONFIRMATION = '^Confirmation$'
 TITLE_ERROR = '^Error$'
 TITLE_WARNING = '^Warning$'
+TITLE_FILE_OPEN_ERROR = '^File Open Error$'
 # This is very Debian specific, you need to install `gdb` and the kicad-nightly-dbg package
 DEBUG_KICAD_NG = False
 DEBUG_KICAD = False
@@ -185,6 +186,15 @@ def dismiss_warning():  # pragma: no cover
     xdotool(['key', 'Return'])
 
 
+def dismiss_file_open_error():
+    nf_title = TITLE_FILE_OPEN_ERROR
+    wait_for_window(nf_title, nf_title, 1)
+
+    logger.warning('This file is already opened ({})'.format(cfg.input_file))
+    xdotool(['search', '--onlyvisible', '--name', nf_title, 'windowfocus'])
+    xdotool(['key', 'Left', 'Return'])
+
+
 def dismiss_error():
     nf_title = TITLE_ERROR
     wait_for_window(nf_title, nf_title, 1)
@@ -203,7 +213,7 @@ def wait_pcbew_start(cfg):
     failed_focuse = False
     other = None
     try:
-        id = wait_pcbnew(cfg.wait_start, [TITLE_CONFIRMATION, TITLE_WARNING, TITLE_ERROR])
+        id = wait_pcbnew(cfg.wait_start, [TITLE_CONFIRMATION, TITLE_WARNING, TITLE_ERROR, TITLE_FILE_OPEN_ERROR])
     except RuntimeError:  # pragma: no cover
         logger.debug('Time-out waiting for pcbnew, will retry')
         failed_focuse = True
@@ -220,10 +230,12 @@ def wait_pcbew_start(cfg):
             dismiss_error()
             logger.error('pcbnew reported an error')
             exit(PCBNEW_ERROR)
-        if other == TITLE_CONFIRMATION:
+        elif other == TITLE_CONFIRMATION:
             dismiss_already_running()
-        if other == TITLE_WARNING:  # pragma: no cover
+        elif other == TITLE_WARNING:  # pragma: no cover
             dismiss_warning()
+        elif other == TITLE_FILE_OPEN_ERROR:
+            dismiss_file_open_error()
         try:
             id = wait_pcbnew(5)
         except RuntimeError:  # pragma: no cover
