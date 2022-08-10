@@ -27,7 +27,7 @@ from kiauto.misc import Config
 
 PROG = 'pcbnew_do'
 REPORT = 'drc_result.rpt'
-OUT_REX = r'(\d+) DRC errors and (\d+) unconnected pads'
+OUT_REX = r'(\d+) DRC errors and (\d+) unconnected pad'
 DEFAULT = 'printed.pdf'
 
 
