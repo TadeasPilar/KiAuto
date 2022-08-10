@@ -152,7 +152,7 @@ def parse_drc_ki6(lines):
     cfg.errs = ['({}) {}; Severity: error\n{}'.format(e['type'], e['message'], e['context']) for e in drc_errors]
     cfg.wrns = ['({}) {}; Severity: warning\n{}'.format(w['type'], w['message'], w['context']) for w in drc_warns]
 
-    return len(drc_errors), len(drc_warns)
+    return len(drc_errors), len(unconnected)
 
 
 def parse_drc(cfg):
