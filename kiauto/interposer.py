@@ -4,7 +4,6 @@
 # License: Apache 2.0
 # Project: KiAuto (formerly kicad-automation-scripts)
 import atexit
-from importlib.machinery import EXTENSION_SUFFIXES
 import os
 import platform
 import psutil
@@ -27,11 +26,7 @@ BOGUS_FILENAME = '#'
 
 def check_interposer(args, logger, cfg):
     # Name of the interposer library
-    # Why Debian thinks the interposer is a Python extension?
-    for ext in EXTENSION_SUFFIXES:
-        interposer_lib = os.path.abspath(os.path.join(os.path.dirname(__file__), 'interposer', 'libinterposer'+ext))
-        if os.path.isfile(interposer_lib):
-            break
+    interposer_lib = os.path.abspath(os.path.join(os.path.dirname(__file__), 'interposer', 'libinterposer.so'))
     if (not os.path.isfile(interposer_lib) or  # The lib isn't there
        args.disable_interposer or              # The user disabled it
        os.environ.get('KIAUTO_INTERPOSER_DISABLE') or  # The user disabled it using the environment
