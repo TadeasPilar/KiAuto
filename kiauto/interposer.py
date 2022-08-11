@@ -180,7 +180,9 @@ def wait_queue(cfg, strs='', starts=False, times=1, timeout=300, do_to=True, kic
         if old_times != times:
             cfg.interposer_dialog.append('KiAuto:times '+str(times))
             cfg.logger.debug('Interposer match, times='+str(times))
-        if not with_windows and not kicad_can_exit and line.startswith('GTK:Window Title:'):
+        if (not with_windows and not kicad_can_exit and line.startswith('GTK:Window Title:') and
+            # The change in the unsaved status is ignored here
+           not(not cfg.ki5 and line.endswith(cfg.window_title_end))):
             # We aren't expecting a window, but something seems to be there
             # Note that window title change is normal when we expect KiCad exiting
             unknown_dialog(cfg, line[17:])
@@ -538,7 +540,6 @@ def wait_start_by_msg(cfg):
         unsaved = ' noname.sch'
     loading_msg = 'Loading '+kind
     prg_msg = prg_name+' —'
-    kicad6_title = ' — '+kind+' Editor'
     with_elapsed = False
     while True:
         # Wait for any window
@@ -548,7 +549,7 @@ def wait_start_by_msg(cfg):
         title = res[pre_l:]
         if not match and with_elapsed:
             log.flush_info()
-        if not cfg.ki5 and title.endswith(kicad6_title):
+        if not cfg.ki5 and title.endswith(cfg.window_title_end):
             # KiCad 6
             if title.startswith('[no schematic loaded]'):
                 # False alarma, nothing loaded

@@ -1348,8 +1348,7 @@ if __name__ == '__main__':
         parser.print_help()
         exit(WRONG_ARGUMENTS)
 
-    cfg = Config(logger, args.kicad_pcb_file, args)
-    cfg.is_pcbnew = True
+    cfg = Config(logger, args.kicad_pcb_file, args, is_pcbnew=True)
     cfg.wait_start = args.wait_start
     cfg.verbose = args.verbose
     set_time_out_scale(cfg.time_out_scale)

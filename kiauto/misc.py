@@ -59,8 +59,9 @@ def hide_stderr():
 
 
 class Config(object):
-    def __init__(self, logger, input_file=None, args=None):
+    def __init__(self, logger, input_file=None, args=None, is_pcbnew=False):
         self.export_format = 'pdf'
+        self.is_pcbnew = is_pcbnew
         if input_file:
             self.input_file = input_file
             self.input_no_ext = os.path.splitext(input_file)[0]
@@ -223,6 +224,8 @@ class Config(object):
             self.ee_window_title = r'\[.*\] — Schematic Editor$'  # "PROJECT [HIERARCHY_PATH] - Schematic Editor"
             self.pn_window_title = r'.* — PCB Editor$'  # "PROJECT - PCB Editor"
             self.pn_simple_window_title = 'PCB Editor'
+            kind = 'PCB' if self.is_pcbnew else 'Schematic'
+            self.window_title_end = ' — '+kind+' Editor'
         else:
             # KiCad 5.1.6
             self.ee_window_title = r'Eeschema.*\.sch'  # "Eeschema - file.sch"

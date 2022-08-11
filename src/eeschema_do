@@ -634,7 +634,6 @@ if __name__ == '__main__':
     logger.debug('Setting timeout scale to {}'.format(cfg.time_out_scale))
     set_time_out_scale(cfg.time_out_scale)
     set_time_out_scale_f(cfg.time_out_scale)
-    cfg.is_pcbnew = False
     cfg.verbose = args.verbose
     cfg.video_name = args.command+'_eeschema_screencast.ogv'
     cfg.all_pages = getattr(args, 'all_pages', False)
