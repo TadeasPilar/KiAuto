@@ -35,6 +35,7 @@ NO_EN_LOCALE = 14
 MISSING_TOOL = 15
 KICAD_DIED = 16
 READ_ONLY_PROBLEM = 17
+WONT_OVERWRITE = 18
 # Wait 60 s to pcbnew/eeschema window to be present
 WAIT_START = 60
 # Name for testing versions

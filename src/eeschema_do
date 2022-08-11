@@ -42,7 +42,7 @@ from kiauto.file_util import (load_filters, wait_for_file_created_by_process, ap
                               check_input_file, memorize_project, restore_project, get_log_files, create_kicad_config,
                               set_time_out_scale as set_time_out_scale_f)
 from kiauto.misc import (REC_W, REC_H, __version__, NO_SCHEMATIC, EESCHEMA_CFG_PRESENT, KICAD_CFG_PRESENT,
-                         WAIT_START, WRONG_SCH_NAME, EESCHEMA_ERROR, Config, KICAD_VERSION_5_99,
+                         WAIT_START, WRONG_SCH_NAME, EESCHEMA_ERROR, Config, KICAD_VERSION_5_99, WONT_OVERWRITE,
                          USER_HOTKEYS_PRESENT, __copyright__, __license__, TIME_OUT_MULT, get_en_locale)
 from kiauto.interposer import (check_interposer, dump_interposer_dialog, start_queue, wait_start_by_msg,
                                set_kicad_process, open_dialog_i,
@@ -565,16 +565,58 @@ def create_eeschema_config(cfg):
             text_file.write('PlotFrameRef=%d\n' % (not cfg.no_frame))
 
 
-def set_output_file(cfg, ext):
-    """ Set the cfg.output_file member using cfg.output_file_no_ext and the extension.
-        Remove the file if already there. """
-    output_file = cfg.output_file_no_ext+'.'+ext
-    if os.path.exists(output_file):
+def restore_output_file(cfg):
+    if cfg.output_file_renamed and os.path.exists(cfg.output_file_renamed):
+        if os.path.exists(cfg.output_file):
+            logger.warning('Removing `{}` to restore the original'.format(cfg.output_file))
+            os.remove(cfg.output_file)
+        logger.debug('Restoring: {} -> {}'.format(cfg.output_file_renamed, cfg.output_file))
+        os.rename(cfg.output_file_renamed, cfg.output_file)
+
+
+def remove_output(cfg):
+    cfg.output_file_renamed = None
+    if cfg.wanted_output_file and cfg.wanted_output_file != cfg.output_file:
+        # KiCad can generate this name
+        if os.path.exists(cfg.output_file):
+            logger.debug(cfg.output_file+' found and we need to preserve it')
+            # The name that KiCad will use belongs to a file that is already there
+            cfg.output_file_renamed = cfg.output_file+'.renamed_by_kiauto'
+            if os.path.exists(cfg.output_file_renamed):
+                # Could be from a failed run
+                logger.error('The `{}` temporal file exists, please solve it'.format(cfg.output_file_renamed))
+                exit(WONT_OVERWRITE)
+            # Move away the name that KiCad will use
+            os.rename(cfg.output_file, cfg.output_file_renamed)
+            # Restore it at exit
+            atexit.register(restore_output_file, cfg)
+    if os.path.exists(cfg.output_file):
         logger.debug('Removing old file')
-        os.remove(output_file)
+        os.remove(cfg.output_file)
         # Note: what if we are exporting multiple files and *all* of them exists?
         # No problem KiCad will overwrite them without even asking ;-)
-    cfg.output_file = output_file
+
+
+def name_with_out_dir(cfg, name):
+    return name if os.path.isabs(name) else os.path.join(cfg.output_dir, name)
+
+
+def set_output_file(cfg, ext, user_out, can_name_out=True):
+    """ Set the cfg.output_file member using cfg.output_file_no_ext and the extension. """
+    wanted_output_file = None
+    if user_out is not None:
+        wanted_output_file = name_with_out_dir(cfg, user_out[0])
+    default_output_file = cfg.output_file_no_ext+'.'+ext
+    if can_name_out:
+        # Outputs that can choose a name
+        cfg.output_file = wanted_output_file if wanted_output_file else default_output_file
+        cfg.wanted_output_file = None
+    else:
+        # Outputs where KiCad forces a name
+        # The name we can get
+        cfg.output_file = default_output_file
+        # The name requested by the user
+        cfg.wanted_output_file = wanted_output_file
 
 
 def wait_eeschema_start_by_msg(cfg):
@@ -589,7 +631,7 @@ if __name__ == '__main__':
     subparsers = parser.add_subparsers(help='Command:', dest='command')
 
     parser.add_argument('schematic', help='KiCad schematic file')
-    parser.add_argument('output_dir', help='Output directory')
+    parser.add_argument('output_dir', help='Output directory (ignored for bom_xml)')
 
     # iImnrsSvVw
     parser.add_argument('--disable_interposer', '-I', help='Avoid using the interposer lib', action='store_true')
@@ -616,6 +658,7 @@ if __name__ == '__main__':
     export_parser.add_argument('--all_pages', '-a', help='Plot all schematic pages in one file', action='store_true')
     export_parser.add_argument('--monochrome', '-m', help='Black and white output', action='store_true')
     export_parser.add_argument('--no_frame', '-F', help='No frame and title block', action='store_true')
+    export_parser.add_argument('--output_name', '-o', nargs=1, help='Name of the output file')
 
     erc_parser = subparsers.add_parser('run_erc', help='Run Electrical Rules Checker on a schematic')
     erc_parser.add_argument('--errors_filter', '-f', nargs=1, help='File with filters to exclude errors')
@@ -623,7 +666,10 @@ if __name__ == '__main__':
     erc_parser.add_argument('--warnings_as_errors', '-w', help='Treat warnings as errors', action='store_true')
 
     netlist_parser = subparsers.add_parser('netlist', help='Create the netlist')
+    netlist_parser.add_argument('--output_name', '-o', nargs=1, help='Name of the output file')
+
     bom_xml_parser = subparsers.add_parser('bom_xml', help='Create the BoM in XML format')
+    bom_xml_parser.add_argument('--output_name', '-o', nargs=1, help='Name of the output file')
 
     args = parser.parse_args()
     logger = log.init(args.separate_info)
@@ -651,7 +697,6 @@ if __name__ == '__main__':
     # Create output dir if it doesn't exist
     output_dir = os.path.abspath(args.output_dir)+'/'
     cfg.video_dir = cfg.output_dir = output_dir
-    os.makedirs(output_dir, exist_ok=True)
     #
     # Configure KiCad in a deterministic way
     #
@@ -688,37 +733,37 @@ if __name__ == '__main__':
     if cfg.enable_interposer:
         flog_out = subprocess.PIPE
         atexit.register(dump_interposer_dialog, cfg)
+    # Setup the output file name
+    use_low_level_io = False
+    if args.command == 'export':
+        # Export
+        ext = cfg.export_format
+        if ext == 'hpgl':
+            ext = 'plt'
+        set_output_file(cfg, ext, args.output_name, can_name_out=False)
+    elif args.command == 'netlist':
+        # Netlist
+        set_output_file(cfg, 'net', args.output_name)
+    elif args.command == 'bom_xml':
+        # BoM XML
+        cfg.output_file = os.path.splitext(cfg.input_file)[0]+'.xml'
+        cfg.wanted_output_file = name_with_out_dir(cfg, args.output_name[0]) if args.output_name is not None else None
+        use_low_level_io = cfg.ki5
+    elif args.command == 'run_erc':
+        # Run ERC
+        set_output_file(cfg, 'erc', args.output_name)
+    remove_output(cfg)
+    logger.debug('Output file: '+cfg.output_file)
+    os.makedirs(os.path.dirname(cfg.output_file), exist_ok=True)
+    if cfg.wanted_output_file:
+        logger.debug('Wanted output file: '+cfg.wanted_output_file)
+        os.makedirs(os.path.dirname(cfg.wanted_output_file), exist_ok=True)
+    os.environ['KIAUTO_INTERPOSER_LOWLEVEL_IO'] = '1' if use_low_level_io else ''
+    # When using the interposer inform the output file name using the environment
+    setup_interposer_filename(cfg)
     for retry in range(3):
         do_retry = False
         problem = False
-        # Setup the output file name
-        use_low_level_io = False
-        if args.command == 'export':
-            # Export
-            ext = cfg.export_format
-            if ext == 'hpgl':
-                ext = 'plt'
-            set_output_file(cfg, ext)
-        elif args.command == 'netlist':
-            # Netlist
-            set_output_file(cfg, 'net')
-        elif args.command == 'bom_xml':
-            # BoM XML
-            cfg.output_file = os.path.splitext(cfg.input_file)[0]+'.xml'
-            use_low_level_io = cfg.ki5
-        elif args.command == 'run_erc':
-            # Run ERC
-            if args.output_name is None:
-                set_output_file(cfg, 'erc')
-            else:
-                cfg.output_file = os.path.abspath(args.output_name[0])
-                if os.path.exists(cfg.output_file):
-                    logger.debug('Removing old file')
-                    os.remove(cfg.output_file)
-            logger.debug('Report file: '+cfg.output_file)
-        os.environ['KIAUTO_INTERPOSER_LOWLEVEL_IO']='1' if use_low_level_io else ''
-        # When using the interposer inform the output file name using the environment
-        setup_interposer_filename(cfg)
         with recorded_xvfb(cfg, retry):
             # Run Eeschema
             logger.debug('Starting '+cfg.eeschema)
@@ -781,6 +826,10 @@ if __name__ == '__main__':
     # Exit clean-up
     #
     # The following code is here only to make coverage tool properly meassure atexit code.
+    if cfg.wanted_output_file and cfg.wanted_output_file != cfg.output_file:
+        logger.debug('Changing KiCad name to user selected name {} -> {}'.format(cfg.output_file, cfg.wanted_output_file))
+        os.makedirs(output_dir, exist_ok=True)
+        os.rename(cfg.output_file, cfg.wanted_output_file)
     atexit.unregister(restore_project)
     restore_project(cfg)
     atexit.unregister(restore_config)

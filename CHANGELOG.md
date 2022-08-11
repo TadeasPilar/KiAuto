@@ -6,11 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
-- New interporse mechanism for Linux x86_64.
+- New interporser mechanism for Linux x86_64.
   - Faster and more reliable
 - `--separate_info` command line option to send information to stdout
   (separated from debug in stderr)
 - `--info` command line option to debug installation issues
+- Now all eeschema_do commands supports `--output_name`
 
 
 ## [1.6.15] - 2022-07-13
