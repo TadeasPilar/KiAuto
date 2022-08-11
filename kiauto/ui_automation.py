@@ -199,10 +199,10 @@ def start_x11vnc(do_it, old_display):
 
 @contextmanager
 def recorded_xvfb(cfg, num_try=0):
-    try:
-        old_display = os.environ['DISPLAY']
-    except KeyError:
-        old_display = None
+    old_display = os.environ.get('DISPLAY')
+    if cfg.record and shutil.which('recordmydesktop') is None:
+        logger.error('To record the session please install `recordmydesktop`')
+        cfg.record = False
     with Xvfb(width=cfg.rec_width, height=cfg.rec_height, colordepth=cfg.colordepth):
         wait_xserver(cfg.output_dir, num_try)
         with start_x11vnc(cfg.start_x11vnc, old_display):
