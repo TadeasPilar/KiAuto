@@ -19,6 +19,8 @@
 #include <GL/glx.h>
 #include <gtk/gtk.h>
 
+#define FORCE_LOW_LEVEL_LOG 1
+
 void glXSwapBuffers(Display *dpy, GLXDrawable drawable)
 {
  static void (*next_func)(Display *, GLXDrawable)=NULL;
@@ -30,7 +32,7 @@ void glXSwapBuffers(Display *dpy, GLXDrawable drawable)
     printf("* wrapping GLX\n");
     next_func=dlsym(RTLD_NEXT,"glXSwapBuffers");
     if ((msg=dlerror())!=NULL)
-       printf("** dlopen failed : %s\n", msg);
+       printf("* dlopen failed : %s\n", msg);
    }
 
  next_func(dpy, drawable);
@@ -51,7 +53,7 @@ void pango_layout_set_text(PangoLayout *layout, const char *text, int length)
     printf("* wrapping PANGO\n");
     next_func=dlsym(RTLD_NEXT,"pango_layout_set_text");
     if ((msg=dlerror())!=NULL)
-       printf("** dlopen failed : %s\n", msg);
+       printf("* dlopen failed : %s\n", msg);
     buffer[0]=0;
    }
 
@@ -86,7 +88,7 @@ void gtk_window_set_title(GtkWindow *window, const gchar *title)
     printf("* wrapping window title change\n");
     next_func=dlsym(RTLD_NEXT,"gtk_window_set_title");
     if ((msg=dlerror())!=NULL)
-       printf("** dlopen failed : %s\n", msg);
+       printf("* dlopen failed : %s\n", msg);
    }
 
  next_func(window, title);
@@ -105,7 +107,7 @@ void gtk_window_set_modal(GtkWindow* window, gboolean modal)
     printf("* wrapping set modal\n");
     next_func=dlsym(RTLD_NEXT,"gtk_window_set_modal");
     if ((msg=dlerror())!=NULL)
-       printf("** dlopen failed : %s\n", msg);
+       printf("* dlopen failed : %s\n", msg);
    }
 
  next_func(window, modal);
@@ -124,7 +126,7 @@ void gtk_widget_show(GtkWidget* widget)
     printf("* wrapping widget show\n");
     next_func=dlsym(RTLD_NEXT,"gtk_widget_show");
     if ((msg=dlerror())!=NULL)
-       printf("** dlopen failed : %s\n", msg);
+       printf("* dlopen failed : %s\n", msg);
    }
 
  next_func(widget);
@@ -147,7 +149,7 @@ void gtk_button_set_label(GtkButton* button, const char *label)
     printf("* wrapping button label\n");
     next_func=dlsym(RTLD_NEXT,"gtk_button_set_label");
     if ((msg=dlerror())!=NULL)
-       printf("** dlopen failed : %s\n", msg);
+       printf("* dlopen failed : %s\n", msg);
    }
 
  /* ACEGLP */
@@ -232,7 +234,7 @@ GtkPrintOperationResult gtk_print_operation_run(GtkPrintOperation* op, GtkPrintO
     printf("* wrapping print op run\n");
     next_func=dlsym(RTLD_NEXT,"gtk_print_operation_run");
     if ((msg=dlerror())!=NULL)
-       printf("** dlopen failed : %s\n", msg);
+       printf("* dlopen failed : %s\n", msg);
     load_print_options();
    }
 
@@ -266,7 +268,7 @@ void gtk_label_set_text_with_mnemonic(GtkLabel *label, const gchar *str)
     printf("* wrapping label set text\n");
     next_func=dlsym(RTLD_NEXT,"gtk_label_set_text_with_mnemonic");
     if ((msg=dlerror())!=NULL)
-       printf("** dlopen failed : %s\n", msg);
+       printf("* dlopen failed : %s\n", msg);
    }
 
  /* Create some accelerators to make the navigation easier */
@@ -325,7 +327,7 @@ gchar *gtk_file_chooser_get_filename(GtkFileChooser *chooser)
     printf("* wrapping file chooser get filename\n");
     next_func=dlsym(RTLD_NEXT,"gtk_file_chooser_get_filename");
     if ((msg=dlerror())!=NULL)
-       printf("** dlopen failed : %s\n", msg);
+       printf("* dlopen failed : %s\n", msg);
     fn=getenv("KIAUTO_INTERPOSER_FILENAME");
     if (fn==NULL)
        printf("****** NOT DEFINED\n");
@@ -359,7 +361,7 @@ FILE *fopen64(const char *filename, const char *mode)
     printf("* wrapping fopen64\n");
     next_func=dlsym(RTLD_NEXT,"fopen64");
     if ((msg=dlerror())!=NULL)
-       printf("** dlopen failed : %s\n", msg);
+       printf("* dlopen failed : %s\n", msg);
    }
 
  res=next_func(filename, mode);
@@ -385,7 +387,8 @@ int fclose(FILE *stream)
     printf("* wrapping fclose\n");
     next_func=dlsym(RTLD_NEXT,"fclose");
     if ((msg=dlerror())!=NULL)
-       printf("** dlopen failed : %s\n", msg);
+       printf("* dlopen failed : %s\n", msg);
+    printf("* next_func : %p\n", next_func);
    }
 
  fd=fileno(stream);
@@ -411,7 +414,7 @@ void gtk_main(void)
     printf("* wrapping gtk_main\n");
     next_func=dlsym(RTLD_NEXT,"gtk_main");
     if ((msg=dlerror())!=NULL)
-       printf("** dlopen failed : %s\n", msg);
+       printf("* dlopen failed : %s\n", msg);
    }
 
  printf("GTK:Main:In\n");
@@ -432,7 +435,7 @@ void gtk_widget_destroy(GtkWidget *widget)
     printf("* wrapping widget destroy\n");
     next_func=dlsym(RTLD_NEXT,"gtk_widget_destroy");
     if ((msg=dlerror())!=NULL)
-       printf("** dlopen failed : %s\n", msg);
+       printf("* dlopen failed : %s\n", msg);
    }
 
  next_func(widget);
@@ -451,7 +454,7 @@ void gtk_widget_destroy(GtkWidget *widget)
 int open64(const char *pathname, int flags, mode_t mode)
 {
  static int (*next_func)(const char *, int , mode_t)=NULL;
- static int do_log=0;
+ static int do_log=FORCE_LOW_LEVEL_LOG;
  int res;
 
  if (next_func==NULL)
@@ -461,9 +464,9 @@ int open64(const char *pathname, int flags, mode_t mode)
     printf("* wrapping open64\n");
     next_func=dlsym(RTLD_NEXT,"open64");
     if ((msg=dlerror())!=NULL)
-       printf("** dlopen failed : %s\n", msg);
+       printf("* dlopen failed : %s\n", msg);
     fn=getenv("KIAUTO_INTERPOSER_LOWLEVEL_IO");
-    if (fn==NULL || !fn[0])
+    if ((fn==NULL || !fn[0]) && !FORCE_LOW_LEVEL_LOG)
        printf("* Not logging low level I/O\n");
     else
        do_log=1;
@@ -483,7 +486,7 @@ int open64(const char *pathname, int flags, mode_t mode)
 int close(int fd)
 {
  static int(*next_func)(int)=NULL;
- static int do_log=0;
+ static int do_log=FORCE_LOW_LEVEL_LOG;
  int res;
  char path[1024];
  char result[1024];
@@ -495,9 +498,9 @@ int close(int fd)
     printf("* wrapping close\n");
     next_func=dlsym(RTLD_NEXT,"close");
     if ((msg=dlerror())!=NULL)
-       printf("** dlopen failed : %s\n", msg);
+       printf("* dlopen failed : %s\n", msg);
     fn=getenv("KIAUTO_INTERPOSER_LOWLEVEL_IO");
-    if (fn==NULL || !fn[0])
+    if ((fn==NULL || !fn[0]) && !FORCE_LOW_LEVEL_LOG)
        printf("* Not logging low level I/O\n");
     else
        do_log=1;
