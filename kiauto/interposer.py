@@ -311,6 +311,9 @@ def send_keys(cfg, msg, keys, closes=None, delay_io=False):
 
 
 def wait_create_i(cfg, name, fn=None):
+    """ Wait for open+close of the file.
+        Also look for them in the collected_io messages.
+        And if we just get close forget about the open. """
     cfg.logger.info('Wait for '+name+' file creation')
     wait_point(cfg)
     if fn is None:
@@ -324,10 +327,12 @@ def wait_create_i(cfg, name, fn=None):
     else:
         got_open = False
         got_close = False
-    if got_open:
-        cfg.logger.debug('Found IO '+open_msg)
+    if got_open or got_close:
+        if got_open:
+            cfg.logger.debug('Found IO '+open_msg)
     else:
-        wait_queue(cfg, open_msg)
+        msg = wait_queue(cfg, [open_msg, close_msg], starts=True)
+        got_close = msg.startswith(close_msg)
     if got_close:
         cfg.logger.debug('Found IO '+close_msg)
     else:
