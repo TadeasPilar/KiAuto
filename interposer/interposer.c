@@ -19,7 +19,10 @@
 #include <GL/glx.h>
 #include <gtk/gtk.h>
 
+/* Always log open/close activity, not just when requested */
 #define FORCE_LOW_LEVEL_LOG 1
+/* Log even when opening for read */
+#define ALL_OPEN_MODES 1
 
 void glXSwapBuffers(Display *dpy, GLXDrawable drawable)
 {
@@ -366,8 +369,35 @@ FILE *fopen64(const char *filename, const char *mode)
 
  res=next_func(filename, mode);
 
- if (mode[0]=='w')
+ if (mode[0]=='w' || ALL_OPEN_MODES)
     printf("IO:open:%s\n", filename);
+    if (ALL_OPEN_MODES)
+       printf("IO:fopen64:%s\n", mode);
+ fflush(stdout);
+ return res;
+}
+
+
+FILE *fopen(const char *filename, const char *mode)
+{
+ static FILE *(*next_func)(const char *, const char *)=NULL;
+ FILE *res;
+
+ if (next_func==NULL)
+   { /* Initialization */
+    char *msg;
+    printf("* wrapping fopen\n");
+    next_func=dlsym(RTLD_NEXT,"fopen");
+    if ((msg=dlerror())!=NULL)
+       printf("* dlopen failed : %s\n", msg);
+   }
+
+ res=next_func(filename, mode);
+
+ if (mode[0]=='w' || ALL_OPEN_MODES)
+    printf("IO:open:%s\n", filename);
+    if (ALL_OPEN_MODES)
+       printf("IO:fopen:%s\n", mode);
  fflush(stdout);
  return res;
 }
@@ -477,6 +507,42 @@ int open64(const char *pathname, int flags, mode_t mode)
  if (do_log)
    {
     printf("IO:open:%s\n", pathname);
+    if (ALL_OPEN_MODES)
+       printf("IO:open64:0x%X\n", mode);
+    fflush(stdout);
+   }
+ return res;
+}
+
+
+int open(const char *pathname, int flags, mode_t mode)
+{
+ static int (*next_func)(const char *, int , mode_t)=NULL;
+ static int do_log=FORCE_LOW_LEVEL_LOG;
+ int res;
+
+ if (next_func==NULL)
+   { /* Initialization */
+    char *msg;
+    const char *fn;
+    printf("* wrapping open\n");
+    next_func=dlsym(RTLD_NEXT,"open");
+    if ((msg=dlerror())!=NULL)
+       printf("* dlopen failed : %s\n", msg);
+    fn=getenv("KIAUTO_INTERPOSER_LOWLEVEL_IO");
+    if ((fn==NULL || !fn[0]) && !FORCE_LOW_LEVEL_LOG)
+       printf("* Not logging low level I/O\n");
+    else
+       do_log=1;
+   }
+
+ res=next_func(pathname, flags, mode);
+
+ if (do_log)
+   {
+    printf("IO:open:%s\n", pathname);
+    if (ALL_OPEN_MODES)
+       printf("IO:open:0x%X\n", mode);
     fflush(stdout);
    }
  return res;
