@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Fixed
+- Problems when using `--output_name` and the system temporal dir isn't in the
+  same file system as the selected name.
 
 ## [2.0.0] - 2022-08-11
 ### Added

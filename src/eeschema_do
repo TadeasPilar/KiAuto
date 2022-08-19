@@ -26,6 +26,7 @@ import re
 import argparse
 import atexit
 import json
+import shutil
 import time
 
 # Look for the 'kiauto' module from where the script is running
@@ -829,7 +830,7 @@ if __name__ == '__main__':
     if cfg.wanted_output_file and cfg.wanted_output_file != cfg.output_file:
         logger.debug('Changing KiCad name to user selected name {} -> {}'.format(cfg.output_file, cfg.wanted_output_file))
         os.makedirs(output_dir, exist_ok=True)
-        os.rename(cfg.output_file, cfg.wanted_output_file)
+        shutil.move(cfg.output_file, cfg.wanted_output_file)
     atexit.unregister(restore_project)
     restore_project(cfg)
     atexit.unregister(restore_config)
