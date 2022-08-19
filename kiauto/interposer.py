@@ -388,6 +388,10 @@ def dismiss_error(cfg, title):
         cfg.logger.warning('Missing libraries, please fix it')
         dismiss_dialog(cfg, title, 'Return')
         return
+    if 'The entire schematic could not be loaded.  Errors occurred attempting to load hierarchical sheets.' in msgs:
+        # KiCad 6 loading a sheet, but sub-sheets are missing
+        cfg.logger.error('Error loading schematic file. Missing schematic files?')
+        exit(EESCHEMA_ERROR)
     unknown_dialog(cfg, title, msgs)
 
 
