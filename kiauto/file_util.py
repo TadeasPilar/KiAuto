@@ -355,12 +355,14 @@ def restore_project(cfg):
 
 def get_log_files(out_dir, app_name, also_interposer=False):
     if log.get_level() > 2:
+        os.makedirs(out_dir, exist_ok=True)
         flog_out = open(os.path.join(out_dir, app_name+'_out.log'), 'wt')
         flog_err = open(os.path.join(out_dir, app_name+'_err.log'), 'wt')
         logger.debug('Redirecting '+app_name+' output to '+app_name+'*.log')
     else:
         flog_out = flog_err = DEVNULL
     if also_interposer:
+        os.makedirs(out_dir, exist_ok=True)
         fname = os.path.join(out_dir, app_name+'_interposer.log')
         flog_int = open(fname, 'wt')
         logger.debug('Saving '+app_name+' interposer dialog to '+fname)
