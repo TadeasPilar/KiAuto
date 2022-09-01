@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2020 Salvador E. Tropea
-# Copyright (c) 2020 Instituto Nacional de Tecnologïa Industrial
+# Copyright (c) 2020-2022 Salvador E. Tropea
+# Copyright (c) 2020-2022 Instituto Nacional de Tecnologïa Industrial
 # License: Apache 2.0
 # Project: KiAuto (formerly kicad-automation-scripts)
 """
@@ -11,9 +11,10 @@ pytest-3 --log-cli-level debug
 
 """
 
-import os
-import sys
 import logging
+import os
+import pytest
+import sys
 # Look for the 'utils' module from where the script is running
 script_dir = os.path.dirname(os.path.abspath(__file__))
 prev_dir = os.path.dirname(script_dir)
@@ -126,4 +127,18 @@ def test_time_out(test_dir):
     ctx = context.TestContextSCH(test_dir, 'SCH_Time_Out', 'good-project')
     cmd = [PROG, '--time_out_scale', '0', 'run_erc']
     ctx.run(cmd, 1)
+    ctx.clean_up()
+
+
+@pytest.mark.skipif(context.ki5, reason="Test for KiCad 6 dialog")
+def test_miss_wks_sch(test_dir):
+    """ Missing kicad_wks """
+    prj = 'missing-project'
+    net = prj+'.net'
+    ctx = context.TestContextSCH(test_dir, 'Missing_WKS_SCH', prj)
+    # Force removing the .net
+    ctx.create_dummy_out_file(net)
+    cmd = [PROG, '-vvv', 'netlist']
+    ctx.run(cmd)
+    ctx.expect_out_file(net)
     ctx.clean_up()

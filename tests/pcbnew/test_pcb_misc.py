@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2020-2021 Salvador E. Tropea
-# Copyright (c) 2020-2021 Instituto Nacional de Tecnologïa Industrial
+# Copyright (c) 2020-2022 Salvador E. Tropea
+# Copyright (c) 2020-2022 Instituto Nacional de Tecnologïa Industrial
 # License: Apache 2.0
 # Project: KiAuto (formerly kicad-automation-scripts)
 """
@@ -11,6 +11,7 @@ pytest-3 --log-cli-level debug
 
 """
 
+import pytest
 import os
 import sys
 import logging
@@ -91,4 +92,16 @@ def test_pcb_wrong_command(test_dir):
     ctx = context.TestContext(test_dir, 'PCB_Wrong_Command', 'good-project')
     cmd = [PROG, 'bogus']
     ctx.run(cmd, WRONG_ARGUMENTS)
+    ctx.clean_up()
+
+
+@pytest.mark.skipif(context.ki5, reason="Test for KiCad 6 dialog")
+def test_miss_wks_pcb(test_dir):
+    """ Missing kicad_wks """
+    prj = 'missing-project'
+    net = prj+'.d356'
+    ctx = context.TestContext(test_dir, 'Missing_WKS_PCB', prj)
+    cmd = ['pcbnew_do', '-vv', 'ipc_netlist', '-o', net]
+    ctx.run(cmd)
+    ctx.expect_out_file(net)
     ctx.clean_up()

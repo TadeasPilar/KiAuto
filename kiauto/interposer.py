@@ -22,6 +22,9 @@ KICAD_EXIT_MSG = '>>exit<<'
 INTERPOSER_OPS = 'interposer_options.txt'
 IGNORED_DIALOG_MSGS = {'The quick brown fox jumps over the lazy dog.', '0123456789'}
 BOGUS_FILENAME = '#'
+# These dialogs are asynchronous, they can pop-up at anytime.
+# One example is when the .kicad_wks is missing, KiCad starts drawing and then detects it.
+INFO_DIALOGS = {'KiCad PCB Editor Information', 'KiCad Schematic Editor Information'}
 
 
 def check_interposer(args, logger, cfg):
@@ -185,7 +188,12 @@ def wait_queue(cfg, strs='', starts=False, times=1, timeout=300, do_to=True, kic
            not(not cfg.ki5 and line.endswith(cfg.window_title_end))):
             # We aren't expecting a window, but something seems to be there
             # Note that window title change is normal when we expect KiCad exiting
-            unknown_dialog(cfg, line[17:])
+            title = line[17:]
+            if title in INFO_DIALOGS:
+                # Async dialogs
+                dismiss_pcb_info(cfg, title)
+            else:
+                unknown_dialog(cfg, title)
     if do_to:
         raise RuntimeError('Timed out waiting for `{}`'.format(strs))
 
@@ -239,10 +247,25 @@ def open_dialog_i(cfg, name, keys, no_show=False, no_wait=False, no_main=False, 
     if isinstance(keys, str):
         keys = ['key', keys]
     xdotool(keys)
-    pre_gtk = 'GTK:Window Title:' if no_show else 'GTK:Window Show:'
+    pre_gtk_title = 'GTK:Window Title:'
+    pre_gtk = pre_gtk_title if no_show else 'GTK:Window Show:'
     if isinstance(name, str):
         name = [name]
-    res = wait_queue(cfg, [pre_gtk+f for f in name], with_windows=True)
+    name_w_pre = [pre_gtk+f for f in name]
+    # Add the async dialogs
+    for t in INFO_DIALOGS:
+        name_w_pre.append(pre_gtk_title+t)
+    # Wait for our dialog or any async dialog
+    # Note: wait_queue won't dismiss them because we use "with_windows=True"
+    while True:
+        res = wait_queue(cfg, name_w_pre, with_windows=True)
+        title = res[len(pre_gtk_title):]
+        if title not in INFO_DIALOGS:
+            break
+        # Get rid of the info dialog
+        dismiss_pcb_info(cfg, title)
+        # Send the keys again
+        xdotool(keys)
     name = res[len(pre_gtk):]
     if no_wait:
         return name, None
@@ -356,12 +379,21 @@ def collect_dialog_messages(cfg, title):
     return msgs
 
 
-def unknown_dialog(cfg, title, msgs=None):
+def exit_pcb_ees_error(cfg):
+    exit(PCBNEW_ERROR if cfg.is_pcbnew else EESCHEMA_ERROR)
+
+
+def unknown_dialog(cfg, title, msgs=None, fatal=True):
     if msgs is None:
         msgs = collect_dialog_messages(cfg, title)
-    cfg.logger.error('Unknown KiCad dialog: '+title)
-    cfg.logger.error('Potential dialog messages: '+str(msgs))
-    exit(PCBNEW_ERROR if cfg.is_pcbnew else EESCHEMA_ERROR)
+    msg_unk = 'Unknown KiCad dialog: '+title
+    msg_msgs = 'Potential dialog messages: '+str(msgs)
+    if fatal:
+        cfg.logger.error(msg_unk)
+        cfg.logger.error(msg_msgs)
+        exit_pcb_ees_error(cfg)
+    cfg.logger.warning(msg_unk)
+    cfg.logger.warning(msg_msgs)
 
 
 def dismiss_dialog(cfg, title, keys):
@@ -430,7 +462,7 @@ def dismiss_warning(cfg, title):
     kind = 'PCB' if cfg.is_pcbnew else 'Schematic'
     if kind+' file "'+cfg.input_file+'" is already open.' in msgs:
         cfg.logger.error('File already opened by another KiCad instance')
-        exit(PCBNEW_ERROR if cfg.is_pcbnew else EESCHEMA_ERROR)
+        exit_pcb_ees_error(cfg)
     if 'Error loading schematic file "'+os.path.abspath(cfg.input_file)+'".' in msgs:
         cfg.logger.error('eeschema reported an error while loading the schematic')
         exit(EESCHEMA_ERROR)
@@ -455,7 +487,22 @@ def dismiss_save_changes(cfg, title):
         dismiss_dialog(cfg, title, ['Left', 'Left', 'Return'])
         return
     cfg.logger.error('Save dialog without correct messages')
-    exit(PCBNEW_ERROR if cfg.is_pcbnew else EESCHEMA_ERROR)
+    exit_pcb_ees_error(cfg)
+
+
+def dismiss_pcb_info(cfg, title):
+    """ KiCad 6 information, we know about missing worksheet style """
+    msgs = collect_dialog_messages(cfg, title)
+    found = False
+    for msg in msgs:
+        if msg.startswith("Drawing sheet ") and msg.endswith(" not found."):
+            cfg.logger.warning("Missing worksheet file (.kicad_wks)")
+            cfg.logger.warning(msg)
+            found = True
+            break
+    if not found:
+        unknown_dialog(cfg, title, msgs, fatal=False)
+    dismiss_dialog(cfg, title, 'Return')
 
 
 def exit_kicad_i(cfg):
@@ -600,5 +647,7 @@ def wait_start_by_msg(cfg):
             dismiss_warning(cfg, title)
         elif title == 'Remap Symbols':
             dismiss_remap_symbols(cfg, title)
+        elif title in INFO_DIALOGS:
+            dismiss_pcb_info(cfg, title)
         else:
             unknown_dialog(cfg, title)
