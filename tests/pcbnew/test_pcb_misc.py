@@ -95,7 +95,8 @@ def test_pcb_wrong_command(test_dir):
     ctx.clean_up()
 
 
-@pytest.mark.skipif(context.ki5, reason="Test for KiCad 6 dialog")
+@pytest.mark.skipif(context.ki5 or os.environ.get('KIAUTO_INTERPOSER_DISABLE', '0') == '1',
+                    reason="Test for KiCad 6 dialog")
 def test_miss_wks_pcb(test_dir):
     """ Missing kicad_wks """
     prj = 'missing-project'
