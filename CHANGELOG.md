@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [2.0.3] - 2022-09-02
 ### Added
 - Support for the asynchronous "Info" dialogs found in KiCad 6.
   Example: missing .kicad_wks (See INTI-CMNB/KiBot#264)
