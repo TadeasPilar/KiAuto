@@ -9,9 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for the asynchronous "Info" dialogs found in KiCad 6.
   Example: missing .kicad_wks (See INTI-CMNB/KiBot#264)
 
+### Fixed
+- Project files are now restored using binary mode. So we preserve the
+  original end of line.
+
+
 ## [2.0.2] - 2022-08-26
 ### Fixed
 - Problems when the output directory doesn't exist.
+
 
 ## [2.0.1] - 2022-08-22
 ### Added

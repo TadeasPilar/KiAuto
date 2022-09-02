@@ -317,7 +317,7 @@ def memorize_project(cfg):
         cfg.pro_stat = cfg.start_pro_stat
     else:
         cfg.pro_stat = cfg.start_kicad_pro_stat
-    with open(cfg.pro_name) as f:
+    with open(cfg.pro_name, 'rb') as f:
         cfg.pro_content = f.read()
     atexit.register(restore_project, cfg)
     if cfg.prl_ext:
@@ -325,7 +325,7 @@ def memorize_project(cfg):
         if not os.path.isfile(cfg.prl_name):
             return
         cfg.prl_stat = cfg.start_kicad_prl_stat
-        with open(cfg.prl_name) as f:
+        with open(cfg.prl_name, 'rb') as f:
             cfg.prl_content = f.read()
 
 
@@ -341,7 +341,7 @@ def _restore_project(name, stat_v, content):
         if not pro_found or new_stat.st_mtime != stat_v.st_mtime:
             logger.debug('Restoring the project file')
             os.rename(name, name+'-bak')
-            with open(name, 'wt') as f:
+            with open(name, 'wb') as f:
                 f.write(content)
             os.utime(name, times=(stat_v.st_atime, stat_v.st_mtime))
 
