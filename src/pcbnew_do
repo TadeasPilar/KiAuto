@@ -1113,7 +1113,13 @@ def create_pcbnew_config(cfg):
                                   "show_footprints_normal": not cfg.no_tht,
                                   "show_footprints_virtual": not cfg.no_virtual,
                                   "show_axis": False,
-                                  "opengl_AA_mode": 0}
+                                  "opengl_AA_mode": 0,
+                                  "show_silkscreen": not cfg.hide_silkscreen,
+                                  "show_soldermask": not cfg.hide_soldermask,
+                                  "show_solderpaste": not cfg.hide_solderpaste,
+                                  "show_zones": not cfg.hide_zones,
+                                  "clip_silk_on_via_annulus": not cfg.dont_clip_silk_on_via_annulus,
+                                  "subtract_mask_from_silk": not cfg.dont_substrack_mask_from_silk}
                 json_text = json.dumps(conf)
                 with open(cfg.conf_3dview, "wt") as viewer_file:
                     viewer_file.write(json_text)
@@ -1300,6 +1306,13 @@ if __name__ == '__main__':
     v3d_parser.add_argument('--orthographic', '-O', help='Enable the orthographic projection', action='store_true')
     v3d_parser.add_argument('--output_name', '-o', nargs=1, help='Name of the output file (PNG)', default=['capture.png'])
     v3d_parser.add_argument('--ray_tracing', '-r', help='Enable the realistic render', action='store_true')
+    v3d_parser.add_argument('--hide_silkscreen', help='Hide the silkscreen layers', action='store_true')
+    v3d_parser.add_argument('--hide_soldermask', help='Hide the solder mask layers', action='store_true')
+    v3d_parser.add_argument('--hide_solderpaste', help='Hide the solder paste layers', action='store_true')
+    v3d_parser.add_argument('--hide_zones', help='Hide filled areas in zones', action='store_true')
+    v3d_parser.add_argument('--dont_substrack_mask_from_silk', help="Don't clip silkscreen at solder mask edges",
+                            action='store_true')
+    v3d_parser.add_argument('--dont_clip_silk_on_via_annulus', help="Don't clip silkscreen at via annuli", action='store_true')
     v3d_parser.add_argument('--silk_color', nargs=1,
                             help='Silk color (KiCad 6 supports color1,color2 for top/bottom)', default=['#E5E5E5'])
     v3d_parser.add_argument('--sm_color', nargs=1, help='Solder mask color (KiCad 6 supports color1,color2 for top/bottom)',
@@ -1451,6 +1464,12 @@ if __name__ == '__main__':
         cfg.orthographic = args.orthographic
         cfg.use_rt_wait = args.use_rt_wait
         cfg.wait_after_move = args.wait_after_move
+        cfg.hide_silkscreen = args.hide_silkscreen
+        cfg.hide_soldermask = args.hide_soldermask
+        cfg.hide_solderpaste = args.hide_solderpaste
+        cfg.hide_zones = args.hide_zones
+        cfg.dont_substrack_mask_from_silk = args.dont_substrack_mask_from_silk
+        cfg.dont_clip_silk_on_via_annulus = args.dont_clip_silk_on_via_annulus
     else:
         cfg.no_tht = False
         cfg.no_smd = False
