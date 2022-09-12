@@ -1290,6 +1290,14 @@ if __name__ == '__main__':
     v3d_parser.add_argument('--copper_color', '-c', nargs=1, help='Copper color', default=['#B29C00'])
     v3d_parser.add_argument('--detect_rt', '-d', help='Try to detect when the ray tracing render finshes,'
                             ' wait_rt value is the time-out (experimental)', action='store_true')
+    v3d_parser.add_argument('--dont_clip_silk_on_via_annulus', help="Don't clip silkscreen at via annuli (KiCad 6)",
+                            action='store_true')
+    v3d_parser.add_argument('--dont_substrack_mask_from_silk', help="Don't clip silkscreen at solder mask edges (KiCad 6)",
+                            action='store_true')
+    v3d_parser.add_argument('--hide_silkscreen', help='Hide the silkscreen layers (KiCad 6)', action='store_true')
+    v3d_parser.add_argument('--hide_soldermask', help='Hide the solder mask layers (KiCad 6)', action='store_true')
+    v3d_parser.add_argument('--hide_solderpaste', help='Hide the solder paste layers (KiCad 6)', action='store_true')
+    v3d_parser.add_argument('--hide_zones', help='Hide filled areas in zones (KiCad 6)', action='store_true')
     v3d_parser.add_argument('--move_x', '-x', nargs=1, help='Steps to move in the X axis (positive is to the right)',
                             default=[0], type=int)
     v3d_parser.add_argument('--move_y', '-y', nargs=1, help='Steps to move in the Y axis (positive is up)', default=[0],
@@ -1306,13 +1314,6 @@ if __name__ == '__main__':
     v3d_parser.add_argument('--orthographic', '-O', help='Enable the orthographic projection', action='store_true')
     v3d_parser.add_argument('--output_name', '-o', nargs=1, help='Name of the output file (PNG)', default=['capture.png'])
     v3d_parser.add_argument('--ray_tracing', '-r', help='Enable the realistic render', action='store_true')
-    v3d_parser.add_argument('--hide_silkscreen', help='Hide the silkscreen layers', action='store_true')
-    v3d_parser.add_argument('--hide_soldermask', help='Hide the solder mask layers', action='store_true')
-    v3d_parser.add_argument('--hide_solderpaste', help='Hide the solder paste layers', action='store_true')
-    v3d_parser.add_argument('--hide_zones', help='Hide filled areas in zones', action='store_true')
-    v3d_parser.add_argument('--dont_substrack_mask_from_silk', help="Don't clip silkscreen at solder mask edges",
-                            action='store_true')
-    v3d_parser.add_argument('--dont_clip_silk_on_via_annulus', help="Don't clip silkscreen at via annuli", action='store_true')
     v3d_parser.add_argument('--silk_color', nargs=1,
                             help='Silk color (KiCad 6 supports color1,color2 for top/bottom)', default=['#E5E5E5'])
     v3d_parser.add_argument('--sm_color', nargs=1, help='Solder mask color (KiCad 6 supports color1,color2 for top/bottom)',
