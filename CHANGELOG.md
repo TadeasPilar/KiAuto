@@ -6,6 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.4] - 2022-09-12
+### Added
+- 3D render options to control:
+ - Hide the silkscreen layers
+ - Hide the solder mask layers
+ - Hide the solder paste layers
+ - Hide filled areas in zones
+ - Don't clip silkscreen at solder mask edges
+ - Don't clip silkscreen at via annuli
+
+### Changed
+- The 3D render now enables silkscreen clips by default
+
+
 ## [2.0.3] - 2022-09-02
 ### Added
 - Support for the asynchronous "Info" dialogs found in KiCad 6.
