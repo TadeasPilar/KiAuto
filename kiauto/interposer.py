@@ -457,7 +457,8 @@ def dismiss_already_running(cfg, title):
 
 def dismiss_warning(cfg, title):
     """ KiCad 5 when already open file (PCB/SCH)
-        KiCad 5 with bogus SCH files """
+        KiCad 5 with bogus SCH files
+        Pad in invalid layer """
     msgs = collect_dialog_messages(cfg, title)
     kind = 'PCB' if cfg.is_pcbnew else 'Schematic'
     if kind+' file "'+cfg.input_file+'" is already open.' in msgs:
@@ -466,6 +467,13 @@ def dismiss_warning(cfg, title):
     if 'Error loading schematic file "'+os.path.abspath(cfg.input_file)+'".' in msgs:
         cfg.logger.error('eeschema reported an error while loading the schematic')
         exit(EESCHEMA_ERROR)
+    # More generic cases
+    for msg in msgs:
+        # Warning about pad using an invalid layer
+        if msg.endswith("could not find valid layer for pad"):
+            cfg.logger.warning(msg)
+            dismiss_dialog(cfg, title, 'Return')
+            return
     unknown_dialog(cfg, title, msgs)
 
 
