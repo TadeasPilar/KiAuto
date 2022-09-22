@@ -1,3 +1,9 @@
+kiauto (2.0.5-1) stable; urgency=medium
+
+  * Added support for KiCad 5 "could not find valid layer for pad" warning
+
+ -- Salvador E. Tropea <salvador@inti.gob.ar>  Thu, 22 Sep 2022 08:24:28 -0300
+
 kiauto (2.0.4-1) stable; urgency=medium
 
   * Added 3D options to disable more stuff (layers and clips)
