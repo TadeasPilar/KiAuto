@@ -192,6 +192,9 @@ def wait_queue(cfg, strs='', starts=False, times=1, timeout=300, do_to=True, kic
             if title in INFO_DIALOGS:
                 # Async dialogs
                 dismiss_pcb_info(cfg, title)
+            elif title == 'pcbnew Warning':
+                # KiCad 5 error during post-load, before releasing the CPU
+                dismiss_pcbnew_warning(cfg, title)
             else:
                 unknown_dialog(cfg, title)
     if do_to:
@@ -457,8 +460,7 @@ def dismiss_already_running(cfg, title):
 
 def dismiss_warning(cfg, title):
     """ KiCad 5 when already open file (PCB/SCH)
-        KiCad 5 with bogus SCH files
-        Pad in invalid layer """
+        KiCad 5 with bogus SCH files """
     msgs = collect_dialog_messages(cfg, title)
     kind = 'PCB' if cfg.is_pcbnew else 'Schematic'
     if kind+' file "'+cfg.input_file+'" is already open.' in msgs:
@@ -467,6 +469,12 @@ def dismiss_warning(cfg, title):
     if 'Error loading schematic file "'+os.path.abspath(cfg.input_file)+'".' in msgs:
         cfg.logger.error('eeschema reported an error while loading the schematic')
         exit(EESCHEMA_ERROR)
+    unknown_dialog(cfg, title, msgs)
+
+
+def dismiss_pcbnew_warning(cfg, title):
+    """ Pad in invalid layer """
+    msgs = collect_dialog_messages(cfg, title)
     # More generic cases
     for msg in msgs:
         # Warning about pad using an invalid layer
@@ -653,6 +661,8 @@ def wait_start_by_msg(cfg):
             dismiss_already_running(cfg, title)
         elif title == 'Warning':
             dismiss_warning(cfg, title)
+        elif title == 'pcbnew Warning':
+            dismiss_pcbnew_warning(cfg, title)
         elif title == 'Remap Symbols':
             dismiss_remap_symbols(cfg, title)
         elif title in INFO_DIALOGS:

@@ -1,0 +1,3 @@
+(fp_lib_table
+  (lib (name Carrier_NetTie)(type KiCad)(uri ${KIPRJMOD}/Carrier_NetTie.pretty)(options "")(descr ""))
+)

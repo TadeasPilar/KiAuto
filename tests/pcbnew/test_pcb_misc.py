@@ -106,3 +106,13 @@ def test_miss_wks_pcb(test_dir):
     ctx.run(cmd)
     ctx.expect_out_file(net)
     ctx.clean_up()
+
+
+@pytest.mark.skipif(not context.ki5, reason="Pad problems for KiCad 5")
+def test_pad_error_1(test_dir):
+    """ could not find valid layer for pad """
+    ctx = context.TestContext(test_dir, 'export_gencad_1', 'inner_layer_net-tie')
+    cmd = [PROG, '-vv', 'export_gencad', '-f', '-n', '-O', '--output_name', 'good.cad']
+    ctx.run(cmd)
+    ctx.expect_out_file('good.cad')
+    ctx.clean_up()
