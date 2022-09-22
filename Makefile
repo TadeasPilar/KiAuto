@@ -80,6 +80,7 @@ test_docker_local_1:
 	#$(PY_COV) erase
 	# Run in the same directory to make the __pycache__ valid
 	# Also change the owner of the files to the current user (we run as root like in GitHub)
+	# KIAUTO_INTERPOSER_DISABLE=1
 	docker run --rm -v $(CWD):$(CWD) --workdir="$(CWD)" setsoft/kicad_auto_test:latest \
 		/bin/bash -c "$(PYTEST) --log-cli-level debug -k '$(SINGLE_TEST)' --test_dir output ; chown -R $(USER_ID):$(GROUP_ID) output/ tests/kicad5/ .coverage"
 	#$(PY_COV) report
