@@ -461,13 +461,17 @@ def open_dialog_with_retry(msg, keys, desc, w_name, cfg, id_dest=None):
     xdotool(keys, id=id_dest)
     retry = False
     try:
-        id = wait_for_window(desc, w_name, popen_obj=cfg.popen_obj)
+        id = wait_for_window(desc, w_name, popen_obj=cfg.popen_obj, others=['pcbnew Warning'])
     except RuntimeError:  # pragma: no cover
         # Perhaps the main window wasn't available yet
         retry = True
     except CalledProcessError as e:
         logger.error(str(e))
         sys.exit(KICAD_DIED)
+    except ValueError:
+        logger.warning('Got pcbnew warning dialog, trying to dismiss it')
+        xdotool(['key', 'Return'])
+        retry = True
     if retry:
         logger.info('"{}" did not open, retrying'.format(desc))
         # wait_eeschema_start(cfg)
