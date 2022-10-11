@@ -557,7 +557,9 @@ def run_drc_6_0_i(cfg):
     send_keys(cfg, 'Create report', 'Return', closes=file_dialog, delay_io=True)
     wait_create_i(cfg, 'DRC report')
     # Close the dialog
-    send_keys(cfg, 'Closing the DRC dialog', 'Escape', closes=control_dlg)
+    # Note: The following command closes the dialog, but on GTK 3.24.34 it looks like
+    # the dialog isn't destroyed. It seems to be safer to skip the wait.
+    send_keys(cfg, 'Closing the DRC dialog', 'Escape')  #, closes=control_dlg)
 
 
 def run_drc_i(cfg):
