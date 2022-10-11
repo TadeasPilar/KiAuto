@@ -277,6 +277,8 @@ def eeschema_parse_erc(cfg):
         err_regex = re.compile(r'^\[(\S+)\]: (.*)')
     else:
         err_regex = re.compile(r'^ErrType\((\d+)\): (.*)')
+    errors_excl = warnings_excl = 0
+    excluded = False
     for i, line in enumerate(lines):
         m = err_regex.search(line)
         if m:
@@ -284,15 +286,25 @@ def eeschema_parse_erc(cfg):
             if cfg.kicad_version >= KICAD_VERSION_5_99 and i < len(lines):
                 # KiCad 6 moved the severity to the next line
                 line = lines[i+1]
+            # Discard messages explicitly excluded using the GUI
+            excluded = '(excluded)' in line
             if r'Severity: error' in line:
                 is_err = True
-                cfg.errs.append(msg)
+                if excluded:
+                    errors_excl += 1
+                else:
+                    cfg.errs.append(msg)
             else:
                 is_err = False
-                cfg.wrns.append(msg)
+                if excluded:
+                    warnings_excl += 1
+                else:
+                    cfg.wrns.append(msg)
             cont = True
             continue
         if cont and line.startswith('    '):
+            if excluded:
+                continue
             if is_err:
                 if len(cfg.errs):
                     cfg.errs.append(cfg.errs.pop()+'\n'+line)
@@ -304,14 +316,14 @@ def eeschema_parse_erc(cfg):
     logger.debug('Last line: '+last_line)
     m = re.search(r'^ \*\* ERC messages: ([0-9]+) +Errors ([0-9]+) +Warnings ([0-9]+)+$', last_line)
     # messages = m.group(1)
-    errors = m.group(2)
-    warnings = m.group(3)
+    errors = int(m.group(2))-errors_excl
+    warnings = int(m.group(3))-warnings_excl
     # Apply the warnings_as_errors option
     if cfg.warnings_as_errors:
         cfg.errs += cfg.wrns
         cfg.wrns = []
-        return int(errors)+int(warnings), 0
-    return int(errors), int(warnings)
+        return errors+warnings, 0
+    return errors, warnings
 
 
 def eeschema_run_erc_schematic_5_1_n(cfg):

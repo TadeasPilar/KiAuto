@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Fixed
 - Problems with GTK 3.24.34 and recycled DRC dialog
+- ERC exclusions not detected (#31)
 
 ## [2.0.5] - 2022-09-22
 ### Added
