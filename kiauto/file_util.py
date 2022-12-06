@@ -201,6 +201,7 @@ def backup_config(name, file, err, cfg):
     logger.debug(name+' config: '+config_file)
     # If we have an old back-up ask for the user to solve it
     if os.path.isfile(old_config_file):
+        return old_config_file 
         logger.error(name+' config back-up found (%s)', old_config_file)
         logger.error('It could contain your %s configuration, rename it to %s or discard it.', name.lower(), config_file)
         exit(err)
